@@ -1,0 +1,27 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# SQLite temporary files
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Java / Maven build
+**/target/
+*.class
+
+# IDE & OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Automation daemons & logs
+auto_push*
+*.log
+temp/
+tmp/

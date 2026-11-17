@@ -1,0 +1,10 @@
+{
+  "name": "skynet-flight-booking-system",
+  "version": "1.0.0",
+  "description": "Skynet - Flight Booking System Web Edition",
+  "author": "mahin1710",
+  "scripts": {
+    "start": "node Skynet-master/Skynet-master/web/server.js",
+    "dev": "node Skynet-master/Skynet-master/web/server.js"
+  }
+}
