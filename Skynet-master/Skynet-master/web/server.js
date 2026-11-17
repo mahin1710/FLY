@@ -1,5 +1,5 @@
 /**
- * SKYNET FLIGHT BOOKING SYSTEM — BACKEND API SERVER
+ * FLY FLIGHT BOOKING SYSTEM — BACKEND API SERVER
  * Author: mahin1710
  */
 const express = require('express');
@@ -2029,10 +2029,11 @@ app.use((req, res) => {
 // Start Server
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`✈️  SKYNET CONFLICT-FREE FLIGHT BOOKING SYSTEM`);
+  console.log(`✈️  FLY CONFLICT-FREE FLIGHT BOOKING SYSTEM`);
   console.log(`👤 Author:        mahin1710`);
   console.log(`🌐 Frontend App:  http://localhost:${PORT}`);
   console.log(`🔌 Backend API:   http://localhost:${PORT}/api`);
+  console.log(`🔒 Data Privacy:  STRICT CUSTOMER ISOLATION & RBAC`);
   console.log(`⏱️  15-min auto-release worker: ACTIVE`);
   console.log(`====================================================`);
 });
