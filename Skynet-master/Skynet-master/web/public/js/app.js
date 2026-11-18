@@ -7,7 +7,7 @@ const app = {
   // Application State
   state: {
     user: null,
-    theme: 'dark',
+    theme: 'light',
     currentPage: 'home',
     currentTripType: 'oneway',
     selectedFlight: null,
