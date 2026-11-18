@@ -661,16 +661,18 @@ app.get('/api/airports/search', (req, res) => {
 app.get('/api/flights', (req, res) => {
   try {
     cleanupExpiredReservations();
-    const {
-      depCountry, depCity,
-      arrCountry, arrCity,
-      dateAfter, dateBefore,
-      q,
-      sortBy = 'closestDate',
-      limit = 12,
-      offset = 0,
-      accountId
-    } = req.query;
+    const depCountry = req.query.depCountry;
+    const depCity = req.query.depCity;
+    const arrCountry = req.query.arrCountry;
+    const arrCity = req.query.arrCity;
+    const dateAfter = req.query.dateAfter || req.query.depDateAfter;
+    const dateBefore = req.query.dateBefore || req.query.depDateBefore;
+    const q = req.query.q || req.query.search;
+    const cabinClass = req.query.cabinClass || req.query.class;
+    const sortBy = req.query.sortBy || 'closestDate';
+    const limit = req.query.limit || 12;
+    const offset = req.query.offset || 0;
+    const accountId = req.query.accountId;
 
     const whereClauses = [];
     const params = [];
@@ -698,6 +700,12 @@ app.get('/api/flights', (req, res) => {
     if (dateBefore) {
       whereClauses.push('f.dep_datetime <= ?');
       params.push(dateBefore + ' 23:59');
+    }
+
+    if (cabinClass && cabinClass !== 'all') {
+      if (cabinClass === 'economy') whereClauses.push('f.economy_price > 0');
+      else if (cabinClass === 'business') whereClauses.push('f.business_price > 0');
+      else if (cabinClass === 'first') whereClauses.push('f.first_price > 0');
     }
 
     if (q && q.trim()) {

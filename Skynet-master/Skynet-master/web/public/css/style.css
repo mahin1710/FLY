@@ -4,119 +4,151 @@
    ========================================================================== */
 
 :root {
-  /* Font Families */
+  /* Font Families: Luxury Serif + Modern Geometric Sans */
+  --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Outfit', sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* Transitions */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Common radii */
+  /* Common radii - refined, subtle airline contours */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
   --radius-pill: 9999px;
 }
 
 /* --------------------------------------------------------------------------
-   DARK THEME (Default)
+   LIGHT THEME (Default: Premium Warm Ivory & Deep Midnight Navy)
    -------------------------------------------------------------------------- */
-[data-theme="dark"] {
-  --bg-app: #0b0f19;
-  --bg-surface: rgba(18, 24, 38, 0.85);
-  --bg-surface-elevated: #1a2236;
-  --bg-surface-hover: #222c44;
-  --bg-input: #121826;
+[data-theme="light"] {
+  --bg-app: #F8F6F1;             /* Warm Ivory */
+  --bg-surface: #FFFFFF;         /* Crisp White Card */
+  --bg-surface-elevated: #FFFFFF;
+  --bg-surface-hover: #F2EDE4;   /* Subtle soft cream */
+  --bg-secondary: #EFEAE0;       /* Soft Cream */
+  --bg-input: #FFFFFF;
+  --bg-navy: #101D2C;            /* Deep Midnight Navy */
+  --bg-navy-dark: #17283B;       /* Dark Navy */
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-focus: #3b82f6;
+  --border-subtle: #E5DFD5;      /* Warm subtle border */
+  --border-medium: #D8D0C2;
+  --border-focus: #C5A46D;       /* Champagne Gold */
+  --border-gold: rgba(197, 164, 109, 0.4);
 
-  --text-main: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-main: #1C2733;          /* Primary Dark Navy/Slate Text */
+  --text-secondary: #5A6673;     /* Readable elegant dark text */
+  --text-muted: #78818A;         /* Secondary Text */
+  --text-inverse: #FFFFFF;
 
-  --accent-primary: #3b82f6;
-  --accent-primary-hover: #2563eb;
-  --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #3b82f6 50%, #6366f1 100%);
-  --accent-glow: rgba(56, 189, 248, 0.25);
+  --accent-primary: #101D2C;     /* Deep Midnight Navy Primary Button/Headers */
+  --accent-primary-hover: #17283B;
+  --accent-gold: #C5A46D;        /* Muted Champagne Gold */
+  --accent-gold-hover: #B49258;
+  --accent-gold-soft: #D9C39A;   /* Soft Gold */
+  --accent-gold-light: rgba(197, 164, 109, 0.12);
+  --accent-gradient: linear-gradient(135deg, #101D2C 0%, #17283B 100%);
+  --accent-gold-gradient: linear-gradient(135deg, #C5A46D 0%, #D9C39A 100%);
+  --accent-glow: rgba(197, 164, 109, 0.25);
 
-  --badge-bg: rgba(59, 130, 246, 0.15);
-  --badge-text: #60a5fa;
+  --badge-bg: rgba(16, 29, 44, 0.06);
+  --badge-text: #101D2C;
+  --badge-gold-bg: rgba(197, 164, 109, 0.16);
+  --badge-gold-text: #8C6D37;
 
-  --color-first-class: #f59e0b;
-  --color-first-bg: rgba(245, 158, 11, 0.15);
-  --color-business: #a855f7;
-  --color-business-bg: rgba(168, 85, 247, 0.15);
-  --color-economy: #06b6d4;
-  --color-economy-bg: rgba(6, 182, 212, 0.15);
+  --color-first-class: #A37E3E;  /* Champagne Gold */
+  --color-first-bg: rgba(197, 164, 109, 0.14);
+  --color-business: #17283B;    /* Dark Navy */
+  --color-business-bg: rgba(23, 40, 59, 0.08);
+  --color-economy: #475569;     /* Slate */
+  --color-economy-bg: rgba(71, 85, 105, 0.08);
 
-  --seat-available: #1e293b;
-  --seat-available-border: #334155;
-  --seat-taken: #161e2e;
-  --seat-taken-border: #1e2738;
-  --seat-selected: #06b6d4;
-  --seat-selected-glow: rgba(6, 182, 212, 0.5);
+  --seat-available: #F8F6F1;
+  --seat-available-border: #D8D0C2;
+  --seat-taken: #101D2C;         /* Deep Midnight Navy */
+  --seat-taken-border: #17283B;
+  --seat-selected: #C5A46D;      /* Champagne Gold */
+  --seat-selected-glow: rgba(197, 164, 109, 0.45);
+  --seat-held: #D97706;          /* Amber */
+  --seat-held-border: #B45309;
 
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 25px rgba(59, 130, 246, 0.25);
+  --shadow-sm: 0 1px 3px rgba(16, 29, 44, 0.05);
+  --shadow-md: 0 4px 16px rgba(16, 29, 44, 0.07);
+  --shadow-lg: 0 12px 32px rgba(16, 29, 44, 0.09);
+  --shadow-gold: 0 4px 20px rgba(197, 164, 109, 0.25);
 
-  --ticket-bg: #151d30;
-  --ticket-border: rgba(255, 255, 255, 0.1);
-  --ticket-stub-bg: #111726;
+  --ticket-bg: #FFFFFF;
+  --ticket-border: #E5DFD5;
+  --ticket-stub-bg: #F8F6F1;
 }
 
 /* --------------------------------------------------------------------------
-   LIGHT THEME
+   DARK THEME (Sophisticated Midnight Luxury)
    -------------------------------------------------------------------------- */
-[data-theme="light"] {
-  --bg-app: #f8fafc;
-  --bg-surface: rgba(255, 255, 255, 0.9);
-  --bg-surface-elevated: #ffffff;
-  --bg-surface-hover: #f1f5f9;
-  --bg-input: #ffffff;
+[data-theme="dark"] {
+  --bg-app: #101D2C;             /* Deep Midnight Navy */
+  --bg-surface: #17283B;         /* Dark Navy */
+  --bg-surface-elevated: #1D3147;
+  --bg-surface-hover: #233A53;
+  --bg-secondary: #17283B;
+  --bg-input: #122131;
+  --bg-navy: #101D2C;
+  --bg-navy-dark: #0A131E;
 
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-focus: #2563eb;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-focus: #C5A46D;       /* Champagne Gold */
+  --border-gold: rgba(197, 164, 109, 0.45);
 
-  --text-main: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-main: #F8F6F1;          /* Warm Ivory */
+  --text-secondary: #C8D1DB;     /* Soft Grey-Ivory */
+  --text-muted: #8493A2;
+  --text-inverse: #101D2C;
 
-  --accent-primary: #2563eb;
-  --accent-primary-hover: #1d4ed8;
-  --accent-gradient: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #4f46e5 100%);
-  --accent-glow: rgba(37, 99, 235, 0.2);
+  --accent-primary: #C5A46D;     /* Champagne Gold in dark mode */
+  --accent-primary-hover: #D9C39A;
+  --accent-gold: #C5A46D;
+  --accent-gold-hover: #D9C39A;
+  --accent-gold-soft: #D9C39A;
+  --accent-gold-light: rgba(197, 164, 109, 0.2);
+  --accent-gradient: linear-gradient(135deg, #17283B 0%, #1D3147 100%);
+  --accent-gold-gradient: linear-gradient(135deg, #C5A46D 0%, #D9C39A 100%);
+  --accent-glow: rgba(197, 164, 109, 0.3);
 
-  --badge-bg: rgba(37, 99, 235, 0.1);
-  --badge-text: #2563eb;
+  --badge-bg: rgba(197, 164, 109, 0.15);
+  --badge-text: #D9C39A;
+  --badge-gold-bg: rgba(197, 164, 109, 0.2);
+  --badge-gold-text: #EFEAE0;
 
-  --color-first-class: #d97706;
-  --color-first-bg: rgba(217, 119, 6, 0.1);
-  --color-business: #7c3aed;
-  --color-business-bg: rgba(124, 58, 237, 0.1);
-  --color-economy: #0284c7;
-  --color-economy-bg: rgba(2, 132, 199, 0.1);
+  --color-first-class: #D9C39A;
+  --color-first-bg: rgba(217, 195, 154, 0.15);
+  --color-business: #A6B8CE;
+  --color-business-bg: rgba(166, 184, 206, 0.15);
+  --color-economy: #8C9CAE;
+  --color-economy-bg: rgba(140, 156, 174, 0.15);
 
-  --seat-available: #e2e8f0;
-  --seat-available-border: #cbd5e1;
-  --seat-taken: #f1f5f9;
-  --seat-taken-border: #e2e8f0;
-  --seat-selected: #0284c7;
-  --seat-selected-glow: rgba(2, 132, 199, 0.4);
+  --seat-available: #1D3147;
+  --seat-available-border: #2D4866;
+  --seat-taken: #0B141F;
+  --seat-taken-border: #142232;
+  --seat-selected: #C5A46D;
+  --seat-selected-glow: rgba(197, 164, 109, 0.5);
+  --seat-held: #E09F3E;
+  --seat-held-border: #C88424;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 12px 28px rgba(0,0,0,0.1);
-  --shadow-glow: 0 0 25px rgba(37, 99, 235, 0.15);
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+  --shadow-gold: 0 4px 20px rgba(197, 164, 109, 0.25);
 
-  --ticket-bg: #ffffff;
-  --ticket-border: #e2e8f0;
-  --ticket-stub-bg: #f8fafc;
+  --ticket-bg: #17283B;
+  --ticket-border: rgba(255, 255, 255, 0.12);
+  --ticket-stub-bg: #122131;
 }
 
 /* --------------------------------------------------------------------------

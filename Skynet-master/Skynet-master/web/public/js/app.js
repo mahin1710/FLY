@@ -127,7 +127,7 @@ const app = {
   // THEME MANAGEMENT
   // -------------------------------------------------------------
   initTheme() {
-    const saved = localStorage.getItem('fly_theme') || 'dark';
+    const saved = localStorage.getItem('fly_theme') || 'light';
     this.setTheme(saved);
   },
 
@@ -1120,10 +1120,25 @@ const app = {
     const dest = document.getElementById('homeDestInput');
     const depDateInput = document.getElementById('homeDepDate');
     const depDate = depDateInput ? depDateInput.value : '';
+    const classSel = document.getElementById('homeCabinClass');
+    const cabinClass = classSel ? classSel.value : 'all';
+    const passSel = document.getElementById('homePassengers');
+    const passengers = passSel ? passSel.value : '1';
 
-    this.state.searchParams.depCity = this.extractCityName(orig);
-    this.state.searchParams.arrCity = this.extractCityName(dest);
+    const depCity = this.extractCityName(orig);
+    const arrCity = this.extractCityName(dest);
+
+    // Validation: prevent identical origin and destination
+    if (depCity && arrCity && depCity.toLowerCase() === arrCity.toLowerCase()) {
+      this.showToast('Origin and destination cannot be identical. Please select another airport.', 'warning');
+      return;
+    }
+
+    this.state.searchParams.depCity = depCity;
+    this.state.searchParams.arrCity = arrCity;
     this.state.searchParams.depDateAfter = depDate || '';
+    this.state.searchParams.cabinClass = cabinClass;
+    this.state.searchParams.passengers = passengers;
     this.state.searchParams.page = 1;
 
     // Sync to search page filter controls
@@ -1142,19 +1157,38 @@ const app = {
     const container = document.getElementById('featuredFlightsGrid');
     if (!container) return;
 
+    container.innerHTML = `
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    `;
+
     try {
       const accId = this.state.user ? this.state.user.id : 0;
       const res = await fetch(`/api/flights/featured?accountId=${accId}`);
+      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const flights = await res.json();
 
       if (!flights || flights.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No featured flights available.</div>`;
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 48px 24px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+            <div style="font-size: 2.2rem; margin-bottom: 10px;">✈️</div>
+            <h4 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 6px; font-family: var(--font-heading);">No Upcoming Flights Available</h4>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 420px; margin: 0 auto 16px auto;">All current flights are operating or in progress. Check back shortly or browse our flight catalog.</p>
+            <button class="btn-primary" onclick="app.navigate('search')">Browse All Flights</button>
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = flights.map(f => this.renderFlightCard(f)).join('');
     } catch (e) {
       console.error('Featured flights error:', e);
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 32px 20px; color: #ef4444; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+          Unable to load featured flights. Please refresh the page or check server connection.
+        </div>
+      `;
     }
   },
 
@@ -1281,9 +1315,10 @@ const app = {
     if (p.arrCountry) query.append('arrCountry', p.arrCountry);
     if (p.depCity) query.append('depCity', p.depCity);
     if (p.arrCity) query.append('arrCity', p.arrCity);
-    if (p.depDateAfter) query.append('depDateAfter', p.depDateAfter);
-    if (p.depDateBefore) query.append('depDateBefore', p.depDateBefore);
-    if (p.search) query.append('search', p.search);
+    if (p.depDateAfter) query.append('dateAfter', p.depDateAfter);
+    if (p.depDateBefore) query.append('dateBefore', p.depDateBefore);
+    if (p.search) query.append('q', p.search);
+    if (p.cabinClass && p.cabinClass !== 'all') query.append('cabinClass', p.cabinClass);
 
     try {
       const res = await fetch(`/api/flights?${query.toString()}`);
@@ -1301,13 +1336,13 @@ const app = {
 
       if (!data.flights || data.flights.length === 0) {
         listContainer.innerHTML = `
-          <div class="glassmorphism" style="padding: 48px 24px; text-align: center;">
-            <div style="font-size: 2.5rem; margin-bottom: 12px;">🛫</div>
-            <h3 style="font-size: 1.3rem; margin-bottom: 8px;">No Flights Match Your Criteria</h3>
-            <p style="color: var(--text-secondary); max-width: 440px; margin: 0 auto 18px auto;">
-              Try clearing specific city/date filters or search for another destination airport.
+          <div class="empty-search-state" style="padding: 56px 24px; text-align: center; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <div style="font-size: 2.8rem; margin-bottom: 14px;">🛫</div>
+            <h3 style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 8px; font-family: var(--font-heading);">No Flights Found Matching Your Criteria</h3>
+            <p style="color: var(--text-secondary); max-width: 460px; margin: 0 auto 20px auto; font-size: 0.94rem; line-height: 1.5;">
+              We couldn't find any scheduled flights for this route and date combination. Try selecting a nearby date, checking another departure airport, or clearing your filters.
             </p>
-            <button class="btn-primary" onclick="app.resetSearchFilters()">Clear All Filters</button>
+            <button class="btn-primary" onclick="app.resetSearchFilters()">Reset Search Filters</button>
           </div>
         `;
         document.getElementById('searchPagination').innerHTML = '';
@@ -1318,7 +1353,7 @@ const app = {
       this.renderPagination(data.total, p.limit, p.page);
     } catch (e) {
       console.error(e);
-      listContainer.innerHTML = '<div style="color: #ef4444; padding: 20px;">Failed to load flights. Please verify server status.</div>';
+      listContainer.innerHTML = '<div style="color: #ef4444; padding: 24px; text-align: center; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">Failed to load flights. Please verify server status and try again.</div>';
     }
   },
 
@@ -1332,7 +1367,11 @@ const app = {
     const arrCode = f.arrIATA || f.arrICAO || 'ARR';
     const depAirportClean = (f.depAirportName || '').replace(/^\?stanbul/i, 'Istanbul');
     const arrAirportClean = (f.arrAirportName || '').replace(/^\?stanbul/i, 'Istanbul');
-    const durationLabel = this.calculateDuration(f.dep_datetime, f.arr_datetime);
+    const durationLabel = f.durationFormatted || this.calculateDuration(f.dep_datetime, f.arr_datetime);
+    const flightNum = f.flightNumber || `${(f.airlineIATA || 'FL').trim().toUpperCase()}-${100 + (f.id % 900)}`;
+    const flightStatus = f.flightStatus || 'ON TIME';
+    const availableSeats = typeof f.availableSeats === 'number' ? f.availableSeats : Math.max(0, 120 - (Number(f.bookedCount) || 0));
+    const seatsBadgeClass = availableSeats > 25 ? 'seats-plenty' : (availableSeats > 5 ? 'seats-limited' : 'seats-almost-full');
 
     const favClass = f.isFavorite ? 'active' : '';
 
@@ -1343,12 +1382,21 @@ const app = {
             <img src="/api/airlines/${f.id_airline}/logo" class="airline-logo-img" alt="${f.airlineName}" onerror="this.src='/images/default_logo.png'">
             <div>
               <div class="airline-name">${f.airlineName}</div>
-              <div class="flight-id-tag">FLIGHT #${f.id} • ${f.airlineIATA || 'SK'}</div>
+              <div class="flight-id-tag">
+                <span class="flight-code">${flightNum}</span>
+                <span class="flight-status-pill status-${flightStatus.toLowerCase().replace(/\s+/g, '-')}">● ${flightStatus}</span>
+              </div>
             </div>
           </div>
-          <button class="btn-favorite-card ${favClass}" onclick="app.toggleFavorite(${f.id}, this)" title="Save to Favorites">
-            <svg viewBox="0 0 24 24" fill="${f.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-          </button>
+          <div class="header-card-right">
+            <span class="seats-available-badge ${seatsBadgeClass}">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 11v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
+              ${availableSeats} Seats Available
+            </span>
+            <button class="btn-favorite-card ${favClass}" onclick="app.toggleFavorite(${f.id}, this)" title="Save to Favorites">
+              <svg viewBox="0 0 24 24" fill="${f.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </button>
+          </div>
         </div>
 
         <div class="flight-timeline">
@@ -1356,7 +1404,7 @@ const app = {
             <div class="point-time">${depTime}</div>
             <div class="point-iata">${depCode}</div>
             <div class="point-city" title="${depAirportClean}">${f.depCity}, ${f.depCountry}</div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">${depDate}</div>
+            <div class="point-date">${depDate}</div>
           </div>
 
           <div class="timeline-path">
@@ -1365,14 +1413,14 @@ const app = {
               <div class="path-line"></div>
               <span class="path-plane-icon">✈</span>
             </div>
-            <span class="nonstop-badge">Non-stop</span>
+            <span class="nonstop-badge">${f.flightType || 'Direct / Non-stop'}</span>
           </div>
 
           <div class="timeline-point text-right">
             <div class="point-time">${arrTime}</div>
             <div class="point-iata">${arrCode}</div>
             <div class="point-city" title="${arrAirportClean}">${f.arrCity}, ${f.arrCountry}</div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">${arrDate}</div>
+            <div class="point-date">${arrDate}</div>
           </div>
         </div>
 
@@ -1392,9 +1440,9 @@ const app = {
             </div>
           </div>
 
-          <button class="btn-primary" onclick="app.openSeatMap(${f.id})">
+          <button class="btn-select-seats" onclick="app.openSeatMap(${f.id})">
             <span>Select Seats</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </button>
         </div>
       </div>
