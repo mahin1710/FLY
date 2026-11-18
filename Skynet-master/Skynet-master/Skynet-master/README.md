@@ -1,9 +1,9 @@
-# Skynet - Flight Booking System
+# FLY - Flight Booking System
 
 **Author:** [mahin1710](https://github.com/mahin1710)
 
 ![preview.jpg](imgs/preview.jpg)
-## What is Skynet?
+## What is FLY?
 It is an academic project that aims to provide a comprehensive flight booking platform for both passengers and airlines. It is a desktop application that is built using Java and JavaFX. The application is built using the MVC design pattern.
 
 The program features include:

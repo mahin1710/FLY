@@ -1,5 +1,5 @@
 ================================================================================
-          SKYNET FLIGHT BOOKING SYSTEM (BANGLADESH EDITION)
+          FLY FLIGHT BOOKING SYSTEM (BANGLADESH EDITION)
                  PROJECT DOCUMENTATION & MASTER GUIDE
 ================================================================================
 Author: mahin1710
@@ -31,7 +31,7 @@ METHOD B (USING TERMINAL / POWERSHELL):
   -> Run:
        npm.cmd start
      OR:
-       cd Skynet-master\web
+       cd FLY-master\web
        node server.js
 
 AFTER STARTING:
@@ -87,7 +87,7 @@ EXPLANATION & ANSWER:
       run directly out-of-the-box.
 
 2. JAVA:
-   -> The ORIGINAL repository in folder "Skynet-master/Skynet-master/Skynet-master"
+   -> The ORIGINAL repository in folder "FLY-master/FLY-master/FLY-master"
       was written in JAVA (JavaFX + Maven + SQLite).
    -> It is a DESKTOP application (a native Windows window).
    -> If you want to run the Java version, you need Java JDK 17+ and Maven:
@@ -107,16 +107,16 @@ EXPLANATION & ANSWER:
 ================================================================================
 4. SIMPLIFIED FOLDER STRUCTURE EXPLANATION
 ================================================================================
-Due to zip extraction from GitHub, you might see nested "Skynet-master" folders.
+Due to zip extraction from GitHub, you might see nested "FLY-master" folders.
 Here is what each folder actually is:
 
-c:\Users\mahed\Downloads\Skynet-master\  <-- [MAIN ROOT DIRECTORY]
+c:\Users\mahed\Downloads\FLY-master\  <-- [MAIN ROOT DIRECTORY]
 │
 ├── start.bat                  <-- 1-Click launcher (starts the web server)
 ├── package.json               <-- Root script configuration (npm start)
 ├── README.txt                 <-- This master guide and update tracker
 │
-└── Skynet-master\
+└── FLY-master\
     │
     ├── web\                   <-- ★★★ THE ACTIVE WEB APPLICATION ★★★
     │   ├── server.js          <-- Node.js Express backend & API endpoints
@@ -128,9 +128,9 @@ c:\Users\mahed\Downloads\Skynet-master\  <-- [MAIN ROOT DIRECTORY]
     │       ├── index.html     <-- Single-Page Application (SPA) Web UI
     │       ├── css\style.css  <-- Dark/Light theme, glassmorphic styling
     │       ├── js\app.js      <-- Interactive seat map, search, auth logic
-    │       └── images\        <-- Logos (Skynet, Biman, Profile avatars)
+    │       └── images\        <-- Logos (FLY, Biman, Profile avatars)
     │
-    └── Skynet-master\         <-- [ORIGINAL JAVA DESKTOP APPLICATION]
+    └── FLY-master\         <-- [ORIGINAL JAVA DESKTOP APPLICATION]
         ├── pom.xml            <-- Maven configuration for Java
         ├── build_app_windows.bat <-- Packaging batch script for Java
         ├── src\               <-- Java & JavaFX MVC source code
@@ -148,11 +148,11 @@ c:\Users\mahed\Downloads\Skynet-master\  <-- [MAIN ROOT DIRECTORY]
        - Integrated navigation button: displays "Sign In" when logged out, and
          "Log Out" with user session badge when logged in.
        - Active User Session card with profile picture, role badge, quick links to
-         trips, and a prominent red "Log Out of Skynet" button.
+         trips, and a prominent red "Log Out of FLY" button.
 
 [X] 3. BANGLADESH PERSPECTIVE (PRIORITIZED AT TOP):
        - Default Search Origin: Pre-filled with Hazrat Shahjalal Intl Airport, Dhaka (DAC).
-       - Hero section branded: "Skynet Bangladesh - Bangladesh's Premier Flight Network".
+       - Hero section branded: "FLY Bangladesh - Bangladesh's Premier Flight Network".
        - Quick Bangladesh Route buttons: Dhaka to Cox's Bazar, Chittagong, Sylhet,
          Dubai, London, Singapore.
        - Airport Autocomplete: Bangladesh airports (Dhaka DAC, Chittagong CGP,
@@ -193,5 +193,5 @@ with what was changed, so your project log remains permanently up-to-date!
 
 ================================================================================
 Project Author & Maintainer: mahin1710
-Repository: Skynet Flight Booking System
+Repository: FLY Flight Booking System
 ================================================================================

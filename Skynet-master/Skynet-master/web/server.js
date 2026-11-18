@@ -212,8 +212,8 @@ function sanitizeAirportRecord(a) {
 function getTicketDataByBookingRef(bookingRef) {
   const booking = db.prepare(`
     SELECT b.id as bookingId, b.booking_reference as bookingReference, b.status, b.total_amount,
-           b.nbr_luggages, b.weight, b.payment_ref, b.paid_at, b.created_at, b.expires_at,
-           f.id as flightId, f.dep_datetime, f.arr_datetime,
+           b.id_account, b.nbr_luggages, b.weight, b.payment_ref, b.paid_at, b.created_at, b.expires_at,
+           f.id as flightId, f.id_airline as airlineId, f.dep_datetime, f.arr_datetime,
            f.first_price, f.business_price, f.economy_price, f.luggage_price, f.weight_price,
            al.id as airlineId, al.name as airlineName, al.IATA as airlineIATA,
            da.name as depAirportName, da.IATA as depIATA, da.ICAO as depICAO, da.city as depCity, da.country as depCountry,
@@ -253,10 +253,10 @@ function getTicketDataByBookingRef(bookingRef) {
 // Helper to retrieve single ticket by reservation ID (legacy support)
 function getTicketData(reservationId) {
   const row = db.prepare(`
-    SELECT r.id as reservationId, r.nbr_luggages, r.weight, r.status, r.booking_reference as bookingReference,
+    SELECT r.id as reservationId, r.id_account, r.nbr_luggages, r.weight, r.status, r.booking_reference as bookingReference,
            s.id as seatId, s.column as seatColumn, s.row as seatRow, s.type as seatClass,
            (s.column || s.row) as seatNumber,
-           f.id as flightId, f.dep_datetime, f.arr_datetime, 
+           f.id as flightId, f.id_airline as airlineId, f.dep_datetime, f.arr_datetime, 
            f.first_price, f.business_price, f.economy_price, f.luggage_price, f.weight_price,
            al.id as airlineId, al.name as airlineName, al.IATA as airlineIATA,
            da.name as depAirportName, da.IATA as depIATA, da.ICAO as depICAO, da.city as depCity, da.country as depCountry,
@@ -842,7 +842,16 @@ app.get('/api/flights/:id/seats', (req, res) => {
 app.post('/api/bookings/hold', (req, res) => {
   cleanupExpiredReservations();
   try {
+    const session = getSession(req);
     const { flightId, accountId, seatIds, seatId, nbrLuggages = 0, weight = 0 } = req.body;
+
+    // Backend-Enforced Authorization: Never trust client-supplied accountId if authenticated session exists
+    let effectiveAccountId = null;
+    if (session) {
+      effectiveAccountId = session.account_id;
+    } else if (accountId) {
+      effectiveAccountId = Number(accountId);
+    }
 
     let seatsToReserve = [];
     if (Array.isArray(seatIds) && seatIds.length > 0) {
@@ -851,8 +860,8 @@ app.post('/api/bookings/hold', (req, res) => {
       seatsToReserve = [Number(seatId)];
     }
 
-    if (!flightId || !accountId || seatsToReserve.length === 0) {
-      return res.status(400).json({ error: 'flightId, accountId, and at least one seatId are required.' });
+    if (!flightId || !effectiveAccountId || seatsToReserve.length === 0) {
+      return res.status(400).json({ error: 'flightId, valid account, and at least one seatId are required.' });
     }
 
     // Atomic transaction using write-exclusive lock
@@ -923,7 +932,7 @@ app.post('/api/bookings/hold', (req, res) => {
         ) VALUES (?, ?, ?, 'PENDING_PAYMENT', ?, ?, ?, ?, ?)
       `).run(
         bookingReference,
-        Number(accountId),
+        Number(effectiveAccountId),
         Number(flightId),
         grandTotal,
         Number(nbrLuggages),
@@ -946,7 +955,7 @@ app.post('/api/bookings/hold', (req, res) => {
 
         insRes.run(
           Number(flightId),
-          Number(accountId),
+          Number(effectiveAccountId),
           s.id,
           Number(nbrLuggages),
           Number(weight),
@@ -1001,7 +1010,7 @@ app.get('/api/bookings/:ref', (req, res) => {
       SELECT b.*,
              a.username, a.emailAddress,
              p.firstName, p.lastName,
-             f.dep_datetime, f.arr_datetime,
+             f.dep_datetime, f.arr_datetime, f.id_airline,
              al.name as airlineName, al.IATA as airlineIATA,
              da.name as depAirportName, da.IATA as depIATA, da.city as depCity,
              aa.name as arrAirportName, aa.IATA as arrIATA, aa.city as arrCity
@@ -1017,6 +1026,22 @@ app.get('/api/bookings/:ref', (req, res) => {
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found.' });
+    }
+
+    // Backend-Enforced Privacy & Authorization:
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to access booking details.', code: 'UNAUTHORIZED' });
+    }
+    const roleUpper = (session.role || '').toUpperCase();
+    if (roleUpper === 'PASSENGER') {
+      if (booking.id_account !== session.account_id) {
+        return res.status(403).json({ error: 'Access denied: You cannot view another customer\'s booking.', code: 'FORBIDDEN' });
+      }
+    } else if (roleUpper === 'AIRLINE_ADMIN') {
+      if (booking.id_airline !== session.airline_id) {
+        return res.status(403).json({ error: 'Access denied: Booking belongs to another airline.', code: 'FORBIDDEN' });
+      }
     }
 
     const seats = db.prepare(`
@@ -1061,6 +1086,15 @@ app.post('/api/bookings/confirm', (req, res) => {
       if (!booking) {
         db.exec('ROLLBACK');
         return res.status(404).json({ error: 'Booking not found.' });
+      }
+
+      // Backend-Enforced Privacy & Authorization:
+      const session = getSession(req);
+      if (session && (session.role || '').toUpperCase() === 'PASSENGER') {
+        if (booking.id_account !== session.account_id) {
+          db.exec('ROLLBACK');
+          return res.status(403).json({ error: 'Access denied: You cannot confirm payment for another customer\'s booking.', code: 'FORBIDDEN' });
+        }
       }
 
       // 1. Idempotency check: if already confirmed, return success without re-billing
@@ -1165,21 +1199,39 @@ app.post('/api/bookings/confirm', (req, res) => {
 // Explicit booking cancellation (releases seats immediately)
 app.post('/api/bookings/cancel', (req, res) => {
   try {
-    const { bookingReference, accountId } = req.body;
+    const { bookingReference } = req.body;
     if (!bookingReference) return res.status(400).json({ error: 'bookingReference is required' });
+
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to cancel a booking.', code: 'UNAUTHORIZED' });
+    }
 
     db.exec('BEGIN IMMEDIATE');
     try {
-      let b;
-      if (accountId) {
-        b = db.prepare('SELECT id, status FROM bookings WHERE booking_reference = ? AND id_account = ?').get(bookingReference, Number(accountId));
-      } else {
-        b = db.prepare('SELECT id, status FROM bookings WHERE booking_reference = ?').get(bookingReference);
-      }
+      const b = db.prepare(`
+        SELECT b.id, b.status, b.id_account, f.id_airline 
+        FROM bookings b
+        JOIN flights f ON b.id_flight = f.id
+        WHERE b.booking_reference = ?
+      `).get(bookingReference);
 
       if (!b) {
         db.exec('ROLLBACK');
-        return res.status(404).json({ error: 'Booking not found' });
+        return res.status(404).json({ error: 'Booking not found.' });
+      }
+
+      const roleUpper = (session.role || '').toUpperCase();
+      if (roleUpper === 'PASSENGER') {
+        if (b.id_account !== session.account_id) {
+          db.exec('ROLLBACK');
+          return res.status(403).json({ error: 'Access denied: You cannot cancel another customer\'s booking.', code: 'FORBIDDEN' });
+        }
+      } else if (roleUpper === 'AIRLINE_ADMIN') {
+        if (b.id_airline !== session.airline_id) {
+          db.exec('ROLLBACK');
+          return res.status(403).json({ error: 'Access denied: Booking belongs to another airline.', code: 'FORBIDDEN' });
+        }
       }
 
       db.prepare("UPDATE bookings SET status = 'CANCELLED' WHERE id = ?").run(b.id);
@@ -1300,6 +1352,24 @@ app.get('/api/reservations/ticket/:id', (req, res) => {
       data = getTicketData(Number(param));
     }
     if (!data) return res.status(404).json({ error: 'Ticket not found' });
+
+    // Backend-Enforced Privacy & Authorization:
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to view boarding pass / ticket.', code: 'UNAUTHORIZED' });
+    }
+    const roleUpper = (session.role || '').toUpperCase();
+    if (roleUpper === 'PASSENGER') {
+      const ticketOwner = data.id_account;
+      if (ticketOwner && ticketOwner !== session.account_id) {
+        return res.status(403).json({ error: 'Access denied: You cannot view or download another customer\'s boarding pass.', code: 'FORBIDDEN' });
+      }
+    } else if (roleUpper === 'AIRLINE_ADMIN') {
+      if (data.airlineId && data.airlineId !== session.airline_id) {
+        return res.status(403).json({ error: 'Access denied: Ticket belongs to another airline.', code: 'FORBIDDEN' });
+      }
+    }
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1311,20 +1381,18 @@ app.get('/api/reservations/my', (req, res) => {
   cleanupExpiredReservations();
   try {
     const session = getSession(req);
-    let accountId = Number(req.query.accountId);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to view bookings.', code: 'UNAUTHORIZED' });
+    }
 
-    // RBAC: Verify passenger can only access their own reservations
-    if (session) {
-      const roleUpper = (session.role || '').toUpperCase();
-      if (roleUpper === 'PASSENGER') {
-        if (accountId && accountId !== session.account_id) {
-          return res.status(403).json({ error: 'Access denied: You cannot view another customer\'s bookings.' });
-        }
-        accountId = session.account_id;
+    const roleUpper = (session.role || '').toUpperCase();
+    if (roleUpper === 'PASSENGER') {
+      if (req.query.accountId && Number(req.query.accountId) !== session.account_id) {
+        return res.status(403).json({ error: 'Access denied: You cannot view another customer\'s bookings.', code: 'FORBIDDEN' });
       }
     }
 
-    if (!accountId) return res.status(400).json({ error: 'accountId is required' });
+    const accountId = session.account_id;
 
     const userBookings = db.prepare(`
       SELECT b.id as bookingId, b.booking_reference as bookingReference, b.status,
@@ -1390,20 +1458,43 @@ app.get('/api/reservations/my', (req, res) => {
 app.delete('/api/reservations/:id', (req, res) => {
   try {
     const resId = Number(req.params.id);
-    const accountId = req.query.accountId ? Number(req.query.accountId) : null;
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to delete a reservation.', code: 'UNAUTHORIZED' });
+    }
 
     db.exec('BEGIN IMMEDIATE');
     try {
-      const resRow = db.prepare('SELECT booking_reference FROM reservations WHERE id = ?').get(resId);
-      if (resRow && resRow.booking_reference) {
+      const resRow = db.prepare(`
+        SELECT r.id, r.booking_reference, r.id_account, f.id_airline
+        FROM reservations r
+        JOIN flights f ON r.id_flight = f.id
+        WHERE r.id = ?
+      `).get(resId);
+
+      if (!resRow) {
+        db.exec('ROLLBACK');
+        return res.status(404).json({ error: 'Reservation not found.' });
+      }
+
+      const roleUpper = (session.role || '').toUpperCase();
+      if (roleUpper === 'PASSENGER') {
+        if (resRow.id_account !== session.account_id) {
+          db.exec('ROLLBACK');
+          return res.status(403).json({ error: 'Access denied: You cannot delete another customer\'s reservation.', code: 'FORBIDDEN' });
+        }
+      } else if (roleUpper === 'AIRLINE_ADMIN') {
+        if (resRow.id_airline !== session.airline_id) {
+          db.exec('ROLLBACK');
+          return res.status(403).json({ error: 'Access denied: Reservation belongs to another airline.', code: 'FORBIDDEN' });
+        }
+      }
+
+      if (resRow.booking_reference) {
         db.prepare("UPDATE bookings SET status = 'CANCELLED' WHERE booking_reference = ?").run(resRow.booking_reference);
         db.prepare("UPDATE reservations SET status = 'CANCELLED' WHERE booking_reference = ?").run(resRow.booking_reference);
       } else {
-        if (accountId) {
-          db.prepare('DELETE FROM reservations WHERE id = ? AND id_account = ?').run(resId, accountId);
-        } else {
-          db.prepare('DELETE FROM reservations WHERE id = ?').run(resId);
-        }
+        db.prepare('DELETE FROM reservations WHERE id = ?').run(resId);
       }
       db.exec('COMMIT');
       res.json({ success: true, message: 'Reservation cancelled successfully and seats released.' });
@@ -1421,8 +1512,14 @@ app.delete('/api/reservations/:id', (req, res) => {
 // -------------------------------------------------------------
 app.get('/api/favorites', (req, res) => {
   try {
-    const accountId = Number(req.query.accountId);
-    if (!accountId) return res.status(400).json({ error: 'accountId required' });
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to view favorites.', code: 'UNAUTHORIZED' });
+    }
+    if (req.query.accountId && Number(req.query.accountId) !== session.account_id) {
+      return res.status(403).json({ error: 'Access denied: You cannot view another customer\'s saved flights.', code: 'FORBIDDEN' });
+    }
+    const accountId = session.account_id;
 
     const flights = db.prepare(`
       SELECT f.*,
@@ -1447,9 +1544,12 @@ app.get('/api/favorites', (req, res) => {
 
 app.post('/api/favorites/:flightId', (req, res) => {
   try {
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to save favorite flight.', code: 'UNAUTHORIZED' });
+    }
+    const accountId = session.account_id;
     const flightId = Number(req.params.flightId);
-    const { accountId } = req.body;
-    if (!accountId) return res.status(400).json({ error: 'accountId required' });
 
     const exists = db.prepare('SELECT id FROM favorites WHERE id_account = ? AND id_flight = ?').get(accountId, flightId);
     if (!exists) {
@@ -1463,9 +1563,12 @@ app.post('/api/favorites/:flightId', (req, res) => {
 
 app.delete('/api/favorites/:flightId', (req, res) => {
   try {
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' });
+    }
+    const accountId = session.account_id;
     const flightId = Number(req.params.flightId);
-    const { accountId } = req.body;
-    if (!accountId) return res.status(400).json({ error: 'accountId required' });
 
     db.prepare('DELETE FROM favorites WHERE id_account = ? AND id_flight = ?').run(accountId, flightId);
     res.json({ success: true, isFavorite: false });
@@ -1475,12 +1578,18 @@ app.delete('/api/favorites/:flightId', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 7. CREDIT CARDS
+// 7. CREDIT CARDS & PAYMENT PRIVACY
 // -------------------------------------------------------------
 app.get('/api/cards', (req, res) => {
   try {
-    const accountId = Number(req.query.accountId);
-    if (!accountId) return res.status(400).json({ error: 'accountId required' });
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to view payment cards.', code: 'UNAUTHORIZED' });
+    }
+    if (req.query.accountId && Number(req.query.accountId) !== session.account_id) {
+      return res.status(403).json({ error: 'Access denied: You cannot view another customer\'s payment cards.', code: 'FORBIDDEN' });
+    }
+    const accountId = session.account_id;
 
     const cards = db.prepare(`
       SELECT id, cardHolder, cardNumber, expirationDate, id_account
@@ -1488,7 +1597,21 @@ app.get('/api/cards', (req, res) => {
       WHERE id_account = ?
     `).all(accountId);
 
-    res.json(cards);
+    // Strict payment privacy: Mask card numbers, never expose full 16 digits or CVV
+    const masked = cards.map(c => {
+      const cleanNum = (c.cardNumber || '').replace(/\D/g, '');
+      const last4 = cleanNum.slice(-4) || '1234';
+      return {
+        id: c.id,
+        cardHolder: c.cardHolder,
+        cardNumber: `•••• •••• •••• ${last4}`,
+        last4,
+        expirationDate: c.expirationDate,
+        id_account: c.id_account
+      };
+    });
+
+    res.json(masked);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1496,19 +1619,39 @@ app.get('/api/cards', (req, res) => {
 
 app.post('/api/cards', (req, res) => {
   try {
-    const { cardHolder, cardNumber, expirationDate, cvv, accountId } = req.body;
-    if (!cardHolder || !cardNumber || !expirationDate || !cvv || !accountId) {
-      return res.status(400).json({ error: 'All card fields are required.' });
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to save payment card.', code: 'UNAUTHORIZED' });
+    }
+    const accountId = session.account_id;
+    const { cardHolder, cardNumber, expirationDate, cvv } = req.body;
+    if (!cardHolder || !cardNumber || !expirationDate) {
+      return res.status(400).json({ error: 'Cardholder name, card number, and expiration date are required.' });
     }
 
+    const cleanNum = cardNumber.replace(/\D/g, '');
+    const last4 = cleanNum.slice(-4) || '1234';
+    const maskedCardNumber = `•••• •••• •••• ${last4}`;
+
+    let formattedExp = expirationDate;
+    if (/^\d{2}\/\d{2}$/.test(expirationDate)) {
+      const [mm, yy] = expirationDate.split('/');
+      formattedExp = `20${yy}-${mm}-01`;
+    } else if (/^\d{4}-\d{2}$/.test(expirationDate)) {
+      formattedExp = `${expirationDate}-01`;
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(expirationDate)) {
+      formattedExp = '2028-12-01';
+    }
+
+    // Store masked card for security (Payment Privacy: never store CVV)
     const ins = db.prepare(`
       INSERT INTO creditCards (cardHolder, cardNumber, expirationDate, CVV, id_account)
       VALUES (?, ?, ?, ?, ?)
     `);
-    ins.run(cardHolder, cardNumber, expirationDate, cvv, Number(accountId));
+    ins.run(cardHolder, maskedCardNumber, formattedExp, '•••', accountId);
     const cardId = db.prepare('SELECT last_insert_rowid() as id').get().id;
 
-    res.status(201).json({ success: true, cardId });
+    res.status(201).json({ success: true, cardId, last4 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1516,16 +1659,19 @@ app.post('/api/cards', (req, res) => {
 
 app.delete('/api/cards/:id', (req, res) => {
   try {
-    const cardId = Number(req.params.id);
-    const accountId = req.query.accountId ? Number(req.query.accountId) : null;
-    let stmt;
-    if (accountId) {
-      stmt = db.prepare('DELETE FROM creditCards WHERE id = ? AND id_account = ?');
-      stmt.run(cardId, accountId);
-    } else {
-      stmt = db.prepare('DELETE FROM creditCards WHERE id = ?');
-      stmt.run(cardId);
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' });
     }
+    const cardId = Number(req.params.id);
+    const card = db.prepare('SELECT id, id_account FROM creditCards WHERE id = ?').get(cardId);
+    if (!card) return res.status(404).json({ error: 'Card not found.' });
+
+    if (card.id_account !== session.account_id) {
+      return res.status(403).json({ error: 'Access denied: You cannot delete another customer\'s card.', code: 'FORBIDDEN' });
+    }
+
+    db.prepare('DELETE FROM creditCards WHERE id = ?').run(cardId);
     res.json({ success: true, message: 'Card removed successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1533,15 +1679,21 @@ app.delete('/api/cards/:id', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 8. PASSENGER PROFILE MANAGEMENT
+// 8. PASSENGER PROFILE MANAGEMENT & DATA PRIVACY
 // -------------------------------------------------------------
 app.get('/api/profile', (req, res) => {
   try {
-    const accountId = Number(req.query.accountId);
-    if (!accountId) return res.status(400).json({ error: 'accountId required' });
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to view profile.', code: 'UNAUTHORIZED' });
+    }
+    if (req.query.accountId && Number(req.query.accountId) !== session.account_id) {
+      return res.status(403).json({ error: 'Access denied: You cannot view another customer\'s profile.', code: 'FORBIDDEN' });
+    }
+    const accountId = session.account_id;
 
     const account = db.prepare(`
-      SELECT a.id, a.username, a.emailAddress, a.id_passenger,
+      SELECT a.id, a.username, a.emailAddress, a.id_passenger, a.role, a.display_name, a.location,
              p.firstName, p.lastName, p.birthDate, p.gender, p.country
       FROM accounts a
       LEFT JOIN passengers p ON a.id_passenger = p.id
@@ -1557,10 +1709,17 @@ app.get('/api/profile', (req, res) => {
 
 app.put('/api/profile', (req, res) => {
   try {
-    const { accountId, firstName, lastName, birthDate, gender, country, emailAddress } = req.body;
-    if (!accountId) return res.status(400).json({ error: 'accountId required' });
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to update profile.', code: 'UNAUTHORIZED' });
+    }
+    if (req.body.accountId && Number(req.body.accountId) !== session.account_id) {
+      return res.status(403).json({ error: 'Access denied: You cannot modify another customer\'s profile.', code: 'FORBIDDEN' });
+    }
+    const accountId = session.account_id;
+    const { firstName, lastName, birthDate, gender, country, emailAddress } = req.body;
 
-    const account = db.prepare('SELECT id, id_passenger FROM accounts WHERE id = ?').get(Number(accountId));
+    const account = db.prepare('SELECT id, id_passenger FROM accounts WHERE id = ?').get(accountId);
     if (!account) return res.status(404).json({ error: 'Account not found' });
 
     if (emailAddress) {
@@ -1596,21 +1755,31 @@ app.put('/api/profile', (req, res) => {
   }
 });
 
-app.put('/api/profile/password', (req, res) => {
+app.put('/api/profile/password', async (req, res) => {
   try {
-    const { accountId, currentPassword, newPassword } = req.body;
-    if (!accountId || !currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'All fields required' });
+    const session = getSession(req);
+    if (!session) {
+      return res.status(401).json({ error: 'Authentication required to change password.', code: 'UNAUTHORIZED' });
+    }
+    if (req.body.accountId && Number(req.body.accountId) !== session.account_id) {
+      return res.status(403).json({ error: 'Access denied: You cannot change another customer\'s password.', code: 'FORBIDDEN' });
+    }
+    const accountId = session.account_id;
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required.' });
     }
 
-    const account = db.prepare('SELECT id, password FROM accounts WHERE id = ?').get(Number(accountId));
+    const account = db.prepare('SELECT id, password FROM accounts WHERE id = ?').get(accountId);
     if (!account) return res.status(404).json({ error: 'Account not found' });
 
-    if (account.password !== currentPassword && account.password !== currentPassword.trim()) {
+    const isValid = await verifyPassword(currentPassword, account.password);
+    if (!isValid) {
       return res.status(401).json({ error: 'Current password does not match.' });
     }
 
-    db.prepare('UPDATE accounts SET password = ? WHERE id = ?').run(newPassword, account.id);
+    const newHash = await hashPassword(newPassword);
+    db.prepare('UPDATE accounts SET password = ? WHERE id = ?').run(newHash, account.id);
     res.json({ success: true, message: 'Password updated successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2004,10 +2173,19 @@ app.get('/api/airlines/:id/logo', (req, res) => {
 
 app.get('/api/passengers/:id/picture', (req, res) => {
   try {
-    const passenger = db.prepare('SELECT profilePicture FROM passengers WHERE id = ?').get(Number(req.params.id));
+    const targetPassengerId = Number(req.params.id);
+    const session = getSession(req);
+    // Customer Privacy: if authenticated as passenger, can only access own picture
+    if (session && (session.role || '').toUpperCase() === 'PASSENGER') {
+      const myPassenger = db.prepare('SELECT id_passenger FROM accounts WHERE id = ?').get(session.account_id);
+      if (myPassenger && myPassenger.id_passenger && myPassenger.id_passenger !== targetPassengerId) {
+        return res.sendFile(path.join(__dirname, 'public', 'images', 'ProfilePicture.png'));
+      }
+    }
+    const passenger = db.prepare('SELECT profilePicture FROM passengers WHERE id = ?').get(targetPassengerId);
     if (passenger && passenger.profilePicture && passenger.profilePicture.length > 0) {
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Cache-Control', 'private, max-age=86400');
       return res.send(Buffer.from(passenger.profilePicture));
     }
   } catch (e) {

@@ -1,7 +1,7 @@
 {
-  "name": "skynet-flight-booking-system",
+  "name": "fly-flight-booking-system",
   "version": "1.0.0",
-  "description": "Skynet - Flight Booking System Web Edition",
+  "description": "FLY - Next-Gen Flight Booking & Reservation System",
   "main": "Skynet-master/web/server.js",
   "scripts": {
     "start": "node Skynet-master/web/server.js",
@@ -9,7 +9,8 @@
   },
   "keywords": [
     "flight-booking",
-    "skynet",
+    "fly",
+    "aviation",
     "express",
     "sqlite"
   ],

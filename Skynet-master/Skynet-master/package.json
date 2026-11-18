@@ -1,7 +1,7 @@
 {
-  "name": "skynet-web",
+  "name": "fly-web",
   "version": "1.0.0",
-  "description": "Skynet - Flight Booking System Web Edition",
+  "description": "FLY - Next-Gen Flight Booking & Reservation System",
   "author": "mahin1710",
   "main": "web/server.js",
   "scripts": {

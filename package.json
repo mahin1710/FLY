@@ -1,7 +1,7 @@
 {
-  "name": "skynet-flight-booking-system",
+  "name": "fly-flight-booking-system",
   "version": "1.0.0",
-  "description": "Skynet - Flight Booking System Web Edition",
+  "description": "FLY - Next-Gen Flight Booking & Reservation System",
   "author": "mahin1710",
   "scripts": {
     "start": "node Skynet-master/Skynet-master/web/server.js",

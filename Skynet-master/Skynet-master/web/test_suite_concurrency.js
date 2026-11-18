@@ -1,19 +1,40 @@
 // Comprehensive Automated Test Suite for Conflict-Free Ticketing System
 const http = require('http');
+const path = require('node:path');
+const { DatabaseSync } = require('node:sqlite');
 
 const BASE_URL = 'http://localhost:5000';
+const dbPath = path.join(__dirname, 'database.db');
+const db = new DatabaseSync(dbPath);
 
-function request(method, path, body = null) {
+const custA = 1676;
+const custB = 1721;
+const tokenA = 'concurrency-token-custA';
+const tokenB = 'concurrency-token-custB';
+
+// Seed active test sessions for simulated customers in SQLite
+const nowIso = new Date().toISOString();
+const expiresIso = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+db.prepare('INSERT OR REPLACE INTO auth_sessions (token, account_id, username, role, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)').run(tokenA, custA, 'custA', 'PASSENGER', nowIso, expiresIso);
+db.prepare('INSERT OR REPLACE INTO auth_sessions (token, account_id, username, role, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)').run(tokenB, custB, 'custB', 'PASSENGER', nowIso, expiresIso);
+
+function request(method, path, body = null, explicitToken = null) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, BASE_URL);
+    let chosenToken = explicitToken || tokenA;
+    if (!explicitToken && body && body.accountId === custB) {
+      chosenToken = tokenB;
+    }
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${chosenToken}`
+    };
     const options = {
       method,
       hostname: url.hostname,
       port: url.port,
       path: url.pathname + url.search,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers
     };
 
     const req = http.request(options, (res) => {
@@ -105,7 +126,8 @@ async function runAllTests() {
 
     // Clean up winner
     const winningRes = resA.status === 201 ? resA : resB;
-    await request('POST', '/api/bookings/cancel', { bookingReference: winningRes.data.bookingReference });
+    const winningToken = resA.status === 201 ? tokenA : tokenB;
+    await request('POST', '/api/bookings/cancel', { bookingReference: winningRes.data.bookingReference }, winningToken);
   }
 
   // -------------------------------------------------------------
@@ -137,7 +159,7 @@ async function runAllTests() {
     );
 
     // Release Customer B's seat s5
-    await request('POST', '/api/bookings/cancel', { bookingReference: holdOne.data.bookingReference });
+    await request('POST', '/api/bookings/cancel', { bookingReference: holdOne.data.bookingReference }, tokenB);
 
     // Now Customer A attempts the 5 seats again when all are free
     const retryMulti = await request('POST', '/api/bookings/hold', { flightId, accountId: custA, seatIds: multiSeats });
@@ -247,7 +269,8 @@ async function runAllTests() {
     assert(codes[0] === 201 && codes[1] === 409, 'Only one device successfully reserved the seat; other received 409');
 
     const winningBooking = results.find(r => r.status === 201).data.bookingReference;
-    await request('POST', '/api/bookings/cancel', { bookingReference: winningBooking });
+    const winningToken = results[0].status === 201 ? tokenA : tokenB;
+    await request('POST', '/api/bookings/cancel', { bookingReference: winningBooking }, winningToken);
   }
 
   // -------------------------------------------------------------

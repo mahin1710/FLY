@@ -1,7 +1,7 @@
 @echo off
-title Skynet Flight Booking System - Author: mahin1710
+title FLY Flight Booking System - Author: mahin1710
 echo ========================================================
-echo   Starting Skynet Flight Booking System (Web Edition)
+echo   Starting FLY Flight Booking System (Web Edition)
 echo   Author: mahin1710
 echo ========================================================
 cd /d "%~dp0web"

@@ -1,5 +1,5 @@
 /**
- * SKYNET FLIGHT BOOKING SYSTEM — WEB APP APPLICATION LOGIC
+ * FLY FLIGHT BOOKING SYSTEM — WEB APP APPLICATION LOGIC
  * Author: mahin1710
  */
 
@@ -127,14 +127,14 @@ const app = {
   // THEME MANAGEMENT
   // -------------------------------------------------------------
   initTheme() {
-    const saved = localStorage.getItem('skynet_theme') || 'dark';
+    const saved = localStorage.getItem('fly_theme') || 'dark';
     this.setTheme(saved);
   },
 
   setTheme(theme) {
     this.state.theme = theme;
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('skynet_theme', theme);
+    localStorage.setItem('fly_theme', theme);
   },
 
   toggleTheme() {
@@ -148,8 +148,8 @@ const app = {
   // -------------------------------------------------------------
   initAuthFromStorage() {
     try {
-      const savedUser = localStorage.getItem('skynet_user') || sessionStorage.getItem('skynet_user');
-      const savedToken = localStorage.getItem('skynet_token') || sessionStorage.getItem('skynet_token');
+      const savedUser = localStorage.getItem('fly_user') || sessionStorage.getItem('fly_user');
+      const savedToken = localStorage.getItem('fly_token') || sessionStorage.getItem('fly_token');
       if (savedUser && savedToken) {
         this.state.user = JSON.parse(savedUser);
         this.state.token = savedToken;
@@ -164,7 +164,7 @@ const app = {
                 this.navigate('auth');
               }
             } else if (data.user) {
-              this.setUser(data.user, savedToken, Boolean(localStorage.getItem('skynet_token')));
+              this.setUser(data.user, savedToken, Boolean(localStorage.getItem('fly_token')));
             }
           })
           .catch(() => {});
@@ -184,21 +184,21 @@ const app = {
 
     if (user && this.state.token) {
       if (rememberMe) {
-        localStorage.setItem('skynet_user', JSON.stringify(user));
-        localStorage.setItem('skynet_token', this.state.token);
-        sessionStorage.removeItem('skynet_user');
-        sessionStorage.removeItem('skynet_token');
+        localStorage.setItem('fly_user', JSON.stringify(user));
+        localStorage.setItem('fly_token', this.state.token);
+        sessionStorage.removeItem('fly_user');
+        sessionStorage.removeItem('fly_token');
       } else {
-        sessionStorage.setItem('skynet_user', JSON.stringify(user));
-        sessionStorage.setItem('skynet_token', this.state.token);
-        localStorage.removeItem('skynet_user');
-        localStorage.removeItem('skynet_token');
+        sessionStorage.setItem('fly_user', JSON.stringify(user));
+        sessionStorage.setItem('fly_token', this.state.token);
+        localStorage.removeItem('fly_user');
+        localStorage.removeItem('fly_token');
       }
     } else {
-      localStorage.removeItem('skynet_user');
-      localStorage.removeItem('skynet_token');
-      sessionStorage.removeItem('skynet_user');
-      sessionStorage.removeItem('skynet_token');
+      localStorage.removeItem('fly_user');
+      localStorage.removeItem('fly_token');
+      sessionStorage.removeItem('fly_user');
+      sessionStorage.removeItem('fly_token');
       this.state.token = null;
     }
 
@@ -467,7 +467,7 @@ const app = {
     if (modal) {
       modal.style.display = 'flex';
     } else {
-      if (confirm('Are you sure you want to log out of your Skynet session?')) {
+      if (confirm('Are you sure you want to log out of your FLY session?')) {
         this.executeLogout();
       }
     }
@@ -507,11 +507,30 @@ const app = {
     const tripBanner = document.getElementById('activeTripBanner');
     if (tripBanner) tripBanner.style.display = 'none';
 
+    // Strict Privacy: Clear all private DOM containers so no previous account data is visible
+    const bookingsList = document.getElementById('bookingsList');
+    if (bookingsList) bookingsList.innerHTML = '';
+    const pendingHoldsList = document.getElementById('pendingHoldsList');
+    if (pendingHoldsList) pendingHoldsList.innerHTML = '';
+    const confirmedTicketsList = document.getElementById('confirmedTicketsList');
+    if (confirmedTicketsList) confirmedTicketsList.innerHTML = '';
+    const favoritesGrid = document.getElementById('favoritesGrid');
+    if (favoritesGrid) favoritesGrid.innerHTML = '';
+    const adminTable = document.getElementById('adminBookingsTableBody');
+    if (adminTable) adminTable.innerHTML = '';
+    ['profileFirstName', 'profileLastName', 'profileEmail', 'profileUsername', 'profileCountry', 'profileGender', 'profileBirthDate'].forEach(fid => {
+      const fEl = document.getElementById(fid);
+      if (fEl) fEl.value = '';
+    });
+
     // Clear login input forms
     ['loginUsername', 'loginPassword', 'authPageLoginUsername', 'authPageLoginPassword'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+
+    sessionStorage.removeItem('fly_active_booking');
+    sessionStorage.removeItem('skynet_active_booking');
 
     // Replace browser history so back button cannot re-enter private page
     history.replaceState(null, '', '/login');
@@ -594,7 +613,7 @@ const app = {
       }
     } catch (err) {
       if (errAlert && errText) {
-        errText.textContent = 'Could not connect to Skynet server.';
+        errText.textContent = 'Could not connect to FLY server.';
         errAlert.style.display = 'flex';
       }
       this.showToast('Failed to connect to server', 'error');
@@ -651,7 +670,7 @@ const app = {
       }
     } catch (err) {
       if (errAlert && errText) {
-        errText.textContent = 'Could not connect to Skynet server.';
+        errText.textContent = 'Could not connect to FLY server.';
         errAlert.style.display = 'flex';
       }
       this.showToast('Failed to connect to server', 'error');
@@ -1420,7 +1439,7 @@ const app = {
 
     try {
       if (isActive) {
-        await fetch(`/api/favorites/${flightId}?accountId=${accId}`, { method: 'DELETE' });
+        await fetch(`/api/favorites/${flightId}?accountId=${accId}`, { method: 'DELETE', headers: this.getAuthHeaders() });
         btnEl.classList.remove('active');
         btnEl.querySelector('svg').setAttribute('fill', 'none');
         this.showToast('Removed from favorites', 'info');
@@ -1774,7 +1793,7 @@ const app = {
       // 1. Send temporary hold request (with database transaction and partial unique constraint check)
       const holdRes = await fetch('/api/bookings/hold', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({
           flightId: f.id,
           accountId: this.state.user.id,
@@ -1797,7 +1816,7 @@ const app = {
 
       // 2. Hold was successful! Store active booking & persist to sessionStorage
       this.state.activeBooking = holdData;
-      sessionStorage.setItem('skynet_active_booking', JSON.stringify({
+      sessionStorage.setItem('fly_active_booking', JSON.stringify({
         bookingReference: holdData.bookingReference,
         flightId: f.id,
         expiresAt: holdData.expiresAt
@@ -1807,7 +1826,7 @@ const app = {
       this.updateStickyHoldBanner(holdData.bookingReference, holdData.expiresAt);
 
       // 3. Load saved user cards
-      const cardsRes = await fetch(`/api/cards?accountId=${this.state.user.id}`);
+      const cardsRes = await fetch(`/api/cards?accountId=${this.state.user.id}`, { headers: this.getAuthHeaders() });
       const cards = await cardsRes.json();
       this.state.userCards = cards || [];
 
@@ -1921,7 +1940,7 @@ const app = {
         document.getElementById('paymentMethodsSection').style.display = 'none';
         document.getElementById('paymentModalFooter').style.display = 'none';
 
-        sessionStorage.removeItem('skynet_active_booking');
+        sessionStorage.removeItem('fly_active_booking');
         this.hideStickyHoldBanner();
 
         this.showToast('Your 15-minute reservation window has expired. Seats released.', 'error');
@@ -1956,7 +1975,7 @@ const app = {
   },
 
   resumePendingPayment() {
-    const stored = sessionStorage.getItem('skynet_active_booking');
+    const stored = sessionStorage.getItem('fly_active_booking');
     if (!stored) return;
     try {
       const data = JSON.parse(stored);
@@ -1973,7 +1992,7 @@ const app = {
             this.startPaymentCountdown(booking.expires_at);
             document.getElementById('modalPayment').style.display = 'flex';
           } else {
-            sessionStorage.removeItem('skynet_active_booking');
+            sessionStorage.removeItem('fly_active_booking');
             this.hideStickyHoldBanner();
             this.showToast('Reservation expired or already completed.', 'info');
           }
@@ -1982,16 +2001,16 @@ const app = {
   },
 
   async cancelActivePendingBooking() {
-    const stored = sessionStorage.getItem('skynet_active_booking');
+    const stored = sessionStorage.getItem('fly_active_booking');
     if (!stored) return;
     try {
       const data = JSON.parse(stored);
       await fetch('/api/bookings/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ bookingReference: data.bookingReference, accountId: this.state.user ? this.state.user.id : null })
       });
-      sessionStorage.removeItem('skynet_active_booking');
+      sessionStorage.removeItem('fly_active_booking');
       this.hideStickyHoldBanner();
       if (this.state.paymentCountdownInterval) {
         clearInterval(this.state.paymentCountdownInterval);
@@ -2005,13 +2024,13 @@ const app = {
   },
 
   async checkPendingBookingOnLoad() {
-    const stored = sessionStorage.getItem('skynet_active_booking');
+    const stored = sessionStorage.getItem('fly_active_booking');
     if (!stored) return;
     try {
       const data = JSON.parse(stored);
-      const res = await fetch(`/api/bookings/${data.bookingReference}`);
+      const res = await fetch(`/api/bookings/${data.bookingReference}`, { headers: this.getAuthHeaders() });
       if (!res.ok) {
-        sessionStorage.removeItem('skynet_active_booking');
+        sessionStorage.removeItem('fly_active_booking');
         return;
       }
       const booking = await res.json();
@@ -2019,7 +2038,7 @@ const app = {
         this.updateStickyHoldBanner(booking.booking_reference, booking.expires_at);
         this.startPaymentCountdown(booking.expires_at);
       } else {
-        sessionStorage.removeItem('skynet_active_booking');
+        sessionStorage.removeItem('fly_active_booking');
       }
     } catch (_) {}
   },
@@ -2045,7 +2064,7 @@ const app = {
     try {
       const res = await fetch('/api/bookings/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({
           bookingReference: bookingRef,
           paymentMethod: paymentType === 'instant_verify' ? 'instant_verification' : 'credit_card',
@@ -2058,7 +2077,7 @@ const app = {
       if (!res.ok) {
         if (res.status === 410) {
           if (this.state.paymentCountdownInterval) clearInterval(this.state.paymentCountdownInterval);
-          sessionStorage.removeItem('skynet_active_booking');
+          sessionStorage.removeItem('fly_active_booking');
           this.hideStickyHoldBanner();
           document.getElementById('paymentTimerBox').style.display = 'none';
           document.getElementById('paymentExpiredBanner').style.display = 'flex';
@@ -2077,7 +2096,7 @@ const app = {
         clearInterval(this.state.paymentCountdownInterval);
         this.state.paymentCountdownInterval = null;
       }
-      sessionStorage.removeItem('skynet_active_booking');
+      sessionStorage.removeItem('fly_active_booking');
       this.hideStickyHoldBanner();
 
       this.closeModal('modalPayment');
@@ -2104,9 +2123,9 @@ const app = {
     if (!t) return;
 
     // Ticket Airline & Logos
-    document.getElementById('ticketAirlineName').innerText = t.airlineName || 'Skynet Airline';
+    document.getElementById('ticketAirlineName').innerText = t.airlineName || 'FLY Airways';
     document.getElementById('ticketAirlineLogo').src = `/api/airlines/${t.airlineId}/logo`;
-    document.getElementById('stubAirlineCode').innerText = t.airlineIATA || 'SKYNET';
+    document.getElementById('stubAirlineCode').innerText = t.airlineIATA || 'FLY';
 
     // Route points
     const depAirportClean = (t.depAirportName || '').replace(/^\?stanbul/i, 'Istanbul');
@@ -2159,7 +2178,7 @@ const app = {
 
   async openTicketById(reservationId) {
     try {
-      const res = await fetch(`/api/reservations/ticket/${reservationId}`);
+      const res = await fetch(`/api/reservations/ticket/${reservationId}`, { headers: this.getAuthHeaders() });
       const ticket = await res.json();
       this.renderBoardingPass(ticket);
     } catch (e) {
@@ -2340,7 +2359,7 @@ const app = {
           body: JSON.stringify({ bookingReference: refOrId, accountId: accId })
         });
       } else {
-        res = await fetch(`/api/reservations/${refOrId}?accountId=${accId}`, { method: 'DELETE' });
+        res = await fetch(`/api/reservations/${refOrId}?accountId=${accId}`, { method: 'DELETE', headers: this.getAuthHeaders() });
       }
 
       const data = await res.json();
@@ -2445,7 +2464,7 @@ const app = {
     container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading favorite flights...</div>`;
 
     try {
-      const res = await fetch(`/api/favorites?accountId=${this.state.user.id}`);
+      const res = await fetch(`/api/favorites?accountId=${this.state.user.id}`, { headers: this.getAuthHeaders() });
       const flights = await res.json();
 
       if (!flights || flights.length === 0) {
@@ -2828,7 +2847,7 @@ const app = {
     }
 
     try {
-      const res = await fetch(`/api/profile?accountId=${this.state.user.id}`);
+      const res = await fetch(`/api/profile?accountId=${this.state.user.id}`, { headers: this.getAuthHeaders() });
       const data = await res.json();
 
       document.getElementById('accountProfileName').innerText = `${data.firstName || ''} ${data.lastName || ''}`.trim() || data.username;
@@ -2871,7 +2890,7 @@ const app = {
     try {
       const res = await fetch('/api/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -2904,7 +2923,7 @@ const app = {
     try {
       const res = await fetch('/api/profile/password', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ accountId: this.state.user.id, oldPassword: oldP, newPassword: newP })
       });
       const data = await res.json();
@@ -2931,7 +2950,7 @@ const app = {
     if (!grid) return;
 
     try {
-      const res = await fetch(`/api/cards?accountId=${this.state.user.id}`);
+      const res = await fetch(`/api/cards?accountId=${this.state.user.id}`, { headers: this.getAuthHeaders() });
       const cards = await res.json();
 
       if (!cards || cards.length === 0) {
@@ -2944,7 +2963,7 @@ const app = {
           <button class="btn-delete-card" onclick="app.deleteCard(${c.id})" title="Delete Card">&times;</button>
           <div class="credit-card-top">
             <div class="card-chip"></div>
-            <span class="card-brand-label">SKYNET PAY</span>
+            <span class="card-brand-label">FLY PAY</span>
           </div>
           <div class="card-num-display">•••• •••• •••• ${c.cardNumber.slice(-4)}</div>
           <div class="credit-card-bottom">
@@ -2992,7 +3011,7 @@ const app = {
     try {
       const res = await fetch('/api/cards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -3017,7 +3036,7 @@ const app = {
   async deleteCard(cardId) {
     if (!confirm('Are you sure you want to remove this card?')) return;
     try {
-      await fetch(`/api/cards/${cardId}?accountId=${this.state.user.id}`, { method: 'DELETE' });
+      await fetch(`/api/cards/${cardId}?accountId=${this.state.user.id}`, { method: 'DELETE', headers: this.getAuthHeaders() });
       this.showToast('Card removed', 'info');
       this.loadSavedCards();
     } catch (e) {
