@@ -208,6 +208,56 @@ function sanitizeAirportRecord(a) {
   return a;
 }
 
+// Helper to enrich flight records with full dynamic aviation details
+function enrichFlightRecord(f, accountId = null) {
+  if (!f) return f;
+  f = sanitizeAirportRecord(f);
+
+  const booked = Number(f.bookedCount) || 0;
+  const totalSeats = 120;
+  const availableSeats = Math.max(0, totalSeats - booked);
+
+  // Compute flight duration in minutes and format string
+  let durationMinutes = 0;
+  let durationFormatted = 'Non-stop';
+  if (f.dep_datetime && f.arr_datetime) {
+    const depTime = new Date(f.dep_datetime.replace(' ', 'T')).getTime();
+    const arrTime = new Date(f.arr_datetime.replace(' ', 'T')).getTime();
+    const diffMs = arrTime - depTime;
+    if (!isNaN(diffMs) && diffMs > 0) {
+      durationMinutes = Math.floor(diffMs / 60000);
+      const hrs = Math.floor(durationMinutes / 60);
+      const mins = durationMinutes % 60;
+      durationFormatted = hrs > 0 && mins > 0 ? `${hrs}h ${mins}m` : (hrs > 0 ? `${hrs}h` : `${mins}m`);
+    }
+  }
+
+  // Realistic airline flight number code (e.g. BG-185, BS-102, EK-582)
+  const airlineCode = (f.airlineIATA || 'FL').trim().toUpperCase();
+  const flightNumber = `${airlineCode}-${100 + (f.id % 900)}`;
+
+  // Determine flight status based on departure time
+  const nowIso = new Date().toISOString().replace('T', ' ').substring(0, 16);
+  let flightStatus = 'SCHEDULED';
+  if (f.dep_datetime && f.dep_datetime <= nowIso) {
+    flightStatus = 'BOARDING';
+  } else {
+    flightStatus = 'ON TIME';
+  }
+
+  return {
+    ...f,
+    flightNumber,
+    flightStatus,
+    durationMinutes,
+    durationFormatted,
+    totalSeats,
+    availableSeats,
+    flightType: 'Direct / Non-stop',
+    isFavorite: Boolean(f.isFavorite)
+  };
+}
+
 // Helper to retrieve detailed ticket info by booking reference
 function getTicketDataByBookingRef(bookingRef) {
   const booking = db.prepare(`
@@ -699,10 +749,7 @@ app.get('/api/flights', (req, res) => {
       total: totalCount,
       limit: Number(limit),
       offset: Number(offset),
-      flights: flights.map(f => sanitizeAirportRecord({
-        ...f,
-        isFavorite: Boolean(f.isFavorite)
-      }))
+      flights: flights.map(f => enrichFlightRecord(f, accountId))
     });
   } catch (err) {
     console.error('Flights error:', err);
@@ -714,6 +761,8 @@ app.get('/api/flights/featured', (req, res) => {
   try {
     cleanupExpiredReservations();
     const accountId = req.query.accountId ? Number(req.query.accountId) : 0;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
     const flights = db.prepare(`
       SELECT f.*,
              al.name as airlineName, al.IATA as airlineIATA,
@@ -725,14 +774,14 @@ app.get('/api/flights/featured', (req, res) => {
       JOIN airLines al ON f.id_airline = al.id
       JOIN airports da ON f.dep_airport = da.id
       JOIN airports aa ON f.arr_airport = aa.id
-      WHERE f.economy_price > 0
+      WHERE f.economy_price > 0 AND f.dep_datetime >= ?
       ORDER BY (CASE WHEN da.country = 'Bangladesh' OR aa.country = 'Bangladesh' THEN 0 ELSE 1 END),
                (CASE WHEN da.IATA = 'DAC' THEN 0 WHEN da.IATA = 'CGP' THEN 1 WHEN da.IATA = 'CXB' THEN 2 ELSE 3 END),
                f.dep_datetime ASC
       LIMIT 8
-    `).all(accountId);
+    `).all(accountId, nowStr);
 
-    res.json(flights.map(f => sanitizeAirportRecord({ ...f, isFavorite: Boolean(f.isFavorite) })));
+    res.json(flights.map(f => enrichFlightRecord(f, accountId)));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -758,7 +807,7 @@ app.get('/api/flights/:id', (req, res) => {
     `).get(accountId, flightId);
 
     if (!flight) return res.status(404).json({ error: 'Flight not found' });
-    res.json(sanitizeAirportRecord({ ...flight, isFavorite: Boolean(flight.isFavorite) }));
+    res.json(enrichFlightRecord(flight, accountId));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1536,7 +1585,7 @@ app.get('/api/favorites', (req, res) => {
       ORDER BY f.dep_datetime ASC
     `).all(accountId);
 
-    res.json(flights.map(sanitizeAirportRecord));
+    res.json(flights.map(f => enrichFlightRecord(f)));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1960,7 +2009,7 @@ app.get('/api/airline/flights', (req, res) => {
       ORDER BY f.dep_datetime DESC
     `).all(airlineId);
 
-    res.json(flights.map(sanitizeAirportRecord));
+    res.json(flights.map(f => enrichFlightRecord(f)));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
