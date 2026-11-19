@@ -1417,8 +1417,8 @@ const app = {
         <div class="flight-card-header">
           <div class="airline-badge">
             <img src="/api/airlines/${f.id_airline}/logo" class="airline-logo-img" alt="${f.airlineName}" onerror="this.src='/images/default_logo.png'">
-            <div>
-              <div class="airline-name">${f.airlineName}</div>
+            <div class="airline-info">
+              <div class="airline-name" title="${f.airlineName}">${f.airlineName}</div>
               <div class="flight-id-tag">
                 <span class="flight-code">${flightNum}</span>
                 <span class="flight-status-pill status-${flightStatus.toLowerCase().replace(/\s+/g, '-')}">● ${flightStatus}</span>
@@ -1450,7 +1450,7 @@ const app = {
               <div class="path-line"></div>
               <span class="path-plane-icon">✈</span>
             </div>
-            <span class="nonstop-badge">${f.flightType || 'Direct / Non-stop'}</span>
+            <span class="nonstop-badge" title="${f.flightType || 'Direct / Non-stop'}">${f.flightType || 'Direct / Non-stop'}</span>
           </div>
 
           <div class="timeline-point text-right">
