@@ -71,12 +71,15 @@ async function runVerification() {
   assert(html.includes('id="modalLogoutConfirm"'), 'index.html has Dedicated Logout Confirmation modal (#modalLogoutConfirm)');
   assert(html.includes('app.executeLogout()'), 'Logout Confirmation modal triggers app.executeLogout()');
 
-  // Verify 4 Demo Accounts are present on the dedicated login page
-  assert(html.includes('MMH_Mahin') && html.includes('Mahin0'), 'Demo Accounts section contains MMH_Mahin (Mahin0)');
-  assert(html.includes('Biman Bangladesh Airlines') && html.includes('Admin_Biman'), 'Demo Accounts section contains Biman Bangladesh Airlines (Admin_Biman)');
-  assert(html.includes('US-Bangla Airlines') && html.includes('Admin_USB'), 'Demo Accounts section contains US-Bangla Airlines (Admin_USB)');
-  assert(html.includes('Mahin1'), 'Demo Accounts section contains Mahin1');
-  assert(html.includes('app.fillDemoAccount') && html.includes('app.instantLogin'), 'Demo accounts provide auto-fill and 1-click login');
+  // Verify Demo Accounts section is completely removed from frontend
+  assert(!html.includes('class="demo-accounts-section"'), 'No demo accounts section in HTML');
+  assert(!html.includes('Demo Accounts'), 'No demo accounts header or buttons in HTML');
+  assert(!html.includes('Mahin0'), 'Demo credential Mahin0 not displayed in login interface');
+  assert(!html.includes('Admin_Biman'), 'Demo credential Admin_Biman not displayed in login interface');
+  assert(!html.includes('Admin_USB'), 'Demo credential Admin_USB not displayed in login interface');
+  assert(!html.includes('Mahin1'), 'Demo credential Mahin1 not displayed in login interface');
+  assert(html.includes('autocomplete="off"'), 'Login form uses autocomplete="off" to prevent credential autofill');
+  assert(html.includes('autocomplete="new-password"'), 'Password field uses autocomplete="new-password"');
 
   // TEST 3: Seeding and Credentials
   console.log('\n3. Verifying Seeded Credentials and Password Hashing...');
