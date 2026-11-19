@@ -3323,20 +3323,28 @@ input, select, textarea {
 }
 
 @media (max-width: 600px) {
+  .flight-card {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+  .flight-card-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .point-time {
+    font-size: 1.25rem;
+  }
+  .point-iata {
+    font-size: 0.85rem;
+  }
   .flight-card-footer {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
-  .flight-card-footer .btn-primary {
+  .btn-select-seats {
     width: 100%;
     justify-content: center;
-  }
-  .demo-pill-btn span:last-child {
-    display: none;
-  }
-  .demo-pill-btn {
-    padding: 7px 10px;
   }
   .brand-title {
     font-size: 1.15rem;
