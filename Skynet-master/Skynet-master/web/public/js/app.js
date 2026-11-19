@@ -1614,7 +1614,7 @@ const app = {
     if (this.state.currentPage !== 'seatMap' || !this.state.selectedFlight) return;
     try {
       const accId = this.state.user ? this.state.user.id : 0;
-      const res = await fetch(`/api/flights/${this.state.selectedFlight.id}/seats?accountId=${accId}`);
+      const res = await fetch(`/api/flights/${this.state.selectedFlight.id}/seats?accountId=${accId}`, { headers: this.getAuthHeaders() });
       if (!res.ok) return;
       const data = await res.json();
       if (!data || !data.seats) return;
@@ -1899,89 +1899,155 @@ const app = {
         return;
       }
 
-      // 2. Hold was successful! Store active booking & persist to sessionStorage
-      this.state.activeBooking = holdData;
-      sessionStorage.setItem('fly_active_booking', JSON.stringify({
+      // 2. Open Payment Modal with live countdown and booking details
+      const seatCodes = seats.map(s => s.code).join(', ');
+      await this.openPaymentModalForBooking({
         bookingReference: holdData.bookingReference,
         flightId: f.id,
+        airlineName: f.airlineName,
+        depCity: f.depCity,
+        depIATA: f.depIATA,
+        arrCity: f.arrCity,
+        arrIATA: f.arrIATA,
+        dep_datetime: f.dep_datetime,
+        seatCodes: seatCodes,
+        seats: seats,
+        nbr_luggages: this.state.luggageCount,
+        weight: this.state.luggageWeight,
+        totalAmount: holdData.totalAmount,
         expiresAt: holdData.expiresAt
-      }));
+      });
 
-      // Update sticky banner
-      this.updateStickyHoldBanner(holdData.bookingReference, holdData.expiresAt);
-
-      // 3. Load saved user cards
-      const cardsRes = await fetch(`/api/cards?accountId=${this.state.user.id}`, { headers: this.getAuthHeaders() });
-      const cards = await cardsRes.json();
-      this.state.userCards = cards || [];
-
-      // 4. Render Checkout Recap
-      const seatCodes = seats.map(s => s.code).join(', ');
-      document.getElementById('checkoutRecapCard').innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div>
-            <span style="font-weight: 800; font-size: 1.05rem;">Booking Ref: ${holdData.bookingReference}</span>
-            <div style="font-size: 0.8rem; color: var(--text-secondary);">Flight #${f.id} • ${f.airlineName}</div>
-          </div>
-          <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">
-            ⏱️ 15-MIN HOLD
-          </span>
-        </div>
-        <div style="font-size: 0.9rem; margin-bottom: 6px;">
-          ${f.depCity} (${f.depIATA}) ➔ ${f.arrCity} (${f.arrIATA})
-        </div>
-        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">
-          📅 ${f.dep_datetime} • Seats: <strong>${seatCodes}</strong> (${seats.length} total) • Baggage: ${this.state.luggageCount} bags (${this.state.luggageWeight}kg)
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
-          <span style="font-weight: 700;">Total Payable Fare:</span>
-          <span style="color: var(--accent-primary); font-size: 1.3rem; font-weight: 800;">${this.formatCurrency(holdData.totalAmount)}</span>
-        </div>
-      `;
-
-      document.getElementById('btnPayText').innerText = `Confirm & Pay ${this.formatCurrency(holdData.totalAmount)}`;
-
-      // Render payment methods
-      const cardsListEl = document.getElementById('checkoutCardsList');
-      if (cards.length === 0) {
-        cardsListEl.innerHTML = `
-          <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 8px;">
-            No saved cards. You can use 1-click instant verification or add a card below.
-          </div>
-        `;
-      } else {
-        cardsListEl.innerHTML = cards.map((c, i) => `
-          <div class="selectable-card-item ${i === 0 ? 'selected' : ''}" onclick="app.selectCheckoutCard(this, ${c.id})">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 1.3rem;">💳</span>
-              <div>
-                <div style="font-weight: 700; font-size: 0.88rem;">•••• •••• •••• ${c.cardNumber.slice(-4)}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted);">${c.cardHolder} • Exp: ${c.expirationDate}</div>
-              </div>
-            </div>
-            <span style="font-size: 0.8rem; color: var(--accent-primary); font-weight: 600;">Use Card</span>
-          </div>
-        `).join('');
-      }
-
-      // Reset expired banner visibility
-      document.getElementById('paymentTimerBox').style.display = 'block';
-      document.getElementById('paymentExpiredBanner').style.display = 'none';
-      document.getElementById('paymentMethodsSection').style.display = 'block';
-      document.getElementById('paymentModalFooter').style.display = 'flex';
-
-      // 5. Start live countdown timer synced to server expiresAt
-      this.startPaymentCountdown(holdData.expiresAt);
-
-      document.getElementById('modalPayment').style.display = 'flex';
-      this.showToast(`Seats reserved exclusively for you for 15 minutes!`, 'success');
-
+      this.showToast('Seats reserved exclusively for you for 15 minutes!', 'success');
     } catch (err) {
       console.error(err);
       this.showToast('Network error during reservation', 'error');
     } finally {
       if (proceedBtn) proceedBtn.disabled = false;
     }
+  },
+
+  async openPaymentModalForBooking(booking) {
+    if (!booking) return;
+
+    const ref = booking.booking_reference || booking.bookingReference;
+    const flightId = booking.id_flight || booking.flightId;
+    const expiresAt = booking.expires_at || booking.expiresAt;
+    const totalAmount = booking.total_amount || booking.totalAmount || 0;
+
+    this.state.activeBooking = {
+      bookingReference: ref,
+      flightId: flightId,
+      expiresAt: expiresAt,
+      totalAmount: totalAmount
+    };
+
+    sessionStorage.setItem('fly_active_booking', JSON.stringify({
+      bookingReference: ref,
+      flightId: flightId,
+      expiresAt: expiresAt
+    }));
+
+    this.updateStickyHoldBanner(ref, expiresAt);
+
+    // Format seat codes
+    let seatCodes = '';
+    if (booking.seats && Array.isArray(booking.seats)) {
+      seatCodes = booking.seats.map(s => s.code || `${s.column || ''}${s.row || ''}`).join(', ');
+    } else if (booking.seatCodes) {
+      seatCodes = Array.isArray(booking.seatCodes) ? booking.seatCodes.join(', ') : String(booking.seatCodes);
+    } else if (booking.seatNumbers) {
+      seatCodes = String(booking.seatNumbers);
+    } else {
+      seatCodes = 'Selected';
+    }
+
+    const airlineName = booking.airlineName || 'FLY Partner Airline';
+    const depCity = booking.depCity || 'Departure';
+    const depIATA = booking.depIATA || '';
+    const arrCity = booking.arrCity || 'Arrival';
+    const arrIATA = booking.arrIATA || '';
+    const depDate = booking.dep_datetime || '';
+    const nbrLuggages = booking.nbr_luggages !== undefined ? booking.nbr_luggages : (this.state.luggageCount || 0);
+    const weight = booking.weight !== undefined ? booking.weight : (this.state.luggageWeight || 0);
+
+    const recapEl = document.getElementById('checkoutRecapCard');
+    if (recapEl) {
+      recapEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <div>
+            <span style="font-weight: 800; font-size: 1.05rem;">Booking Ref: ${ref}</span>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">Flight #${flightId} • ${airlineName}</div>
+          </div>
+          <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">
+            ⏱️ 15-MIN HOLD
+          </span>
+        </div>
+        <div style="font-size: 0.9rem; margin-bottom: 6px; font-weight: 600;">
+          ${depCity} (${depIATA}) ➔ ${arrCity} (${arrIATA})
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">
+          📅 ${depDate} • Seats: <strong>${seatCodes}</strong> • Baggage: ${nbrLuggages} bags (${weight}kg)
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-subtle); padding-top: 8px;">
+          <span style="font-weight: 700;">Total Payable Fare:</span>
+          <span style="color: var(--accent-primary); font-size: 1.3rem; font-weight: 800;">${this.formatCurrency(totalAmount)}</span>
+        </div>
+      `;
+    }
+
+    const payTextEl = document.getElementById('btnPayText');
+    if (payTextEl) {
+      payTextEl.innerText = `Confirm Payment (${this.formatCurrency(totalAmount)})`;
+    }
+
+    const confirmBtn = document.getElementById('btnConfirmPay');
+    if (confirmBtn) confirmBtn.disabled = false;
+
+    // Load saved user cards
+    try {
+      const accId = this.state.user ? this.state.user.id : 0;
+      const cardsRes = await fetch(`/api/cards?accountId=${accId}`, { headers: this.getAuthHeaders() });
+      const cards = await cardsRes.json();
+      const cardsListEl = document.getElementById('checkoutCardsList');
+      if (cardsListEl) {
+        if (!cards || cards.length === 0) {
+          cardsListEl.innerHTML = `
+            <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 8px;">
+              No saved cards. Instant one-click verification will simulate authorized card clearing.
+            </div>
+          `;
+        } else {
+          cardsListEl.innerHTML = cards.map((c, i) => `
+            <div class="selectable-card-item ${i === 0 ? 'selected' : ''}" onclick="app.selectCheckoutCard(this, ${c.id})">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.3rem;">💳</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.88rem;">•••• •••• •••• ${c.cardNumber.slice(-4)}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">${c.cardHolder} • Exp: ${c.expirationDate}</div>
+                </div>
+              </div>
+              <span style="font-size: 0.8rem; color: var(--accent-primary); font-weight: 600;">Use Card</span>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (_) { }
+
+    // Reset expired banner visibility
+    const timerBox = document.getElementById('paymentTimerBox');
+    if (timerBox) timerBox.style.display = 'block';
+    const expiredBanner = document.getElementById('paymentExpiredBanner');
+    if (expiredBanner) expiredBanner.style.display = 'none';
+    const methodsSec = document.getElementById('paymentMethodsSection');
+    if (methodsSec) methodsSec.style.display = 'block';
+    const modalFooter = document.getElementById('paymentModalFooter');
+    if (modalFooter) modalFooter.style.display = 'flex';
+
+    // 5. Start live countdown timer synced to server expiresAt
+    this.startPaymentCountdown(expiresAt);
+
+    document.getElementById('modalPayment').style.display = 'flex';
   },
 
   startPaymentCountdown(expiresAtStr) {
@@ -2059,29 +2125,25 @@ const app = {
     if (banner) banner.style.display = 'none';
   },
 
-  resumePendingPayment() {
+  async resumePendingPayment() {
     const stored = sessionStorage.getItem('fly_active_booking');
     if (!stored) return;
     try {
       const data = JSON.parse(stored);
-      fetch(`/api/bookings/${data.bookingReference}`)
-        .then(res => res.json())
-        .then(booking => {
-          if (booking.status === 'PENDING_PAYMENT' && booking.secondsRemaining > 0) {
-            this.state.activeBooking = {
-              bookingReference: booking.booking_reference,
-              flightId: booking.id_flight,
-              expiresAt: booking.expires_at,
-              totalAmount: booking.total_amount
-            };
-            this.startPaymentCountdown(booking.expires_at);
-            document.getElementById('modalPayment').style.display = 'flex';
-          } else {
-            sessionStorage.removeItem('fly_active_booking');
-            this.hideStickyHoldBanner();
-            this.showToast('Reservation expired or already completed.', 'info');
-          }
-        });
+      const res = await fetch(`/api/bookings/${data.bookingReference}`, { headers: this.getAuthHeaders() });
+      if (!res.ok) {
+        sessionStorage.removeItem('fly_active_booking');
+        this.hideStickyHoldBanner();
+        return;
+      }
+      const booking = await res.json();
+      if (booking.status === 'PENDING_PAYMENT' && booking.secondsRemaining > 0) {
+        await this.openPaymentModalForBooking(booking);
+      } else {
+        sessionStorage.removeItem('fly_active_booking');
+        this.hideStickyHoldBanner();
+        this.showToast('Reservation expired or already completed.', 'info');
+      }
     } catch (_) { }
   },
 
@@ -2187,6 +2249,10 @@ const app = {
       this.closeModal('modalPayment');
       this.showToast('Payment verified! Flight reservation confirmed.', 'success');
       this.refreshBookingsBadge();
+
+      if (this.state.currentPage === 'bookings') {
+        this.loadMyBookings();
+      }
 
       if (data.ticket) {
         this.renderBoardingPass(data.ticket);
@@ -2384,7 +2450,7 @@ const app = {
             </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+          <div class="booking-card-footer">
             <div>
               ${!isExpired ? `
                 <button class="btn-text-link" style="color: #ef4444;" onclick="app.cancelBooking('${refOrId}')">
@@ -2395,7 +2461,7 @@ const app = {
             <div style="display: flex; gap: 10px;">
               ${isPending ? `
                 <button class="btn-primary" onclick="app.resumePendingPaymentByRef('${refOrId}')">
-                  <span>Complete Payment (15m window)</span>
+                  <span>Confirm Payment</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                 </button>
               ` : ''}
@@ -2412,24 +2478,26 @@ const app = {
     }).join('');
   },
 
-  resumePendingPaymentByRef(bookingRef) {
-    fetch(`/api/bookings/${bookingRef}`)
-      .then(res => res.json())
-      .then(booking => {
-        if (booking.status === 'PENDING_PAYMENT' && booking.secondsRemaining > 0) {
-          this.state.activeBooking = {
-            bookingReference: booking.booking_reference,
-            flightId: booking.id_flight,
-            expiresAt: booking.expires_at,
-            totalAmount: booking.total_amount
-          };
-          this.startPaymentCountdown(booking.expires_at);
-          document.getElementById('modalPayment').style.display = 'flex';
-        } else {
-          this.showToast('Reservation expired or already confirmed.', 'info');
-          this.loadMyBookings();
-        }
-      });
+  async resumePendingPaymentByRef(bookingRef) {
+    try {
+      const res = await fetch(`/api/bookings/${bookingRef}`, { headers: this.getAuthHeaders() });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        this.showToast(err.error || 'Unable to retrieve reservation hold details.', 'error');
+        this.loadMyBookings();
+        return;
+      }
+      const booking = await res.json();
+      if (booking.status === 'PENDING_PAYMENT' && booking.secondsRemaining > 0) {
+        await this.openPaymentModalForBooking(booking);
+      } else {
+        this.showToast('Reservation hold expired or already confirmed.', 'info');
+        this.loadMyBookings();
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast('Failed to resume reservation payment.', 'error');
+    }
   },
 
   async cancelBooking(refOrId) {
@@ -2440,7 +2508,7 @@ const app = {
       if (String(refOrId).startsWith('BK-')) {
         res = await fetch('/api/bookings/cancel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({ bookingReference: refOrId, accountId: accId })
         });
       } else {
@@ -2792,7 +2860,7 @@ const app = {
     try {
       const res = await fetch('/api/bookings/cancel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getAuthHeaders(),
         body: JSON.stringify({ bookingReference: bookingRef })
       });
       const data = await res.json();

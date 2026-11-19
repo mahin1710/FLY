@@ -4431,3 +4431,378 @@ input, select, textarea {
   opacity: 0.9;
   transform: scale(1.02);
 }
+
+
+/* ==========================================================================
+   COMPREHENSIVE RESPONSIVE SUITE & SCREEN-FIT ENHANCEMENTS
+   Ensures complete seamless fit across Desktop, Laptop, Tablet, and Mobile
+   ========================================================================== */
+
+/* Universal Layout & Container Fit */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 12px;
+  }
+}
+
+/* Header & Navigation Bar Responsiveness */
+@media (max-width: 768px) {
+  .header-container {
+    padding: 0 16px;
+    height: 64px;
+  }
+  .brand-title {
+    font-size: 1.25rem;
+    letter-spacing: 0.1em;
+  }
+  .brand-logo-img {
+    width: 30px;
+    height: 30px;
+  }
+  .brand-logo-glow {
+    width: 34px;
+    height: 34px;
+  }
+  .nav-links {
+    gap: 4px;
+  }
+  .nav-btn {
+    padding: 6px 10px;
+  }
+  .header-actions {
+    gap: 8px;
+  }
+  .theme-toggle-btn {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-container {
+    padding: 0 10px;
+    height: 58px;
+    gap: 6px;
+  }
+  .brand-title {
+    font-size: 1.15rem;
+  }
+  .header-user-btn {
+    padding: 5px 8px;
+    font-size: 0.78rem;
+  }
+  .header-user-name {
+    max-width: 65px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Hero Section & Search Widget Responsiveness */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 40px 0 48px 0;
+  }
+  .hero-title {
+    font-size: 2.1rem;
+    line-height: 1.2;
+  }
+  .hero-subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+  }
+  .search-widget-card {
+    padding: 20px 16px;
+  }
+  .search-widget-tabs {
+    gap: 6px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .tab-indicator-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 32px 0 40px 0;
+  }
+  .hero-title {
+    font-size: 1.7rem;
+  }
+  .hero-badge {
+    margin-bottom: 14px;
+    padding: 4px 12px;
+    font-size: 0.74rem;
+  }
+  .search-widget-card {
+    padding: 16px 12px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* 4-Step Booking Workflow Indicator Responsiveness */
+@media (max-width: 768px) {
+  .booking-steps-bar {
+    padding: 10px 12px;
+    gap: 6px;
+    justify-content: center;
+  }
+  .booking-steps-bar .step-arrow {
+    display: none;
+  }
+  .step-item {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .step-item span:not(.step-circle) {
+    display: none;
+  }
+  .step-item {
+    padding: 4px 6px;
+  }
+}
+
+/* Aircraft Cabin Seat Map Responsiveness */
+.seatmap-page-layout {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.seatmap-content-grid {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .aircraft-container {
+    padding: 28px 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .seatmap-summary-panel {
+    position: static;
+    margin-top: 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .aircraft-container {
+    padding: 18px 6px;
+  }
+  .aircraft-nose {
+    width: 220px;
+    height: 90px;
+  }
+  .cockpit-windows {
+    gap: 12px;
+  }
+  .window-pane {
+    width: 28px;
+    height: 18px;
+  }
+  .seatmap-legend {
+    gap: 6px 10px;
+    font-size: 0.74rem;
+    padding: 10px 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .cabin-fuselage {
+    max-width: 100%;
+    padding: 14px 6px;
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cabin-row {
+    grid-template-columns: 34px 34px 34px 20px 34px 34px 34px;
+    gap: 3px;
+  }
+  .seat-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.68rem;
+    border-radius: 4px;
+  }
+  .cabin-row-header {
+    font-size: 0.72rem;
+  }
+  .row-num-badge {
+    font-size: 0.68rem;
+  }
+  .exit-row-banner {
+    font-size: 0.64rem;
+    padding: 4px;
+  }
+}
+
+@media (max-width: 360px) {
+  .aircraft-container {
+    padding: 14px 4px;
+  }
+  .cabin-fuselage {
+    padding: 10px 4px;
+  }
+  .cabin-row {
+    grid-template-columns: 30px 30px 30px 16px 30px 30px 30px;
+    gap: 2px;
+  }
+  .seat-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.62rem;
+  }
+}
+
+/* Booking Card & My Bookings Responsiveness */
+.booking-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .booking-card-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .booking-card-footer > div {
+    width: 100%;
+    display: flex;
+    justify-content: stretch;
+  }
+  .booking-card-footer button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .bookings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .bookings-tabs {
+    width: 100%;
+    display: flex;
+  }
+  .bookings-tabs .btn-tab-pill {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* Modal Responsiveness */
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 12px;
+  }
+  .modal-box {
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+    max-height: 92vh;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .modal-header {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+  }
+  .modal-title {
+    font-size: 1.18rem;
+  }
+  .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .modal-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Active Hold Sticky Banner Responsiveness */
+@media (max-width: 600px) {
+  .active-hold-sticky-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .active-hold-sticky-banner > div:last-child {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Admin Dashboard Responsiveness */
+@media (max-width: 768px) {
+  .dashboard-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .dashboard-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .dashboard-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    padding: 14px;
+  }
+  .kpi-value {
+    font-size: 1.6rem;
+  }
+  .dash-tab-nav {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dash-tab-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
