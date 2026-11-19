@@ -168,7 +168,7 @@ const app = {
               this.setUser(data.user, savedToken, Boolean(localStorage.getItem('fly_token')));
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       } else {
         this.state.user = null;
         this.state.token = null;
@@ -1637,7 +1637,7 @@ const app = {
 
       this.renderCabinSeats(data.seats);
       this.updatePriceCalculations();
-    } catch (_) {}
+    } catch (_) { }
   },
 
   renderCabinSeats(seats) {
@@ -2082,7 +2082,7 @@ const app = {
             this.showToast('Reservation expired or already completed.', 'info');
           }
         });
-    } catch (_) {}
+    } catch (_) { }
   },
 
   async cancelActivePendingBooking() {
@@ -2125,7 +2125,7 @@ const app = {
       } else {
         sessionStorage.removeItem('fly_active_booking');
       }
-    } catch (_) {}
+    } catch (_) { }
   },
 
   selectCheckoutCard(el, cardId) {
@@ -2340,7 +2340,7 @@ const app = {
 
       let statusBadge = '';
       if (isConfirmed) statusBadge = `<span class="badge-status-confirmed">✓ Confirmed</span>`;
-      else if (isPending) statusBadge = `<span class="badge-status-pending">⏱️ Pending Payment (${Math.max(0, Math.floor((b.secondsRemaining || 900)/60))}m left)</span>`;
+      else if (isPending) statusBadge = `<span class="badge-status-pending">⏱️ Pending Payment (${Math.max(0, Math.floor((b.secondsRemaining || 900) / 60))}m left)</span>`;
       else if (isExpired) statusBadge = `<span class="badge-status-expired">✕ Expired</span>`;
       else statusBadge = `<span class="badge-status-cancelled">Cancelled</span>`;
 
@@ -2487,7 +2487,7 @@ const app = {
           badge.style.display = 'none';
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   },
 
   async checkActiveTrips() {
@@ -2665,10 +2665,10 @@ const app = {
     const flights = this.state.airlineFlightsCache || [];
     const filtered = flights.filter(f => {
       return (f.depCity && f.depCity.toLowerCase().includes(k)) ||
-             (f.arrCity && f.arrCity.toLowerCase().includes(k)) ||
-             (f.depIATA && f.depIATA.toLowerCase().includes(k)) ||
-             (f.arrIATA && f.arrIATA.toLowerCase().includes(k)) ||
-             String(f.id).includes(k);
+        (f.arrCity && f.arrCity.toLowerCase().includes(k)) ||
+        (f.depIATA && f.depIATA.toLowerCase().includes(k)) ||
+        (f.arrIATA && f.arrIATA.toLowerCase().includes(k)) ||
+        String(f.id).includes(k);
     });
     this.renderAirlineFlightsTable(filtered);
   },
@@ -2848,7 +2848,7 @@ const app = {
           this.state.airportsCache = allAirports;
           this.state.allAirportsLoaded = true;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const airports = this.state.airportsCache || [];
