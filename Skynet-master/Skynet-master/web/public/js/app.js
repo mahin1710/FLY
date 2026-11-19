@@ -1556,8 +1556,8 @@ const app = {
 
     const accId = this.state.user ? this.state.user.id : 0;
     const [fRes, sRes] = await Promise.all([
-      fetch(`/api/flights/${flightId}?accountId=${accId}`),
-      fetch(`/api/flights/${flightId}/seats?accountId=${accId}`)
+      fetch(`/api/flights/${flightId}?accountId=${accId}`, { headers: this.getAuthHeaders() }),
+      fetch(`/api/flights/${flightId}/seats?accountId=${accId}`, { headers: this.getAuthHeaders() })
     ]);
 
     const flight = await fRes.json();

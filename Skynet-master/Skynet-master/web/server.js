@@ -828,7 +828,8 @@ app.get('/api/flights/:id/seats', (req, res) => {
   try {
     cleanupExpiredReservations();
     const flightId = Number(req.params.id);
-    const accountId = req.query.accountId ? Number(req.query.accountId) : null;
+    const session = getSession(req);
+    const accountId = session ? session.account_id : (req.query.accountId ? Number(req.query.accountId) : null);
 
     const allSeats = db.prepare('SELECT id, "column", row, type FROM seats ORDER BY row ASC, "column" ASC').all();
 
@@ -1309,12 +1310,14 @@ app.post('/api/bookings/cancel', (req, res) => {
 app.post('/api/reservations', (req, res) => {
   cleanupExpiredReservations();
   try {
+    const session = getSession(req);
     const { flightId, accountId, seatId, seatIds, nbrLuggages = 0, weight = 0, cardDetails } = req.body;
+    const effectiveAccountId = session ? session.account_id : Number(accountId);
     const seatsToReserve = Array.isArray(seatIds) && seatIds.length > 0 
       ? seatIds.map(Number) 
       : (seatId ? [Number(seatId)] : []);
 
-    if (!flightId || !accountId || seatsToReserve.length === 0) {
+    if (!flightId || !effectiveAccountId || seatsToReserve.length === 0) {
       return res.status(400).json({ error: 'flightId, accountId, and seatId are required.' });
     }
 
@@ -1357,7 +1360,7 @@ app.post('/api/reservations', (req, res) => {
           booking_reference, id_account, id_flight, status, total_amount, nbr_luggages, weight, created_at, expires_at, payment_ref, paid_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        bookingReference, Number(accountId), Number(flightId), status, grandTotal,
+        bookingReference, Number(effectiveAccountId), Number(flightId), status, grandTotal,
         Number(nbrLuggages), Number(weight), createdAt, expiresAt, txnRef, isConfirmed ? createdAt : null
       );
 
@@ -1368,7 +1371,7 @@ app.post('/api/reservations', (req, res) => {
             id_flight, id_account, id_seat, nbr_luggages, weight, booking_reference, status, created_at, expires_at, payment_ref, total_price
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          Number(flightId), Number(accountId), s.id, Number(nbrLuggages), Number(weight),
+          Number(flightId), Number(effectiveAccountId), s.id, Number(nbrLuggages), Number(weight),
           bookingReference, isConfirmed ? 'CONFIRMED' : 'HELD', createdAt, isConfirmed ? null : expiresAt, txnRef, grandTotal
         );
         if (!firstResId) {
