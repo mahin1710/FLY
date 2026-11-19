@@ -66,6 +66,7 @@ const app = {
   // INITIALIZATION
   // -------------------------------------------------------------
   async init() {
+    this.clearAuthInputs();
     this.initTheme();
     this.initAuthFromStorage();
     await this.loadCountries();
@@ -200,6 +201,7 @@ const app = {
       sessionStorage.removeItem('fly_user');
       sessionStorage.removeItem('fly_token');
       this.state.token = null;
+      this.clearAuthInputs();
     }
 
     this.renderHeaderAuth();
@@ -369,7 +371,37 @@ const app = {
     }
   },
 
+  // -------------------------------------------------------------
+  // SECURE AUTH INPUT STATE SANITIZATION
+  // -------------------------------------------------------------
+  clearAuthInputs() {
+    const ids = [
+      'authPageLoginUsername',
+      'authPageLoginPassword',
+      'authPageRegFirstName',
+      'authPageRegLastName',
+      'authPageRegEmail',
+      'authPageRegUsername',
+      'authPageRegPassword',
+      'loginUsername',
+      'loginPassword',
+      'regFirstName',
+      'regLastName',
+      'regEmail',
+      'regUsername',
+      'regPassword'
+    ];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = '';
+        el.defaultValue = '';
+      }
+    });
+  },
+
   openAuthModal(tab = 'login') {
+    this.clearAuthInputs();
     this.switchAuthTab(tab);
 
     // Reset error alerts
@@ -395,6 +427,7 @@ const app = {
   },
 
   switchAuthTab(tab) {
+    this.clearAuthInputs();
     const isLogin = tab === 'login';
     document.getElementById('tabAuthLogin').classList.toggle('active', isLogin);
     document.getElementById('tabAuthRegister').classList.toggle('active', !isLogin);
@@ -523,11 +556,8 @@ const app = {
       if (fEl) fEl.value = '';
     });
 
-    // Clear login input forms
-    ['loginUsername', 'loginPassword', 'authPageLoginUsername', 'authPageLoginPassword'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
+    // Clear and sanitize all login & register input forms
+    this.clearAuthInputs();
 
     sessionStorage.removeItem('fly_active_booking');
     sessionStorage.removeItem('skynet_active_booking');
@@ -594,6 +624,7 @@ const app = {
       }
 
       this.setUser(data.user, data.token, rememberMe);
+      this.clearAuthInputs();
       this.closeModal('modalAuth');
       this.showToast(`Welcome back, ${data.user.displayName || data.user.username}!`, 'success');
 
@@ -658,6 +689,7 @@ const app = {
       }
 
       this.setUser(data.user, data.token, rememberMe);
+      this.clearAuthInputs();
       this.showToast(`Welcome back, ${data.user.displayName || data.user.username}!`, 'success');
 
       // Role-Based Redirection
@@ -703,6 +735,7 @@ const app = {
       }
 
       this.setUser(data.user, data.token, true);
+      this.clearAuthInputs();
       this.closeModal('modalAuth');
       this.showToast('Account created successfully! Welcome aboard.', 'success');
 
@@ -752,6 +785,7 @@ const app = {
       }
 
       this.setUser(data.user, data.token, true);
+      this.clearAuthInputs();
       this.showToast('Account created successfully! Welcome aboard.', 'success');
       this.navigate('bookings');
     } catch (err) {
@@ -811,6 +845,8 @@ const app = {
       loggedInCard.style.display = 'none';
       notLoggedInCard.style.display = 'block';
 
+      this.clearAuthInputs();
+
       const hash = window.location.hash.toLowerCase();
       this.switchAuthPageView(hash === '#register' ? 'register' : 'login');
 
@@ -820,6 +856,7 @@ const app = {
   },
 
   switchAuthPageView(tab) {
+    this.clearAuthInputs();
     const isLogin = tab === 'login';
     const tabLogin = document.getElementById('authPageTabLogin');
     const tabReg = document.getElementById('authPageTabRegister');

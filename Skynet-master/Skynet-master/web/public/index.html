@@ -61,12 +61,6 @@
           <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
         </button>
 
-        <!-- Quick Demo Switcher -->
-        <button class="demo-pill-btn" onclick="app.openDemoAccountsModal()" title="1-Click Demo Accounts">
-          <span class="pulsing-dot"></span>
-          <span>Demo Accounts</span>
-        </button>
-
         <!-- User Profile / Auth Area -->
         <div class="auth-area" id="authArea">
           <!-- Populated dynamically: Sign In button or User Avatar with dropdown -->
@@ -866,15 +860,18 @@
           </div>
 
           <!-- Sign In Form -->
-          <form id="authPageLoginForm" onsubmit="app.submitPageLogin(event)">
+          <form id="authPageLoginForm" onsubmit="app.submitPageLogin(event)" autocomplete="off">
             <div class="form-field">
               <label class="field-label">Username or Email</label>
-              <input type="text" id="authPageLoginUsername" class="field-input" placeholder="e.g. Mahin0, Admin_Biman, or Admin_USB" required autocomplete="username">
+              <input type="text" id="authPageLoginUsername" class="field-input" placeholder="Enter your username or email" required autocomplete="off" value="">
             </div>
             <div class="form-field">
-              <label class="field-label">Password</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="field-label" style="margin-bottom: 0;">Password</label>
+                <a href="javascript:void(0)" class="btn-text-link" style="font-size: 0.82rem;" onclick="app.showToast('Please contact customer support or your airline administrator to reset your credentials.', 'info')">Forgot Password?</a>
+              </div>
               <div class="password-field-wrap">
-                <input type="password" id="authPageLoginPassword" class="field-input" placeholder="Enter your password" required autocomplete="current-password">
+                <input type="password" id="authPageLoginPassword" class="field-input" placeholder="Enter your password" required autocomplete="new-password" value="">
                 <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('authPageLoginPassword', this)" title="Show / Hide Password">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -887,7 +884,6 @@
                 <input type="checkbox" id="authPageRememberMe" checked>
                 <span>Remember me on this device</span>
               </label>
-              <span style="font-size: 0.8rem; color: var(--text-secondary);">Demo Mode Enabled</span>
             </div>
 
             <button type="submit" class="btn-primary w-100 btn-large auth-submit-btn">
@@ -897,30 +893,30 @@
           </form>
 
           <!-- Register Form -->
-          <form id="authPageRegisterForm" onsubmit="app.submitPageRegister(event)" style="display: none;">
+          <form id="authPageRegisterForm" onsubmit="app.submitPageRegister(event)" style="display: none;" autocomplete="off">
             <div class="form-row-2">
               <div class="form-field">
                 <label class="field-label">First Name</label>
-                <input type="text" id="authPageRegFirstName" class="field-input" placeholder="First name" required>
+                <input type="text" id="authPageRegFirstName" class="field-input" placeholder="First name" required autocomplete="off" value="">
               </div>
               <div class="form-field">
                 <label class="field-label">Last Name</label>
-                <input type="text" id="authPageRegLastName" class="field-input" placeholder="Last name" required>
+                <input type="text" id="authPageRegLastName" class="field-input" placeholder="Last name" required autocomplete="off" value="">
               </div>
             </div>
             <div class="form-field">
               <label class="field-label">Email Address</label>
-              <input type="email" id="authPageRegEmail" class="field-input" placeholder="name@example.com" required>
+              <input type="email" id="authPageRegEmail" class="field-input" placeholder="name@example.com" required autocomplete="off" value="">
             </div>
             <div class="form-row-2">
               <div class="form-field">
                 <label class="field-label">Choose Username</label>
-                <input type="text" id="authPageRegUsername" class="field-input" placeholder="Username" required>
+                <input type="text" id="authPageRegUsername" class="field-input" placeholder="Username" required autocomplete="off" value="">
               </div>
               <div class="form-field">
                 <label class="field-label">Password</label>
                 <div class="password-field-wrap">
-                  <input type="password" id="authPageRegPassword" class="field-input" placeholder="Password" required>
+                  <input type="password" id="authPageRegPassword" class="field-input" placeholder="Password" required autocomplete="new-password" value="">
                   <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('authPageRegPassword', this)" title="Show / Hide Password">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
@@ -944,96 +940,6 @@
               <span>Create Account & Sign In</span>
             </button>
           </form>
-
-          <!-- Clean Dedicated "Demo Accounts" Section -->
-          <div class="demo-accounts-section">
-            <div class="demo-accounts-header">
-              <div class="demo-title-wrap">
-                <span class="pulsing-green-dot"></span>
-                <h3 class="demo-accounts-title">Demo Accounts</h3>
-              </div>
-              <span class="demo-hint-badge">Click to Auto-Fill & Review</span>
-            </div>
-            <p class="demo-accounts-subtitle">Pre-configured role-based test accounts ready for instant testing:</p>
-
-            <div class="demo-accounts-grid">
-              <!-- 1. MMH_Mahin — Passenger -->
-              <div class="demo-acc-card" onclick="app.fillDemoAccount('Mahin0', 'Mahin0', 'passenger')">
-                <div class="demo-acc-top">
-                  <span class="demo-role-pill passenger">Passenger</span>
-                  <span class="demo-location">📍 Dhaka, BD</span>
-                </div>
-                <div class="demo-acc-body">
-                  <strong class="demo-acc-name">MMH_Mahin</strong>
-                  <div class="demo-cred-row">
-                    <code>Mahin0</code> / <code>Mahin0</code>
-                  </div>
-                  <p class="demo-acc-desc">Search, hold seats, pay, download boarding passes</p>
-                </div>
-                <div class="demo-acc-actions">
-                  <button type="button" class="btn-demo-fill" onclick="event.stopPropagation(); app.fillDemoAccount('Mahin0', 'Mahin0', 'passenger')">Fill</button>
-                  <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Mahin0', 'Mahin0')">1-Click Login</button>
-                </div>
-              </div>
-
-              <!-- 2. Biman Bangladesh Airlines — Admin -->
-              <div class="demo-acc-card" onclick="app.fillDemoAccount('Admin_Biman', 'Admin_Biman', 'airline')">
-                <div class="demo-acc-top">
-                  <span class="demo-role-pill admin">Airline Admin</span>
-                  <span class="demo-airline-iata">BG (Biman)</span>
-                </div>
-                <div class="demo-acc-body">
-                  <strong class="demo-acc-name">Biman Bangladesh Airlines</strong>
-                  <div class="demo-cred-row">
-                    <code>Admin_Biman</code> / <code>Admin_Biman</code>
-                  </div>
-                  <p class="demo-acc-desc">Manage Biman flight schedules, sales & revenue analytics</p>
-                </div>
-                <div class="demo-acc-actions">
-                  <button type="button" class="btn-demo-fill" onclick="event.stopPropagation(); app.fillDemoAccount('Admin_Biman', 'Admin_Biman', 'airline')">Fill</button>
-                  <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Admin_Biman', 'Admin_Biman')">1-Click Login</button>
-                </div>
-              </div>
-
-              <!-- 3. US-Bangla Airlines — Admin -->
-              <div class="demo-acc-card" onclick="app.fillDemoAccount('Admin_USB', 'Admin_USB', 'airline')">
-                <div class="demo-acc-top">
-                  <span class="demo-role-pill admin">Airline Admin</span>
-                  <span class="demo-airline-iata">BS (US-Bangla)</span>
-                </div>
-                <div class="demo-acc-body">
-                  <strong class="demo-acc-name">US-Bangla Airlines</strong>
-                  <div class="demo-cred-row">
-                    <code>Admin_USB</code> / <code>Admin_USB</code>
-                  </div>
-                  <p class="demo-acc-desc">Manage US-Bangla domestic & intl routes & bookings</p>
-                </div>
-                <div class="demo-acc-actions">
-                  <button type="button" class="btn-demo-fill" onclick="event.stopPropagation(); app.fillDemoAccount('Admin_USB', 'Admin_USB', 'airline')">Fill</button>
-                  <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Admin_USB', 'Admin_USB')">1-Click Login</button>
-                </div>
-              </div>
-
-              <!-- 4. Mahin1 — Alternative Passenger -->
-              <div class="demo-acc-card" onclick="app.fillDemoAccount('Mahin1', 'Mahin1', 'passenger')">
-                <div class="demo-acc-top">
-                  <span class="demo-role-pill passenger">Passenger</span>
-                  <span class="demo-location">📍 Chittagong, BD</span>
-                </div>
-                <div class="demo-acc-body">
-                  <strong class="demo-acc-name">Mahin1</strong>
-                  <div class="demo-cred-row">
-                    <code>Mahin1</code> / <code>Mahin1</code>
-                  </div>
-                  <p class="demo-acc-desc">Test concurrent seat booking conflicts & seat hold</p>
-                </div>
-                <div class="demo-acc-actions">
-                  <button type="button" class="btn-demo-fill" onclick="event.stopPropagation(); app.fillDemoAccount('Mahin1', 'Mahin1', 'passenger')">Fill</button>
-                  <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Mahin1', 'Mahin1')">1-Click Login</button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- STATE B: LOGGED IN (DEDICATED ACTIVE SESSION & LOG OUT VIEW) -->
@@ -1481,15 +1387,15 @@
         </div>
 
         <!-- Sign In Form -->
-        <form id="formLogin" onsubmit="app.submitLogin(event)">
+        <form id="formLogin" onsubmit="app.submitLogin(event)" autocomplete="off">
           <div class="form-field">
             <label class="field-label">Username or Email</label>
-            <input type="text" id="loginUsername" class="field-input" placeholder="e.g. Mahin0, Admin_Biman, or Admin_USB" required>
+            <input type="text" id="loginUsername" class="field-input" placeholder="Enter your username or email" required autocomplete="off" value="">
           </div>
           <div class="form-field">
             <label class="field-label">Password</label>
             <div class="password-field-wrap">
-              <input type="password" id="loginPassword" class="field-input" placeholder="Enter password" required>
+              <input type="password" id="loginPassword" class="field-input" placeholder="Enter your password" required autocomplete="new-password" value="">
               <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('loginPassword', this)" title="Show / Hide Password">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
@@ -1499,39 +1405,38 @@
           <div class="auth-remember-row">
             <label class="auth-checkbox-label">
               <input type="checkbox" id="modalRememberMe" checked>
-              <span>Remember me</span>
+              <span>Remember me on this device</span>
             </label>
-            <span style="font-size: 0.8rem; color: var(--text-secondary);">Demo Mode</span>
           </div>
 
           <button type="submit" class="btn-primary w-100 btn-large">Sign In to FLY</button>
         </form>
 
         <!-- Register Form -->
-        <form id="formRegister" onsubmit="app.submitRegister(event)" style="display: none;">
+        <form id="formRegister" onsubmit="app.submitRegister(event)" style="display: none;" autocomplete="off">
           <div class="form-row-2">
             <div class="form-field">
               <label class="field-label">First Name</label>
-              <input type="text" id="regFirstName" class="field-input" required>
+              <input type="text" id="regFirstName" class="field-input" required autocomplete="off" value="">
             </div>
             <div class="form-field">
               <label class="field-label">Last Name</label>
-              <input type="text" id="regLastName" class="field-input" required>
+              <input type="text" id="regLastName" class="field-input" required autocomplete="off" value="">
             </div>
           </div>
           <div class="form-field">
             <label class="field-label">Email</label>
-            <input type="email" id="regEmail" class="field-input" required>
+            <input type="email" id="regEmail" class="field-input" required autocomplete="off" value="">
           </div>
           <div class="form-row-2">
             <div class="form-field">
               <label class="field-label">Username</label>
-              <input type="text" id="regUsername" class="field-input" required>
+              <input type="text" id="regUsername" class="field-input" required autocomplete="off" value="">
             </div>
             <div class="form-field">
               <label class="field-label">Password</label>
               <div class="password-field-wrap">
-                <input type="password" id="regPassword" class="field-input" required>
+                <input type="password" id="regPassword" class="field-input" required autocomplete="new-password" value="">
                 <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('regPassword', this)" title="Show / Hide Password">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -1553,58 +1458,6 @@
           </div>
           <button type="submit" class="btn-primary w-100 btn-large">Create Account</button>
         </form>
-
-        <!-- Demo Accounts Section in Modal -->
-        <div class="demo-accounts-section" style="margin-top: 20px; padding-top: 16px;">
-          <div class="demo-accounts-header">
-            <div class="demo-title-wrap">
-              <span class="pulsing-green-dot"></span>
-              <strong style="font-size: 0.95rem; color: var(--text-main);">Demo Accounts</strong>
-            </div>
-            <span class="demo-hint-badge">One-Click Selection</span>
-          </div>
-          <div class="demo-accounts-grid">
-            <div class="demo-acc-card" onclick="app.fillDemoAccount('Mahin0', 'Mahin0', 'passenger')">
-              <div class="demo-acc-top">
-                <span class="demo-role-pill passenger">Passenger</span>
-                <span class="demo-location">📍 Dhaka</span>
-              </div>
-              <strong class="demo-acc-name">MMH_Mahin</strong>
-              <div class="demo-cred-row"><code>Mahin0</code> / <code>Mahin0</code></div>
-              <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Mahin0', 'Mahin0')">1-Click Login</button>
-            </div>
-
-            <div class="demo-acc-card" onclick="app.fillDemoAccount('Admin_Biman', 'Admin_Biman', 'airline')">
-              <div class="demo-acc-top">
-                <span class="demo-role-pill admin">Airline Admin</span>
-                <span class="demo-airline-iata">BG</span>
-              </div>
-              <strong class="demo-acc-name">Biman Bangladesh</strong>
-              <div class="demo-cred-row"><code>Admin_Biman</code></div>
-              <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Admin_Biman', 'Admin_Biman')">1-Click Login</button>
-            </div>
-
-            <div class="demo-acc-card" onclick="app.fillDemoAccount('Admin_USB', 'Admin_USB', 'airline')">
-              <div class="demo-acc-top">
-                <span class="demo-role-pill admin">Airline Admin</span>
-                <span class="demo-airline-iata">BS</span>
-              </div>
-              <strong class="demo-acc-name">US-Bangla Airlines</strong>
-              <div class="demo-cred-row"><code>Admin_USB</code></div>
-              <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Admin_USB', 'Admin_USB')">1-Click Login</button>
-            </div>
-
-            <div class="demo-acc-card" onclick="app.fillDemoAccount('Mahin1', 'Mahin1', 'passenger')">
-              <div class="demo-acc-top">
-                <span class="demo-role-pill passenger">Passenger</span>
-                <span class="demo-location">📍 Chittagong</span>
-              </div>
-              <strong class="demo-acc-name">Mahin1</strong>
-              <div class="demo-cred-row"><code>Mahin1</code> / <code>Mahin1</code></div>
-              <button type="button" class="btn-demo-instant" onclick="event.stopPropagation(); app.instantLogin('Mahin1', 'Mahin1')">1-Click Login</button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
