@@ -18,8 +18,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-const dbPath = path.join(__dirname, 'database.db');
+// Database connection (supports both local environment & Netlify serverless execution)
+const isServerless = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+let dbPath = path.join(__dirname, 'database.db');
+if (isServerless) {
+  const tmpDbPath = path.join('/tmp', 'database.db');
+  if (!fs.existsSync(tmpDbPath)) {
+    try {
+      if (fs.existsSync(dbPath)) {
+        fs.copyFileSync(dbPath, tmpDbPath);
+      }
+    } catch (_) {}
+  }
+  if (fs.existsSync(tmpDbPath)) {
+    dbPath = tmpDbPath;
+  }
+}
 if (!fs.existsSync(dbPath)) {
   console.error('Database file not found at:', dbPath);
 }
@@ -2264,14 +2278,18 @@ app.use((req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`✈️  FLY CONFLICT-FREE FLIGHT BOOKING SYSTEM`);
-  console.log(`👤 Author:        mahin1710`);
-  console.log(`🌐 Frontend App:  http://localhost:${PORT}`);
-  console.log(`🔌 Backend API:   http://localhost:${PORT}/api`);
-  console.log(`🔒 Data Privacy:  STRICT CUSTOMER ISOLATION & RBAC`);
-  console.log(`⏱️  15-min auto-release worker: ACTIVE`);
-  console.log(`====================================================`);
-});
+// Start Server if run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`✈️  FLY CONFLICT-FREE FLIGHT BOOKING SYSTEM`);
+    console.log(`👤 Author:        mahin1710`);
+    console.log(`🌐 Frontend App:  http://localhost:${PORT}`);
+    console.log(`🔌 Backend API:   http://localhost:${PORT}/api`);
+    console.log(`🔒 Data Privacy:  STRICT CUSTOMER ISOLATION & RBAC`);
+    console.log(`⏱️  15-min auto-release worker: ACTIVE`);
+    console.log(`====================================================`);
+  });
+}
+
+module.exports = app;
