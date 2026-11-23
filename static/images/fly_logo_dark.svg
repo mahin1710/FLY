@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64">
+  <defs>
+    <linearGradient id="flyGradDark1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#00e5ff" />
+    </linearGradient>
+    <linearGradient id="flyGradDark2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+    <linearGradient id="flyTextGradDark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f8fafc" />
+    </linearGradient>
+    <filter id="flyGlowDark" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Aviation Wing Monogram Symbol -->
+  <g transform="translate(6, 6)" filter="url(#flyGlowDark)">
+    <path d="M 6 42 L 24 14 L 30 18 L 16 42 Z" fill="url(#flyGradDark2)" opacity="0.85" />
+    <path d="M 17 42 L 36 6 L 46 12 L 31 42 Z" fill="url(#flyGradDark1)" />
+    <path d="M 33 42 L 47 19 L 51 22 L 41 42 Z" fill="#00e5ff" />
+    <circle cx="10" cy="42" r="2.5" fill="#38bdf8" />
+  </g>
+
+  <!-- Brand Wordmark FLY -->
+  <g transform="translate(70, 0)">
+    <text x="0" y="44" font-family="'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="38" font-weight="900" letter-spacing="4" fill="url(#flyTextGradDark)">FLY</text>
+    <text x="2" y="57" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="9" font-weight="700" letter-spacing="3" fill="#38bdf8" opacity="0.95">AVIATION &amp; TRAVEL</text>
+  </g>
+</svg>

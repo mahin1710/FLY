@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLY — Premium International Flight Booking</title>
+  <meta name="author" content="mahin1710">
+  <meta name="description" content="Experience seamless luxury flight booking, real-time interactive seat maps, airline fleet management, and instant digital boarding passes with FLY.">
+  <link rel="icon" type="image/svg+xml" href="/images/fly_icon.svg">
+  <link rel="alternate icon" type="image/png" href="/images/favicon.png">
+
+  <!-- Google Fonts: Playfair Display, Plus Jakarta Sans, Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Global App Header / Navbar -->
+  <header class="app-header" id="appHeader">
+    <div class="header-container">
+      <div class="brand-wrapper" id="brandLogo" onclick="app.navigate('home')">
+        <div class="brand-logo-glow">
+          <img src="/images/fly_icon.svg" alt="FLY Logo" class="brand-logo-img">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">FLY</span>
+          <span class="brand-sub">Premium Airline Experience</span>
+        </div>
+      </div>
+
+      <nav class="nav-links" id="mainNav">
+        <button class="nav-btn active" data-page="home" onclick="app.navigate('home')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-btn" data-page="search" onclick="app.navigate('search')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span>Explore Flights</span>
+        </button>
+        <button class="nav-btn" data-page="bookings" id="navBookingsBtn" onclick="app.navigate('bookings')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+          <span>My Bookings</span>
+          <span class="badge" id="bookingsCountBadge" style="display: none;">0</span>
+        </button>
+        <button class="nav-btn" data-page="favorites" id="navFavoritesBtn" onclick="app.navigate('favorites')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          <span>Saved Trips</span>
+        </button>
+        <button class="nav-btn airline-only" data-page="dashboard" id="navDashboardBtn" onclick="app.navigate('dashboard')" style="display: none;">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Airline Portal</span>
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Dark/Light Mode Switcher -->
+        <button class="theme-toggle-btn" id="themeToggleBtn" onclick="app.toggleTheme()" title="Toggle Dark/Light Mode">
+          <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" x2="12" y1="1" y2="3"/><line x1="12" x2="12" y1="21" y2="23"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="1" x2="3" y1="12" y2="12"/><line x1="21" x2="23" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/></svg>
+          <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+
+        <!-- User Profile / Auth Area -->
+        <div class="auth-area" id="authArea">
+          <!-- Populated dynamically: Sign In button or User Avatar with dropdown -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Active Hold Sticky Notification -->
+  <div id="activeHoldStickyBanner" class="active-hold-sticky-banner" style="display: none;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span>⏳</span>
+      <span>Active Reservation Pending Payment: <strong id="activeHoldRefText">BK-XXXX</strong> (<span id="activeHoldTimeText">15:00</span> remaining)</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" onclick="app.resumePendingPayment()">Complete Payment Now</button>
+      <button type="button" onclick="app.cancelActivePendingBooking()" style="background: rgba(0,0,0,0.25); color: #fff;">Release Seats</button>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main View Container (Single Page Application) -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ============================================== -->
+    <!-- VIEW 1: HOME PAGE -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageHome">
+      <!-- Hero Banner -->
+      <div class="hero-section">
+        <div class="hero-bg-glow"></div>
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="badge-icon">✈</span>
+            <span>World-Class Aviation • Domestic &amp; Global Routes</span>
+          </div>
+          <h1 class="hero-title">
+            Your Journey Begins with <span class="gold-text">FLY</span>
+          </h1>
+          <p class="hero-subtitle">
+            Discover destinations, explore flights, and travel with confidence.
+          </p>
+
+          <!-- Flight Search Widget Card -->
+          <div class="search-widget-card">
+            <div class="search-widget-tabs">
+              <button class="tab-btn active" id="tabOneWay" onclick="app.setTripType('oneway')">One Way</button>
+              <button class="tab-btn" id="tabRoundTrip" onclick="app.setTripType('roundtrip')">Round Trip</button>
+              <div class="tab-indicator-badge">990+ Scheduled Flights</div>
+            </div>
+
+            <div class="search-widget-form">
+              <!-- Origin Airport -->
+              <div class="form-group-airport" id="originGroup">
+                <label class="input-label">FROM</label>
+                <div class="input-airport-wrapper">
+                  <span class="airport-icon">🛫</span>
+                  <input type="text" id="homeOriginInput" class="airport-input" placeholder="Departure City or Airport..." autocomplete="off">
+                </div>
+                <div class="airport-dropdown-list" id="homeOriginDropdown"></div>
+              </div>
+
+              <!-- Swap Button -->
+              <button class="btn-swap" onclick="app.swapHomeAirports()" title="Swap Departure and Arrival">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+              </button>
+
+              <!-- Destination Airport -->
+              <div class="form-group-airport" id="destGroup">
+                <label class="input-label">TO</label>
+                <div class="input-airport-wrapper">
+                  <span class="airport-icon">🛬</span>
+                  <input type="text" id="homeDestInput" class="airport-input" placeholder="Destination City or Airport..." autocomplete="off">
+                </div>
+                <div class="airport-dropdown-list" id="homeDestDropdown"></div>
+              </div>
+
+              <!-- Departure Date -->
+              <div class="form-group-field">
+                <label class="input-label">DEPARTURE DATE</label>
+                <div class="input-field-wrapper">
+                  <input type="date" id="homeDepDate" class="date-input">
+                </div>
+              </div>
+
+              <!-- Return Date (for Round Trip) -->
+              <div class="form-group-field" id="returnDateField" style="display: none;">
+                <label class="input-label">RETURN DATE</label>
+                <div class="input-field-wrapper">
+                  <input type="date" id="homeReturnDate" class="date-input">
+                </div>
+              </div>
+
+              <!-- Passengers -->
+              <div class="form-group-field">
+                <label class="input-label">PASSENGERS</label>
+                <div class="input-field-wrapper">
+                  <select id="homePassengers" class="select-input">
+                    <option value="1">1 Passenger</option>
+                    <option value="2">2 Passengers</option>
+                    <option value="3">3 Passengers</option>
+                    <option value="4">4 Passengers</option>
+                    <option value="5">5+ Passengers</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Cabin Class -->
+              <div class="form-group-field">
+                <label class="input-label">CABIN CLASS</label>
+                <div class="input-field-wrapper">
+                  <select id="homeCabinClass" class="select-input">
+                    <option value="all">All Classes</option>
+                    <option value="economy">Economy Class</option>
+                    <option value="business">Business Class</option>
+                    <option value="first">First Class</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Submit Search Button -->
+              <div class="form-group-submit">
+                <button class="btn-primary-search" id="btnHomeSearch" onclick="app.executeHomeSearch()">
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <span>Search Flights</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick filters bar with Bangladesh routes -->
+            <div class="quick-tags-bar">
+              <span class="quick-tag-label">Popular Routes:</span>
+              <button class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">🏖️ Dhaka ➔ Cox's Bazar</button>
+              <button class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Chittagong')">🚢 Dhaka ➔ Chittagong</button>
+              <button class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Sylhet')">🍵 Dhaka ➔ Sylhet</button>
+              <button class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Dubai')">🏙️ Dhaka ➔ Dubai</button>
+              <button class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'London')">🎡 Dhaka ➔ London</button>
+              <button class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Singapore')">🦁 Dhaka ➔ Singapore</button>
+              <button class="quick-tag reset-tag" onclick="app.clearHomeSearch()">Clear All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Glance: Active Trip Widget (Shows if user has upcoming reservation) -->
+      <div class="container active-trip-banner" id="activeTripBanner" style="display: none;">
+        <!-- Populated dynamically with upcoming flight details -->
+      </div>
+
+      <!-- Featured Flights Section -->
+      <section class="container featured-section">
+        <div class="section-header">
+          <div>
+            <div class="section-eyebrow">WORLD-CLASS SERVICE</div>
+            <h2 class="section-title">Featured Flight Schedules</h2>
+            <p class="section-subtitle">Direct database departures with guaranteed real-time seat availability</p>
+          </div>
+          <button class="btn-secondary-outline" onclick="app.navigate('search')">
+            <span>Explore All 990+ Flights</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="featured-flights-grid" id="featuredFlightsGrid">
+          <!-- Featured flight cards loaded via JS -->
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </section>
+
+      <!-- System Highlights Ribbons -->
+      <section class="container stats-ribbon">
+        <div class="stat-card">
+          <div class="stat-number">5,928+</div>
+          <div class="stat-label">Airports Worldwide</div>
+          <p class="stat-desc">Complete coverage with IATA and ICAO global airport identifiers.</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">120</div>
+          <div class="stat-label">Detailed Cabin Seats</div>
+          <p class="stat-desc">Select exact window, aisle, first class & business class seats.</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Instant Boarding Passes</div>
+          <p class="stat-desc">Generate print-ready e-tickets with verifiable QR and barcodes.</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">Airline</div>
+          <div class="stat-label">Management Portal</div>
+          <p class="stat-desc">Real-time airline dashboard for adding routes, pricing & occupancy.</p>
+        </div>
+      </section>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 2: SEARCH & RESULTS PAGE -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageSearch" style="display: none;">
+      <div class="container search-page-layout">
+        <!-- Sidebar Filters -->
+        <aside class="search-sidebar glassmorphism">
+          <div class="sidebar-header">
+            <h3>Filters & Sorting</h3>
+            <button class="btn-text-link" onclick="app.resetSearchFilters()">Reset</button>
+          </div>
+
+          <!-- Quick Text Search -->
+          <div class="filter-group">
+            <label class="filter-label">Quick Search</label>
+            <input type="text" id="filterKeyword" class="filter-input" placeholder="City, country, airport or airline..." oninput="app.triggerFilteredSearch()">
+          </div>
+
+          <!-- Departure Country & City -->
+          <div class="filter-group">
+            <label class="filter-label">Departure Country</label>
+            <select id="filterDepCountry" class="filter-select" onchange="app.onDepCountryChange()">
+              <option value="">All Countries</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Departure City</label>
+            <select id="filterDepCity" class="filter-select" onchange="app.triggerFilteredSearch()">
+              <option value="">All Cities</option>
+            </select>
+          </div>
+
+          <!-- Arrival Country & City -->
+          <div class="filter-group">
+            <label class="filter-label">Arrival Country</label>
+            <select id="filterArrCountry" class="filter-select" onchange="app.onArrCountryChange()">
+              <option value="">All Countries</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Arrival City</label>
+            <select id="filterArrCity" class="filter-select" onchange="app.triggerFilteredSearch()">
+              <option value="">All Cities</option>
+            </select>
+          </div>
+
+          <!-- Date Filters -->
+          <div class="filter-group">
+            <label class="filter-label">Departure From</label>
+            <input type="date" id="filterDateAfter" class="filter-input" onchange="app.triggerFilteredSearch()">
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Departure Until</label>
+            <input type="date" id="filterDateBefore" class="filter-input" onchange="app.triggerFilteredSearch()">
+          </div>
+
+          <!-- Sorting -->
+          <div class="filter-group">
+            <label class="filter-label">Sort Results By</label>
+            <select id="filterSortBy" class="filter-select" onchange="app.triggerFilteredSearch()">
+              <option value="closestDate">Closest Date (Earliest)</option>
+              <option value="furthestDate">Furthest Date</option>
+              <option value="priceAsc">Price: Low to High</option>
+              <option value="priceDesc">Price: High to Low</option>
+            </select>
+          </div>
+
+          <button class="btn-primary w-100" onclick="app.triggerFilteredSearch()">Apply Filters</button>
+        </aside>
+
+        <!-- Search Results Main Column -->
+        <div class="search-results-wrapper">
+          <div class="results-top-bar glassmorphism">
+            <div class="results-count-wrapper">
+              <span class="results-badge" id="resultsCountBadge">Loading...</span>
+              <span class="results-hint" id="resultsFilterHint">Showing scheduled flights</span>
+            </div>
+            <div class="results-actions">
+              <button class="btn-secondary-sm" onclick="app.swapSearchAirports()" title="Swap Departure and Arrival Filters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                <span>Swap Origin / Dest</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Flight Cards List -->
+          <div class="flights-list-container" id="flightsListContainer">
+            <!-- Flight cards populated dynamically -->
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination-bar" id="searchPagination">
+            <!-- Loaded via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 3: SEAT MAP & CABIN CUSTOMIZATION -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageSeatMap" style="display: none;">
+      <div class="container seatmap-page-layout">
+        <!-- 4-Step Booking Workflow Indicator -->
+        <div class="booking-steps-bar">
+          <div class="step-item completed">
+            <span class="step-circle">✓</span>
+            <span>1. Flight Selected</span>
+          </div>
+          <span class="step-arrow">➔</span>
+          <div class="step-item active">
+            <span class="step-circle">2</span>
+            <span>2. Choose Seat(s)</span>
+          </div>
+          <span class="step-arrow">➔</span>
+          <div class="step-item">
+            <span class="step-circle">3</span>
+            <span>3. 15-Min Hold & Payment</span>
+          </div>
+          <span class="step-arrow">➔</span>
+          <div class="step-item">
+            <span class="step-circle">4</span>
+            <span>4. E-Ticket Pass</span>
+          </div>
+        </div>
+
+        <!-- Back Navigation Button -->
+        <div class="seatmap-top-nav">
+          <button class="btn-back" onclick="app.goBackFromSeatMap()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Back to Flights</span>
+          </button>
+          <div class="flight-route-header" id="seatmapRouteHeader">
+            <!-- Flight Route Info -->
+          </div>
+        </div>
+
+        <div class="seatmap-content-grid">
+          <!-- Aircraft Cabin Visualization -->
+          <div class="aircraft-container glassmorphism">
+            <div class="aircraft-nose">
+              <div class="cockpit-windows">
+                <span class="window-pane"></span>
+                <span class="window-pane"></span>
+              </div>
+              <div class="cockpit-label">COCKPIT</div>
+            </div>
+
+            <!-- Seat Legend with Clear Status Distinctions -->
+            <div class="seatmap-legend">
+              <div class="legend-item"><span class="legend-box available-first"></span> First</div>
+              <div class="legend-item"><span class="legend-box available-business"></span> Business</div>
+              <div class="legend-item"><span class="legend-box available-economy"></span> Economy</div>
+              <div class="legend-item"><span class="legend-box seat-selected"></span> Selected Seat</div>
+              <div class="legend-item"><span class="legend-box seat-held"></span> Held (15-min lock)</div>
+              <div class="legend-item"><span class="legend-box seat-booked"></span> Booked / Confirmed</div>
+            </div>
+
+            <!-- The Grid of Seats -->
+            <div class="cabin-fuselage">
+              <div class="cabin-seats-grid" id="cabinSeatsGrid">
+                <!-- Rendered dynamically via JS with real-time polling -->
+              </div>
+            </div>
+
+            <div class="aircraft-tail">
+              <div class="tail-fin"></div>
+              <div class="aircraft-model-text">BOEING 787-9 FLY SPECIAL</div>
+            </div>
+          </div>
+
+          <!-- Live Booking Summary & Extras Panel -->
+          <div class="seatmap-summary-panel glassmorphism">
+            <h3 class="panel-title">Trip Summary & Extras</h3>
+
+            <div class="summary-flight-card" id="summaryFlightInfo">
+              <!-- Rendered via JS -->
+            </div>
+
+            <!-- Selected Seat Info Box (Supports Multi-Seat Selection) -->
+            <div class="selected-seat-box" id="selectedSeatBox">
+              <div class="seat-badge-icon">💺</div>
+              <div class="seat-details-text" style="flex: 1;">
+                <span class="seat-title" id="summarySeatName">No Seat Selected</span>
+                <span class="seat-class-desc" id="summarySeatClass">Click any available seat to select (multi-seat supported)</span>
+                <div class="selected-seats-pills" id="selectedSeatsPills"></div>
+              </div>
+              <div class="seat-price-tag" id="summarySeatPrice">৳0</div>
+            </div>
+
+            <!-- Baggage & Addons -->
+            <div class="extras-section">
+              <h4 class="extras-title">Baggage & Options</h4>
+
+              <!-- Baggage Count -->
+              <div class="extra-item">
+                <div class="extra-info">
+                  <span class="extra-name">Checked Baggage</span>
+                  <span class="extra-sub" id="lblLuggageRate">+৳0 / bag</span>
+                </div>
+                <div class="spinner-counter">
+                  <button class="spinner-btn" onclick="app.adjustLuggage(-1)">-</button>
+                  <span class="spinner-value" id="valLuggageCount">0</span>
+                  <button class="spinner-btn" onclick="app.adjustLuggage(1)">+</button>
+                </div>
+                <span class="extra-total" id="valLuggageTotal">৳0</span>
+              </div>
+
+              <!-- Baggage Weight -->
+              <div class="extra-item">
+                <div class="extra-info">
+                  <span class="extra-name">Total Weight (kg)</span>
+                  <span class="extra-sub" id="lblWeightRate">+৳0 / kg</span>
+                </div>
+                <div class="slider-wrapper">
+                  <input type="range" id="inputWeightSlider" min="0" max="60" value="0" step="1" oninput="app.onWeightChange(this.value)">
+                  <span class="slider-display" id="valWeightDisplay">0 kg</span>
+                </div>
+                <span class="extra-total" id="valWeightTotal">৳0</span>
+              </div>
+            </div>
+
+            <!-- Price Breakdown Calculation -->
+            <div class="price-breakdown">
+              <div class="price-row">
+                <span>Base Seats Fare</span>
+                <span id="calcBaseFare">৳0</span>
+              </div>
+              <div class="price-row">
+                <span>Extra Baggage</span>
+                <span id="calcLuggageFee">৳0</span>
+              </div>
+              <div class="price-row">
+                <span>Weight Fee</span>
+                <span id="calcWeightFee">৳0</span>
+              </div>
+              <div class="price-divider"></div>
+              <div class="price-row total-row">
+                <span>Total Amount</span>
+                <span class="total-amount" id="calcGrandTotal">৳0</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <button class="btn-primary w-100 btn-large" id="btnProceedPayment" onclick="app.proceedToPayment()" disabled>
+              <span id="btnProceedPaymentText">Reserve Seats & Continue to Payment</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+            <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 8px;">
+              ⏱️ Clicking locks your seats exclusively for 15 minutes while you complete payment.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 4: MY BOOKINGS & SAVED TRIPS -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageBookings" style="display: none;">
+      <div class="container bookings-page-layout">
+        <div class="bookings-header">
+          <div>
+            <h2 class="page-title">My Travel Reservations</h2>
+            <p class="page-subtitle">View, manage, or print your confirmed boarding passes and flight tickets.</p>
+          </div>
+          <div class="bookings-tabs">
+            <button class="btn-tab-pill active" id="tabUpcoming" onclick="app.switchBookingsTab('upcoming')">Upcoming Flights</button>
+            <button class="btn-tab-pill" id="tabPast" onclick="app.switchBookingsTab('past')">Trip History</button>
+          </div>
+        </div>
+
+        <div class="bookings-list-container" id="bookingsListContainer">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 5: FAVORITE FLIGHTS -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageFavorites" style="display: none;">
+      <div class="container favorites-page-layout">
+        <div class="section-header">
+          <div>
+            <h2 class="page-title">Saved Favorite Flights</h2>
+            <p class="page-subtitle">Quickly access flights you've bookmarked for later booking.</p>
+          </div>
+        </div>
+
+        <div class="favorites-list-container" id="favoritesListContainer">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 6: AIRLINE MANAGER DASHBOARD -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageDashboard" style="display: none;">
+      <div class="container dashboard-layout">
+        <div class="dashboard-top-bar">
+          <div class="airline-brand-badge">
+            <img src="/images/default_logo.png" id="dashboardAirlineLogo" class="airline-dash-logo" alt="Airline Logo">
+            <div>
+              <h2 class="airline-dash-name" id="dashboardAirlineName">Airline Operations Dashboard</h2>
+              <span class="airline-dash-code" id="dashboardAirlineIATA">Fleet Management Portal</span>
+            </div>
+          </div>
+
+          <div class="dashboard-actions">
+            <button class="btn-primary" onclick="app.openNewFlightModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              <span>Add Scheduled Flight</span>
+            </button>
+            <button class="btn-secondary" onclick="app.promptLogout()" title="Log Out" style="display: inline-flex; align-items: center; gap: 6px; color: #ef4444;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Metrics Ribbon -->
+        <div class="kpi-grid">
+          <div class="kpi-card glassmorphism">
+            <div class="kpi-header">
+              <span class="kpi-title">Active Flights</span>
+              <span class="kpi-icon">✈️</span>
+            </div>
+            <div class="kpi-value" id="kpiTotalFlights">0</div>
+            <div class="kpi-desc">Scheduled flights on record</div>
+          </div>
+
+          <div class="kpi-card glassmorphism">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Bookings</span>
+              <span class="kpi-icon">🎟️</span>
+            </div>
+            <div class="kpi-value" id="kpiTotalBookings">0</div>
+            <div class="kpi-desc">Confirmed passenger seats</div>
+          </div>
+
+          <div class="kpi-card glassmorphism">
+            <div class="kpi-header">
+              <span class="kpi-title">Gross Revenue</span>
+              <span class="kpi-icon">💰</span>
+            </div>
+            <div class="kpi-value" id="kpiTotalRevenue">৳0</div>
+            <div class="kpi-desc">From confirmed fares (BDT)</div>
+          </div>
+
+          <div class="kpi-card glassmorphism">
+            <div class="kpi-header">
+              <span class="kpi-title">Avg. Occupancy</span>
+              <span class="kpi-icon">📊</span>
+            </div>
+            <div class="kpi-value" id="kpiOccupancy">0%</div>
+            <div class="kpi-desc">Seat utilization rate</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Tabs: Flight Operations vs Customer Reservations -->
+        <div class="dash-tab-nav">
+          <button type="button" class="dash-tab-btn active" id="btnDashTabFlights" onclick="app.switchDashTab('flights')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span>Flight Schedule Operations</span>
+          </button>
+          <button type="button" class="dash-tab-btn" id="btnDashTabBookings" onclick="app.switchDashTab('bookings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+            <span>Customer Reservations & Holds</span>
+          </button>
+        </div>
+
+        <!-- Panel 1: Flights Management Table -->
+        <div class="table-card glassmorphism" id="dashFlightsPanel">
+          <div class="table-card-header">
+            <h3>Scheduled Flight Operations</h3>
+            <input type="text" id="dashTableSearch" class="table-search-input" placeholder="Search flights by city or airport..." oninput="app.filterDashboardTable(this.value)">
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Flight #</th>
+                  <th>Origin (Departure)</th>
+                  <th>Destination (Arrival)</th>
+                  <th>Departure Schedule</th>
+                  <th>Arrival Schedule</th>
+                  <th>Economy</th>
+                  <th>Business</th>
+                  <th>First</th>
+                  <th>Seats Booked</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="airlineFlightsTableBody">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel 2: Customer Bookings & Holds Management -->
+        <div class="table-card glassmorphism" id="dashBookingsPanel" style="display: none;">
+          <div class="table-card-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3>Customer Bookings & Temporary Holds</h3>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Real-time conflict-free reservation audit with 15-min countdowns</p>
+            </div>
+            <input type="text" id="dashBookingsSearch" class="table-search-input" placeholder="Search by Booking Ref, customer, or flight..." oninput="app.filterAdminBookings(this.value)">
+          </div>
+
+          <!-- Status Filter Pills -->
+          <div class="filter-pills-bar" style="padding: 0 16px 12px 16px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-right: 4px;">Filter Status:</span>
+            <button type="button" class="status-filter-pill active" data-status="all" onclick="app.filterAdminBookingStatus('all')">All Bookings</button>
+            <button type="button" class="status-filter-pill" data-status="CONFIRMED" onclick="app.filterAdminBookingStatus('CONFIRMED')">Confirmed</button>
+            <button type="button" class="status-filter-pill" data-status="PENDING_PAYMENT" onclick="app.filterAdminBookingStatus('PENDING_PAYMENT')">Pending / Held (15m window)</button>
+            <button type="button" class="status-filter-pill" data-status="EXPIRED" onclick="app.filterAdminBookingStatus('EXPIRED')">Expired</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Booking Ref</th>
+                  <th>Customer</th>
+                  <th>Route / Flight</th>
+                  <th>Seat(s)</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Expires / Paid</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminBookingsTableBody">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 7: ACCOUNT & PROFILE MANAGEMENT -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageAccount" style="display: none;">
+      <div class="container account-page-layout">
+        <aside class="account-sidebar glassmorphism">
+          <div class="account-user-card">
+            <img src="/images/ProfilePicture.png" id="accountUserAvatar" class="account-avatar-large" alt="Profile Picture">
+            <h3 class="account-user-name" id="accountProfileName">Passenger</h3>
+            <span class="account-user-email" id="accountProfileEmail">user@mail.com</span>
+          </div>
+
+          <nav class="account-nav-tabs">
+            <button class="account-tab-btn active" data-tab="info" onclick="app.switchAccountTab('info')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Personal Information</span>
+            </button>
+            <button class="account-tab-btn" data-tab="cards" onclick="app.switchAccountTab('cards')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+              <span>Saved Payment Cards</span>
+            </button>
+            <button class="account-tab-btn" data-tab="security" onclick="app.switchAccountTab('security')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Password & Security</span>
+            </button>
+            <button class="account-tab-btn" onclick="app.logout()" style="color: #ef4444; margin-top: 10px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+              <span>Log Out</span>
+            </button>
+          </nav>
+        </aside>
+
+        <!-- Account Tab Contents -->
+        <div class="account-content-pane glassmorphism">
+          <!-- Tab 1: Personal Info -->
+          <div class="account-tab-view" id="tabContentInfo">
+            <h3 class="tab-heading">Personal Information</h3>
+            <p class="tab-sub">Update your passport profile details used for flight tickets.</p>
+
+            <form class="account-form" onsubmit="app.savePersonalInfo(event)">
+              <div class="form-row-2">
+                <div class="form-field">
+                  <label class="field-label">First Name</label>
+                  <input type="text" id="profFirstName" class="field-input" required>
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Last Name</label>
+                  <input type="text" id="profLastName" class="field-input" required>
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-field">
+                  <label class="field-label">Email Address</label>
+                  <input type="email" id="profEmail" class="field-input" required>
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Date of Birth</label>
+                  <input type="date" id="profBirthDate" class="field-input">
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-field">
+                  <label class="field-label">Gender</label>
+                  <select id="profGender" class="field-select">
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="field-label">Nationality / Country</label>
+                  <select id="profCountry" class="field-select"></select>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary">Save Changes</button>
+            </form>
+          </div>
+
+          <!-- Tab 2: Saved Cards -->
+          <div class="account-tab-view" id="tabContentCards" style="display: none;">
+            <div class="cards-header-bar">
+              <div>
+                <h3 class="tab-heading">Saved Credit Cards</h3>
+                <p class="tab-sub">Securely store your cards for fast 1-click flight bookings.</p>
+              </div>
+              <button class="btn-primary" onclick="app.openAddCardModal()">+ Add New Card</button>
+            </div>
+
+            <div class="cards-grid" id="savedCardsGrid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Tab 3: Security -->
+          <div class="account-tab-view" id="tabContentSecurity" style="display: none;">
+            <h3 class="tab-heading">Password & Security</h3>
+            <p class="tab-sub">Change your account password.</p>
+
+            <form class="account-form" onsubmit="app.changePassword(event)">
+              <div class="form-field">
+                <label class="field-label">Current Password</label>
+                <input type="password" id="secCurrentPassword" class="field-input" required>
+              </div>
+              <div class="form-field">
+                <label class="field-label">New Password</label>
+                <input type="password" id="secNewPassword" class="field-input" required>
+              </div>
+              <div class="form-field">
+                <label class="field-label">Confirm New Password</label>
+                <input type="password" id="secConfirmPassword" class="field-input" required>
+              </div>
+
+              <button type="submit" class="btn-primary">Update Password</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 8: DEDICATED AUTHENTICATION (LOG IN & LOG OUT) PAGE -->
+    <!-- ============================================== -->
+    <section class="page-view" id="pageAuth" style="display: none;">
+      <div class="container auth-page-container">
+
+        <!-- STATE A: NOT LOGGED IN (SIGN IN / REGISTER TABS) -->
+        <div id="authPageNotLoggedIn" class="auth-page-card glassmorphism">
+          <div class="auth-page-header">
+            <div class="auth-page-brand-icon">
+              <img src="/images/fly_logo.svg" alt="FLY Logo" class="auth-page-logo-img" style="height: 48px; width: auto;">
+            </div>
+            <h2 class="auth-page-title">Welcome to <span class="gradient-text">FLY</span></h2>
+            <p class="auth-page-subtitle">Access your flight bookings, boarding passes, and seat preferences</p>
+
+            <div class="auth-page-tabs">
+              <button type="button" class="auth-page-tab-btn active" id="authPageTabLogin" onclick="app.switchAuthPageView('login')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                <span>Sign In</span>
+              </button>
+              <button type="button" class="auth-page-tab-btn" id="authPageTabRegister" onclick="app.switchAuthPageView('register')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" x2="20" y1="8" y2="14"/><line x1="23" x2="17" y1="11" y2="11"/></svg>
+                <span>Create Account</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Inline Error Alert for page -->
+          <div id="authPageErrorAlert" class="auth-error-banner" style="display: none;">
+            <span class="error-icon">⚠️</span>
+            <span id="authPageErrorText">Invalid credentials</span>
+          </div>
+
+          <!-- Sign In Form -->
+          <form id="authPageLoginForm" onsubmit="app.submitPageLogin(event)" autocomplete="off">
+            <div class="form-field">
+              <label class="field-label">Username or Email</label>
+              <input type="text" id="authPageLoginUsername" class="field-input" placeholder="Enter your username or email" required autocomplete="off" value="">
+            </div>
+            <div class="form-field">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="field-label" style="margin-bottom: 0;">Password</label>
+                <a href="javascript:void(0)" class="btn-text-link" style="font-size: 0.82rem;" onclick="app.showToast('Please contact customer support or your airline administrator to reset your credentials.', 'info')">Forgot Password?</a>
+              </div>
+              <div class="password-field-wrap">
+                <input type="password" id="authPageLoginPassword" class="field-input" placeholder="Enter your password" required autocomplete="new-password" value="">
+                <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('authPageLoginPassword', this)" title="Show / Hide Password">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember Me Row -->
+            <div class="auth-remember-row">
+              <label class="auth-checkbox-label">
+                <input type="checkbox" id="authPageRememberMe" checked>
+                <span>Remember me on this device</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn-primary w-100 btn-large auth-submit-btn">
+              <span>Sign In to FLY</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </form>
+
+          <!-- Register Form -->
+          <form id="authPageRegisterForm" onsubmit="app.submitPageRegister(event)" style="display: none;" autocomplete="off">
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">First Name</label>
+                <input type="text" id="authPageRegFirstName" class="field-input" placeholder="First name" required autocomplete="off" value="">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Last Name</label>
+                <input type="text" id="authPageRegLastName" class="field-input" placeholder="Last name" required autocomplete="off" value="">
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Email Address</label>
+              <input type="email" id="authPageRegEmail" class="field-input" placeholder="name@example.com" required autocomplete="off" value="">
+            </div>
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">Choose Username</label>
+                <input type="text" id="authPageRegUsername" class="field-input" placeholder="Username" required autocomplete="off" value="">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Password</label>
+                <div class="password-field-wrap">
+                  <input type="password" id="authPageRegPassword" class="field-input" placeholder="Password" required autocomplete="new-password" value="">
+                  <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('authPageRegPassword', this)" title="Show / Hide Password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">Birth Date</label>
+                <input type="date" id="authPageRegBirthDate" class="field-input" value="1998-05-15">
+              </div>
+              <div class="form-field">
+                <label class="field-label">Gender</label>
+                <select id="authPageRegGender" class="field-select">
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary w-100 btn-large auth-submit-btn">
+              <span>Create Account & Sign In</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- STATE B: LOGGED IN (DEDICATED ACTIVE SESSION & LOG OUT VIEW) -->
+        <div id="authPageLoggedIn" class="auth-page-card glassmorphism" style="display: none;">
+          <div class="auth-page-header">
+            <div class="session-badge-wrap">
+              <span class="pulsing-green-dot"></span>
+              <span class="session-badge-text">Active User Session</span>
+            </div>
+            <h2 class="auth-page-title">Signed In as <span class="gradient-text" id="authPageDisplayName">User</span></h2>
+            <p class="auth-page-subtitle">Manage your session, explore your flight records, or securely log out.</p>
+          </div>
+
+          <!-- User Details Profile Card -->
+          <div class="session-user-details-card">
+            <div class="session-avatar-wrap">
+              <img src="/images/ProfilePicture.png" id="authPageAvatar" class="session-avatar" alt="User Avatar">
+              <span class="session-role-badge" id="authPageRoleBadge">Passenger</span>
+            </div>
+            <div class="session-info-lines">
+              <div class="session-info-line">
+                <span class="info-k">Full Name:</span>
+                <strong class="info-v" id="authPageFullName">-</strong>
+              </div>
+              <div class="session-info-line">
+                <span class="info-k">Username:</span>
+                <span class="info-v" id="authPageUsernameVal">@username</span>
+              </div>
+              <div class="session-info-line">
+                <span class="info-k">Email Address:</span>
+                <span class="info-v" id="authPageEmailVal">email@example.com</span>
+              </div>
+              <div class="session-info-line" id="authPageCountryLine">
+                <span class="info-k">Country:</span>
+                <span class="info-v" id="authPageCountryVal">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shortcuts Grid -->
+          <div class="session-shortcuts-grid">
+            <button type="button" class="session-shortcut-btn" onclick="app.navigate('bookings')" id="sessionShortcutTrips">
+              <span class="shortcut-icon">🎟️</span>
+              <div class="shortcut-text">
+                <strong>My Booked Trips</strong>
+                <small>View & manage tickets</small>
+              </div>
+            </button>
+            <button type="button" class="session-shortcut-btn" onclick="app.navigate('favorites')" id="sessionShortcutFavorites">
+              <span class="shortcut-icon">❤️</span>
+              <div class="shortcut-text">
+                <strong>Saved Flights</strong>
+                <small>Quick flight booking</small>
+              </div>
+            </button>
+            <button type="button" class="session-shortcut-btn" onclick="app.navigate('account')" id="sessionShortcutProfile">
+              <span class="shortcut-icon">👤</span>
+              <div class="shortcut-text">
+                <strong>Passport & Profile</strong>
+                <small>Cards & password</small>
+              </div>
+            </button>
+            <button type="button" class="session-shortcut-btn" onclick="app.navigate('dashboard')" id="sessionShortcutDashboard" style="display: none;">
+              <span class="shortcut-icon">🏢</span>
+              <div class="shortcut-text">
+                <strong>Airline Fleet Dashboard</strong>
+                <small>Schedules & passenger stats</small>
+              </div>
+            </button>
+          </div>
+
+          <!-- Prominent Log Out Action Buttons -->
+          <div class="session-logout-action">
+            <button type="button" class="btn-logout-prominent" onclick="app.logoutFromAuthPage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+              <span>Log Out of FLY</span>
+            </button>
+            <button type="button" class="btn-switch-account" onclick="app.switchAccountFromAuthPage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+              <span>Switch to Another Account</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- APP FOOTER -->
+  <!-- ============================================== -->
+  <footer class="app-main-footer" style="padding: 24px 20px; text-align: center; color: var(--text-secondary); font-size: 0.88rem; border-top: 1px solid var(--border-subtle); background: var(--bg-surface); margin-top: 40px;">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+      <div>&copy; 2026 <strong>FLY</strong> &bull; Flight Booking &amp; Reservation System</div>
+      <div style="font-size: 0.82rem; opacity: 0.85;">
+        Developed &amp; Maintained by <strong style="color: var(--primary);">mahin1710</strong>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================== -->
+  <!-- MODAL: PAYMENT CHECKOUT (15-MIN PAYMENT WINDOW) -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalPayment" style="display: none;">
+    <div class="modal-box modal-md glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title">Complete Reservation & Payment</h3>
+        <button class="modal-close" onclick="app.closeModal('modalPayment')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- 15-Minute Payment Countdown Box -->
+        <div class="payment-timer-box" id="paymentTimerBox">
+          <div class="timer-badge">
+            <span class="pulse-amber-dot"></span>
+            <span>Temporary Seat Hold Active</span>
+          </div>
+          <div class="timer-digits-row">
+            <span class="timer-clock-icon">⏱️</span>
+            <span class="timer-digits" id="paymentTimerClock">15:00</span>
+            <span class="timer-unit">REMAINING</span>
+          </div>
+          <div class="timer-progress-bar">
+            <div class="timer-progress-fill" id="paymentTimerProgress" style="width: 100%;"></div>
+          </div>
+          <p class="timer-note">
+            Your seats are locked on the server. If payment is not completed before the timer reaches 0, seats are automatically released.
+          </p>
+        </div>
+
+        <!-- Expiration Alert (Visible on Timeout) -->
+        <div class="payment-expired-banner" id="paymentExpiredBanner" style="display: none;">
+          <div class="expired-icon">⚠️</div>
+          <div class="expired-content">
+            <h4>15-Minute Window Expired</h4>
+            <p>Your temporary reservation has timed out and your seats have been released back to availability.</p>
+            <button type="button" class="btn-primary" onclick="app.handlePaymentExpiredDismiss()">Choose Seats Again</button>
+          </div>
+        </div>
+
+        <!-- Flight & Seat Recap -->
+        <div class="checkout-recap-card" id="checkoutRecapCard">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Payment Actions & Methods -->
+        <div class="checkout-cards-selection" id="paymentMethodsSection">
+          <label class="filter-label">Payment Verification</label>
+          <div class="cards-list-selectable" id="checkoutCardsList">
+            <!-- Loaded via JS -->
+          </div>
+          <button class="btn-text-link" onclick="app.openAddCardModal()">+ Add A New Credit Card</button>
+
+          <!-- Instant 1-Click Pay for instant automated verification -->
+          <button type="button" class="btn-quick-pay" id="btnQuickPayInstant" onclick="app.submitPayment('instant_verify')">
+            <span>⚡ Instant Verify & Pay (One-Click)</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer" id="paymentModalFooter">
+        <button class="btn-secondary" onclick="app.closeModal('modalPayment')">Cancel / Pay Later</button>
+        <button class="btn-primary btn-large" id="btnConfirmPay" onclick="app.submitPayment('standard')">
+          <span id="btnPayText">Confirm & Pay ৳0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: BOARDING PASS (DIGITAL E-TICKET) -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalBoardingPass" style="display: none;">
+    <div class="modal-box modal-lg glassmorphism-ticket">
+      <div class="modal-header print-hide">
+        <h3 class="modal-title">Official E-Ticket & Boarding Pass</h3>
+        <button class="modal-close" onclick="app.closeModal('modalBoardingPass')">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Physical Boarding Pass Visual Layout -->
+        <div class="boarding-pass-card" id="printableTicket">
+          <!-- Main Ticket Section -->
+          <div class="ticket-main">
+            <div class="ticket-top-row">
+              <div class="ticket-airline-info">
+                <img src="/images/default_logo.png" id="ticketAirlineLogo" class="ticket-airline-logo" alt="Airline">
+                <div>
+                  <h4 class="ticket-airline-title" id="ticketAirlineName">FLY Airways</h4>
+                  <span class="ticket-subtext">FIRST CLASS BOARDING PASS</span>
+                </div>
+              </div>
+              <div class="ticket-brand-mark">
+                <img src="/images/fly_icon.svg" class="ticket-logo-mark" alt="FLY">
+                <span>FLY</span>
+              </div>
+            </div>
+
+            <!-- Route Banner -->
+            <div class="ticket-route-row">
+              <div class="route-point">
+                <span class="route-city" id="ticketDepCity">NEW YORK</span>
+                <span class="route-code" id="ticketDepCode">JFK</span>
+                <span class="route-airport" id="ticketDepAirport">John F. Kennedy Intl</span>
+              </div>
+
+              <div class="route-flight-path">
+                <span class="flight-no-badge" id="ticketFlightId">FLIGHT #880</span>
+                <div class="path-line-flight">
+                  <span class="path-plane">✈</span>
+                </div>
+                <span class="flight-time-duration" id="ticketDuration">NON-STOP</span>
+              </div>
+
+              <div class="route-point text-right">
+                <span class="route-city" id="ticketArrCity">LONDON</span>
+                <span class="route-code" id="ticketArrCode">LHR</span>
+                <span class="route-airport" id="ticketArrAirport">Heathrow Airport</span>
+              </div>
+            </div>
+
+            <!-- Ticket Metadata Grid -->
+            <div class="ticket-info-grid">
+              <div class="info-block">
+                <span class="info-label">PASSENGER NAME</span>
+                <span class="info-val" id="ticketPassenger">JOHN DOE</span>
+              </div>
+              <div class="info-block">
+                <span class="info-label">DEPARTURE TIME</span>
+                <span class="info-val" id="ticketDepTime">14:30</span>
+              </div>
+              <div class="info-block">
+                <span class="info-label">DATE</span>
+                <span class="info-val" id="ticketDate">2026-10-28</span>
+              </div>
+              <div class="info-block">
+                <span class="info-label">GATE / TERMINAL</span>
+                <span class="info-val" id="ticketGate">T2 / B14</span>
+              </div>
+              <div class="info-block">
+                <span class="info-label">CABIN CLASS</span>
+                <span class="info-val highlight-val" id="ticketClass">BUSINESS</span>
+              </div>
+              <div class="info-block">
+                <span class="info-label">SEAT NUMBER</span>
+                <span class="info-val seat-highlight" id="ticketSeat">3B</span>
+              </div>
+            </div>
+
+            <!-- Barcode Footer -->
+            <div class="ticket-barcode-footer">
+              <div class="barcode-visual">
+                <div class="simulated-barcode"></div>
+                <span class="barcode-num" id="ticketBarcodeNumber">FLY-2026-8809-4112-99</span>
+              </div>
+              <div class="qr-visual">
+                <div class="simulated-qr"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Perforated Tear-off Stub Section -->
+          <div class="ticket-stub">
+            <div class="stub-notch top-notch"></div>
+            <div class="stub-notch bottom-notch"></div>
+            <div class="stub-airline">
+              <span id="stubAirlineCode">FLY</span>
+              <span id="stubFlightNo">#880</span>
+            </div>
+            <div class="stub-passenger" id="stubPassenger">JOHN DOE</div>
+            <div class="stub-seat-box">
+              <span class="stub-seat-label">SEAT</span>
+              <span class="stub-seat-val" id="stubSeat">3B</span>
+            </div>
+            <div class="stub-route">
+              <span id="stubFrom">JFK</span> ➔ <span id="stubTo">LHR</span>
+            </div>
+            <div class="stub-date" id="stubDate">2026-10-28</div>
+            <div class="stub-barcode"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer print-hide">
+        <button class="btn-secondary" onclick="app.closeModal('modalBoardingPass')">Close</button>
+        <button class="btn-secondary" onclick="app.closeModal('modalBoardingPass'); app.navigate('search');">
+          <span>Book Another Flight</span>
+        </button>
+        <button class="btn-primary" onclick="window.print()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>Print / Save PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: ADD CREDIT CARD -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalAddCard" style="display: none;">
+    <div class="modal-box modal-sm glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title">Add New Credit Card</h3>
+        <button class="modal-close" onclick="app.closeModal('modalAddCard')">&times;</button>
+      </div>
+      <form onsubmit="app.submitAddCard(event)">
+        <div class="modal-body">
+          <div class="credit-card-preview-mini">
+            <div class="card-chip"></div>
+            <div class="card-number-preview" id="cardNumPreview">•••• •••• •••• ••••</div>
+            <div class="card-bottom-preview">
+              <span id="cardHolderPreview">CARDHOLDER NAME</span>
+              <span id="cardExpiryPreview">MM/YY</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label">Cardholder Name</label>
+            <input type="text" id="newCardHolder" class="field-input" placeholder="Name on card" required oninput="document.getElementById('cardHolderPreview').innerText = this.value || 'CARDHOLDER NAME'">
+          </div>
+
+          <div class="form-field">
+            <label class="field-label">Card Number</label>
+            <input type="text" id="newCardNumber" class="field-input" placeholder="16-digit card number" maxlength="19" required oninput="app.formatCardInput(this)">
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Expiration Date</label>
+              <input type="date" id="newCardExpiry" class="field-input" required onchange="app.formatExpiryPreview(this.value)">
+            </div>
+            <div class="form-field">
+              <label class="field-label">CVV / CVC</label>
+              <input type="password" id="newCardCVV" class="field-input" placeholder="123" maxlength="4" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="app.closeModal('modalAddCard')">Cancel</button>
+          <button type="submit" class="btn-primary">Save Credit Card</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: ADD / EDIT FLIGHT (AIRLINE ADMIN) -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalFlightAdmin" style="display: none;">
+    <div class="modal-box modal-md glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title" id="adminFlightModalTitle">Add Scheduled Flight</h3>
+        <button class="modal-close" onclick="app.closeModal('modalFlightAdmin')">&times;</button>
+      </div>
+      <form onsubmit="app.submitAdminFlight(event)">
+        <div class="modal-body">
+          <input type="hidden" id="adminFlightId">
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Departure Airport</label>
+              <select id="adminDepAirport" class="field-select" required></select>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Arrival Airport</label>
+              <select id="adminArrAirport" class="field-select" required></select>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Departure Date & Time</label>
+              <input type="datetime-local" id="adminDepTime" class="field-input" required>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Arrival Date & Time</label>
+              <input type="datetime-local" id="adminArrTime" class="field-input" required>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-field">
+              <label class="field-label">Economy Price (৳ BDT)</label>
+              <input type="number" id="adminEcoPrice" class="field-input" min="500" step="100" required>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Business Price (৳ BDT)</label>
+              <input type="number" id="adminBizPrice" class="field-input" min="1000" step="100" required>
+            </div>
+            <div class="form-field">
+              <label class="field-label">First Class (৳ BDT)</label>
+              <input type="number" id="adminFirstPrice" class="field-input" min="2000" step="100" required>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Per Luggage Price (৳ BDT)</label>
+              <input type="number" id="adminLuggagePrice" class="field-input" min="0" step="50" value="350">
+            </div>
+            <div class="form-field">
+              <label class="field-label">Per KG Weight Price (৳ BDT)</label>
+              <input type="number" id="adminWeightPrice" class="field-input" min="0" step="10" value="120">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="app.closeModal('modalFlightAdmin')">Cancel</button>
+          <button type="submit" class="btn-primary" id="btnAdminFlightSubmit">Save Flight Schedule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: AUTHENTICATION (LOGIN & SIGN UP) -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalAuth" style="display: none;">
+    <div class="modal-box modal-sm glassmorphism">
+      <div class="modal-header">
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="tabAuthLogin" onclick="app.switchAuthTab('login')">Sign In</button>
+          <button class="auth-tab-btn" id="tabAuthRegister" onclick="app.switchAuthTab('register')">Register</button>
+        </div>
+        <button class="modal-close" onclick="app.closeModal('modalAuth')">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Currently Logged In Banner (if user is active) -->
+        <div id="currentAuthStatusBanner" class="auth-status-banner" style="display: none;">
+          <div class="status-user-info">
+            <span class="status-label">Currently Signed In:</span>
+            <strong id="statusUsernameDisplay">user</strong>
+            <span class="status-role" id="statusRoleDisplay">(Passenger)</span>
+          </div>
+          <button type="button" class="btn-logout-small" onclick="app.logout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            <span>Log Out</span>
+          </button>
+        </div>
+
+        <!-- Inline Error Alert -->
+        <div id="authErrorAlert" class="auth-error-banner" style="display: none;">
+          <span class="error-icon">⚠️</span>
+          <span id="authErrorText">Invalid credentials</span>
+        </div>
+
+        <!-- Sign In Form -->
+        <form id="formLogin" onsubmit="app.submitLogin(event)" autocomplete="off">
+          <div class="form-field">
+            <label class="field-label">Username or Email</label>
+            <input type="text" id="loginUsername" class="field-input" placeholder="Enter your username or email" required autocomplete="off" value="">
+          </div>
+          <div class="form-field">
+            <label class="field-label">Password</label>
+            <div class="password-field-wrap">
+              <input type="password" id="loginPassword" class="field-input" placeholder="Enter your password" required autocomplete="new-password" value="">
+              <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('loginPassword', this)" title="Show / Hide Password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="auth-remember-row">
+            <label class="auth-checkbox-label">
+              <input type="checkbox" id="modalRememberMe" checked>
+              <span>Remember me on this device</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary w-100 btn-large">Sign In to FLY</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="formRegister" onsubmit="app.submitRegister(event)" style="display: none;" autocomplete="off">
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">First Name</label>
+              <input type="text" id="regFirstName" class="field-input" required autocomplete="off" value="">
+            </div>
+            <div class="form-field">
+              <label class="field-label">Last Name</label>
+              <input type="text" id="regLastName" class="field-input" required autocomplete="off" value="">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Email</label>
+            <input type="email" id="regEmail" class="field-input" required autocomplete="off" value="">
+          </div>
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Username</label>
+              <input type="text" id="regUsername" class="field-input" required autocomplete="off" value="">
+            </div>
+            <div class="form-field">
+              <label class="field-label">Password</label>
+              <div class="password-field-wrap">
+                <input type="password" id="regPassword" class="field-input" required autocomplete="new-password" value="">
+                <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('regPassword', this)" title="Show / Hide Password">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Birth Date</label>
+              <input type="date" id="regBirthDate" class="field-input" value="1998-05-15">
+            </div>
+            <div class="form-field">
+              <label class="field-label">Gender</label>
+              <select id="regGender" class="field-select">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-100 btn-large">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: DEDICATED LOGOUT CONFIRMATION -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalLogoutConfirm" style="display: none;">
+    <div class="modal-box modal-sm glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">🚪</span>
+          <span>Confirm Sign Out</span>
+        </h3>
+        <button class="modal-close" onclick="app.closeModal('modalLogoutConfirm')">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 24px 16px;">
+        <div style="font-size: 2.8rem; margin-bottom: 12px;">🛫</div>
+        <h4 style="margin: 0 0 8px; font-weight: 700; color: var(--text-main); font-size: 1.15rem;">Are you sure you want to log out?</h4>
+        <p style="color: var(--text-secondary); font-size: 0.92rem; margin: 0 0 24px; line-height: 1.5;">
+          You will be securely signed out of your current FLY session. You will be redirected to the login page and will need to sign in again to access your flight bookings or administrative dashboards.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button type="button" class="btn-secondary" style="flex: 1;" onclick="app.closeModal('modalLogoutConfirm')">
+            Cancel
+          </button>
+          <button type="button" class="btn-primary" style="flex: 1.2; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-color: #ef4444;" onclick="app.executeLogout()">
+            Yes, Log Out
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Script -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
