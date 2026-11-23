@@ -48,7 +48,7 @@ def get_db():
 def hash_password(password: str) -> str:
     """Hashes a password using scrypt with a unique random salt."""
     salt = secrets.token_hex(16)
-    derived = hashlib.scrypt(password.encode('utf-8'), salt=bytes.fromhex(salt), n=16384, r=8, p=1, maxmem=0, dklen=64)
+    derived = hashlib.scrypt(password.encode('utf-8'), salt=salt.encode('utf-8'), n=16384, r=8, p=1, maxmem=0, dklen=64)
     return f"scrypt:{salt}:{derived.hex()}"
 
 def verify_password(password: str, stored_hash: str) -> bool:
@@ -61,8 +61,17 @@ def verify_password(password: str, stored_hash: str) -> bool:
             return False
         salt = parts[1]
         orig_key = parts[2]
-        derived = hashlib.scrypt(password.encode('utf-8'), salt=bytes.fromhex(salt), n=16384, r=8, p=1, maxmem=0, dklen=64)
-        return secrets.compare_digest(derived.hex(), orig_key)
+        # Check salt as utf-8 string (Node.js format)
+        derived = hashlib.scrypt(password.encode('utf-8'), salt=salt.encode('utf-8'), n=16384, r=8, p=1, maxmem=0, dklen=64)
+        if secrets.compare_digest(derived.hex(), orig_key):
+            return True
+        try:
+            derived_hex = hashlib.scrypt(password.encode('utf-8'), salt=bytes.fromhex(salt), n=16384, r=8, p=1, maxmem=0, dklen=64)
+            if secrets.compare_digest(derived_hex.hex(), orig_key):
+                return True
+        except Exception:
+            pass
+        return False
     # Plain text fallback for old accounts
     return stored_hash == password or stored_hash == password.strip()
 
@@ -184,6 +193,19 @@ def seed_demo_accounts():
 # -------------------------------------------------------------
 # SEAT HOLDING & EXPIRATION LOGIC
 # -------------------------------------------------------------
+def is_expired(expires_at_str):
+    """Checks whether an expiration timestamp (supports ISO format) is in the past."""
+    if not expires_at_str:
+        return False
+    try:
+        clean = str(expires_at_str).replace('T', ' ').replace('Z', '')
+        if '.' in clean:
+            clean = clean.split('.')[0]
+        exp_dt = datetime.strptime(clean[:19], "%Y-%m-%d %H:%M:%S")
+        return exp_dt <= datetime.utcnow()
+    except Exception:
+        return False
+
 def cleanup_expired_holds():
     """
     Automatically checks and releases temporary seat holds whose 15-minute window has expired.
@@ -191,21 +213,17 @@ def cleanup_expired_holds():
     """
     conn = get_db()
     cursor = conn.cursor()
-    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
     # Find expired pending bookings
-    cursor.execute("""
-        SELECT booking_reference FROM bookings
-        WHERE status = 'PENDING_PAYMENT' AND datetime(expires_at) <= datetime(?)
-    """, (now_iso,))
-    expired = cursor.fetchall()
+    cursor.execute("SELECT booking_reference, expires_at FROM bookings WHERE status = 'PENDING_PAYMENT'")
+    rows = cursor.fetchall()
+    expired_refs = [row['booking_reference'] for row in rows if is_expired(row['expires_at'])]
 
-    for row in expired:
-        ref = row['booking_reference']
+    for ref in expired_refs:
         cursor.execute("UPDATE bookings SET status = 'EXPIRED' WHERE booking_reference = ?", (ref,))
         cursor.execute("UPDATE reservations SET status = 'EXPIRED' WHERE booking_reference = ?", (ref,))
 
-    if expired:
+    if expired_refs:
         conn.commit()
     conn.close()
 
@@ -234,7 +252,7 @@ def get_flight_seats(flight_id: int, current_account_id: int = None):
     res_map = {}
     for r in res_rows:
         status = r['status']
-        if status == 'PENDING_PAYMENT' and r['expires_at'] and r['expires_at'] < now_iso:
+        if status == 'PENDING_PAYMENT' and is_expired(r['expires_at']):
             continue  # expired
         res_map[r['id_seat']] = r
 
@@ -262,6 +280,7 @@ def get_flight_seats(flight_id: int, current_account_id: int = None):
         result.append({
             'id': seat_id,
             'code': f"{s['column']}{s['row']}",
+            'seatCode': f"{s['column']}{s['row']}",
             'column': s['column'],
             'row': s['row'],
             'type': s['type'],
@@ -306,7 +325,7 @@ def hold_seats_atomic(flight_id: int, seat_ids: list, account_id: int, nbr_lugga
                 conn.close()
                 return False, f"Seat {c['id_seat']} is already booked.", "SEAT_UNAVAILABLE", None
             if c['status'] == 'PENDING_PAYMENT':
-                if c['expires_at'] and c['expires_at'] > now_iso:
+                if not is_expired(c['expires_at']):
                     # Held by someone else or current user?
                     if c['id_account'] != account_id:
                         conn.close()
@@ -395,6 +414,9 @@ def confirm_payment_atomic(booking_ref: str, account_id: int, payment_method: st
     cursor = conn.cursor()
 
     try:
+        now_dt = datetime.utcnow()
+        now_iso = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
         cursor.execute("SELECT * FROM bookings WHERE booking_reference = ?", (booking_ref,))
         booking = cursor.fetchone()
         if not booking:
@@ -421,9 +443,7 @@ def confirm_payment_atomic(booking_ref: str, account_id: int, payment_method: st
             }
 
         # Check expiration
-        now_dt = datetime.utcnow()
-        now_iso = now_dt.strftime("%Y-%m-%d %H:%M:%S")
-        if booking['status'] == 'EXPIRED' or (booking['expires_at'] and booking['expires_at'] < now_iso):
+        if booking['status'] == 'EXPIRED' or is_expired(booking['expires_at']):
             cursor.execute("UPDATE bookings SET status = 'EXPIRED' WHERE booking_reference = ?", (booking_ref,))
             cursor.execute("UPDATE reservations SET status = 'EXPIRED' WHERE booking_reference = ?", (booking_ref,))
             conn.commit()

@@ -177,7 +177,8 @@ def api_login():
             'displayName': display_name,
             'email': acc['emailAddress'],
             'location': acc['location'] or 'Dhaka, Bangladesh',
-            'airlineId': acc['id_airline']
+            'airlineId': acc['id_airline'],
+            'id_airline': acc['id_airline']
         }
     })
 
@@ -198,19 +199,19 @@ def api_auth_me():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Unauthorized', 'code': 'UNAUTHORIZED'}), 401
-    return jsonify({'user': user})
+    user_data = dict(user)
+    user_data['id_airline'] = user.get('airlineId')
+    return jsonify({'authenticated': True, 'user': user_data})
 
 @app.route('/api/auth/demo-users', methods=['GET'])
 def api_demo_users():
     """Returns seeded demo accounts for convenient testing."""
-    return jsonify({
-        'users': [
-            {'username': 'Mahin0', 'role': 'PASSENGER', 'displayName': 'MMH_Mahin', 'airlineId': None, 'desc': 'Passenger Account (Dhaka)'},
-            {'username': 'Admin_Biman', 'role': 'AIRLINE_ADMIN', 'displayName': 'Biman Bangladesh Airlines', 'airlineId': 839, 'desc': 'Airline Admin (BG)'},
-            {'username': 'Admin_USB', 'role': 'AIRLINE_ADMIN', 'displayName': 'US-Bangla Airlines', 'airlineId': 371, 'desc': 'Airline Admin (BS)'},
-            {'username': 'Mahin1', 'role': 'PASSENGER', 'displayName': 'Chittagong Traveler', 'airlineId': None, 'desc': 'Passenger Account (Chittagong)'}
-        ]
-    })
+    return jsonify([
+        {'username': 'Mahin0', 'role': 'PASSENGER', 'displayName': 'MMH_Mahin', 'airlineId': None, 'id_airline': None, 'desc': 'Passenger Account (Dhaka)'},
+        {'username': 'Admin_Biman', 'role': 'AIRLINE_ADMIN', 'displayName': 'Biman Bangladesh Airlines', 'airlineId': 839, 'id_airline': 839, 'desc': 'Airline Admin (BG)'},
+        {'username': 'Admin_USB', 'role': 'AIRLINE_ADMIN', 'displayName': 'US-Bangla Airlines', 'airlineId': 371, 'id_airline': 371, 'desc': 'Airline Admin (BS)'},
+        {'username': 'Mahin1', 'role': 'PASSENGER', 'displayName': 'Chittagong Traveler', 'airlineId': None, 'id_airline': None, 'desc': 'Passenger Account (Chittagong)'}
+    ])
 
 # -------------------------------------------------------------
 # AIRPORTS & FLIGHTS APIS
@@ -356,8 +357,17 @@ def api_flight_seats(flight_id):
     """Returns seat map and real-time availability for a flight."""
     user = get_current_user()
     account_id = user['id'] if user else None
+    req_acc = request.args.get('accountId')
+    if req_acc:
+        try:
+            account_id = int(req_acc)
+        except ValueError:
+            pass
     seats = database.get_flight_seats(flight_id, account_id)
-    return jsonify(seats)
+    return jsonify({
+        'flightId': flight_id,
+        'seats': seats
+    })
 
 # -------------------------------------------------------------
 # SEAT HOLDING & BOOKING SYSTEM (CORE 15-MIN LOCKING ENGINE)
@@ -409,6 +419,7 @@ def api_hold_seats():
 
     return jsonify({
         'success': True,
+        'status': 'PENDING_PAYMENT',
         'message': msg,
         **hold_info
     }), 201
@@ -507,6 +518,7 @@ def api_confirm_payment():
 
     return jsonify({
         'success': True,
+        'status': 'CONFIRMED',
         'message': msg,
         **result_data
     })
@@ -556,6 +568,14 @@ def api_my_reservations():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Authentication required to view bookings.', 'code': 'UNAUTHORIZED'}), 401
+
+    requested_acc = request.args.get('accountId')
+    if requested_acc and user['role'].upper() == 'PASSENGER':
+        try:
+            if int(requested_acc) != user['id']:
+                return jsonify({'error': 'Forbidden: Cannot view another customer\'s bookings.', 'code': 'FORBIDDEN'}), 403
+        except ValueError:
+            pass
 
     account_id = user['id']
     conn = database.get_db()
@@ -714,13 +734,24 @@ def api_admin_all_bookings():
     """, (airline_id,))
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
-    return jsonify(rows)
+    return jsonify({
+        'airlineId': airline_id,
+        'bookings': rows
+    })
 
 @app.route('/api/airline/flights', methods=['GET'])
 def api_airline_flights():
     user = get_current_user()
     if not user or user['role'].upper() != 'AIRLINE_ADMIN':
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({'error': 'Forbidden: Airline admin access required.', 'code': 'FORBIDDEN'}), 403
+
+    requested_airline = request.args.get('airlineId')
+    if requested_airline:
+        try:
+            if int(requested_airline) != user['airlineId']:
+                return jsonify({'error': 'Forbidden: Cannot access another airline.', 'code': 'FORBIDDEN'}), 403
+        except ValueError:
+            pass
 
     conn = database.get_db()
     cursor = conn.cursor()
@@ -743,7 +774,15 @@ def api_airline_flights():
 def api_airline_stats():
     user = get_current_user()
     if not user or user['role'].upper() != 'AIRLINE_ADMIN':
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({'error': 'Forbidden: Airline admin access required.', 'code': 'FORBIDDEN'}), 403
+
+    requested_airline = request.args.get('airlineId')
+    if requested_airline:
+        try:
+            if int(requested_airline) != user['airlineId']:
+                return jsonify({'error': 'Forbidden: Cannot access another airline.', 'code': 'FORBIDDEN'}), 403
+        except ValueError:
+            pass
 
     conn = database.get_db()
     cursor = conn.cursor()

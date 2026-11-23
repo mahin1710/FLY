@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLY — My Bookings & Payment</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-wrapper" onclick="window.location.href='/'">
+        <img src="/images/fly_icon.svg" alt="FLY Logo" class="brand-logo-img">
+        <div class="brand-text">
+          <span class="brand-title">FLY</span>
+          <span class="brand-sub">My Bookings</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="/" class="nav-btn">Home</a>
+        <a href="/my-bookings" class="nav-btn active">My Bookings</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 32px; padding-bottom: 60px;">
+    <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+      <h2>My Flight Bookings</h2>
+      <p style="color: var(--text-secondary); margin-top: 6px;">
+        View your temporary holds and confirmed reservations. You can confirm payment for pending holds below.
+      </p>
+    </div>
+
+    <div id="myBookingsListContainer" class="flights-list-container">
+      <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+        Loading your bookings...
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/payment.js"></script>
+</body>
+</html>
