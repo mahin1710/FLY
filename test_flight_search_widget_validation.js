@@ -323,6 +323,7 @@ async function runTests() {
   });
 
   it('Rejects multi-city leg with identical origin and destination', () => {
+    FlightSearchWidget.state.tripType = 'multicity';
     FlightSearchWidget.state.multiCityLegs = [
       { from: 'Dhaka (DAC)', to: 'Chittagong (CGP)', date: tomorrowStr },
       { from: 'Chittagong (CGP)', to: 'Chittagong (CGP)', date: nextWeekStr }
@@ -334,6 +335,7 @@ async function runTests() {
   });
 
   it('Rejects multi-city leg with date earlier than previous leg', () => {
+    FlightSearchWidget.state.tripType = 'multicity';
     FlightSearchWidget.state.multiCityLegs = [
       { from: 'Dhaka (DAC)', to: 'Chittagong (CGP)', date: nextWeekStr },
       { from: 'Chittagong (CGP)', to: 'Cox\'s Bazar (CXB)', date: tomorrowStr } // Precedes leg 1
@@ -345,6 +347,7 @@ async function runTests() {
   });
 
   it('Accepts valid sequential multi-city itinerary (Leg 1: DAC->CGP, Leg 2: CGP->CXB)', () => {
+    FlightSearchWidget.state.tripType = 'multicity';
     FlightSearchWidget.state.multiCityLegs = [
       { from: 'Dhaka (DAC)', fromCode: 'DAC', to: 'Chittagong (CGP)', toCode: 'CGP', date: tomorrowStr },
       { from: 'Chittagong (CGP)', fromCode: 'CGP', to: 'Cox\'s Bazar (CXB)', toCode: 'CXB', date: nextWeekStr }
