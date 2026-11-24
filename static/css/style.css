@@ -1133,6 +1133,66 @@ input, select, textarea {
   height: 18px;
 }
 
+.btn-primary-search:disabled,
+.btn-primary-search[disabled],
+.btn-primary-search[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------
+   FLIGHT SEARCH WIDGET VALIDATION & ACCESSIBILITY STYLES
+   ------------------------------------------------------------- */
+.search-validation-alert {
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+  animation: fadeInDown 0.2s ease-in-out;
+}
+
+[data-theme="dark"] .search-validation-alert {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.field-error-msg {
+  display: none;
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+[data-theme="dark"] .field-error-msg {
+  color: #f87171;
+}
+
+.form-group-airport.has-error .input-airport-wrapper,
+.form-group-field.has-error .input-field-wrapper,
+.form-group-field.has-error .passenger-picker-trigger {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2) !important;
+}
+
+.btn-swap.is-rotating svg {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease-in-out;
+}
+
 /* -------------------------------------------------------------
    TRAVELERS & CLASS PICKER (GoZayaan Inspiration)
    ------------------------------------------------------------- */

@@ -115,6 +115,9 @@
               <div class="tab-indicator-badge">⏱️ 15-Min Guaranteed Hold</div>
             </div>
 
+            <!-- Validation Alert Banner -->
+            <div class="search-validation-alert" id="searchValidationAlert" role="alert" aria-live="polite" style="display: none;"></div>
+
             <!-- Standard Search Form (One Way & Round Trip) -->
             <div class="search-widget-form is-roundtrip" id="standardSearchForm">
               <!-- Origin Airport -->
@@ -124,11 +127,12 @@
                   <span class="airport-icon" aria-hidden="true">🛫</span>
                   <input type="text" id="homeOriginInput" class="airport-input" placeholder="Departure City or Airport..." autocomplete="off">
                 </div>
+                <div class="field-error-msg" id="originError" role="alert" aria-live="polite"></div>
                 <div class="airport-dropdown-list" id="homeOriginDropdown" role="listbox"></div>
               </div>
 
               <!-- Swap Button -->
-              <button class="btn-swap" id="btnSwapHome" onclick="app.swapHomeAirports()" title="Swap Departure and Arrival" type="button" aria-label="Swap departure and arrival airports">
+              <button class="btn-swap" id="btnSwapHome" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.swapAirports(); } else { app.swapHomeAirports(); }" title="Swap Departure and Arrival" type="button" aria-label="Swap departure and arrival airports">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="swap-icon"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
               </button>
 
@@ -139,6 +143,7 @@
                   <span class="airport-icon" aria-hidden="true">🛬</span>
                   <input type="text" id="homeDestInput" class="airport-input" placeholder="Destination City or Airport..." autocomplete="off">
                 </div>
+                <div class="field-error-msg" id="destError" role="alert" aria-live="polite"></div>
                 <div class="airport-dropdown-list" id="homeDestDropdown" role="listbox"></div>
               </div>
 
@@ -148,6 +153,7 @@
                 <div class="input-field-wrapper">
                   <input type="date" id="homeDepDate" class="date-input" aria-label="Departure date">
                 </div>
+                <div class="field-error-msg" id="depDateError" role="alert" aria-live="polite"></div>
               </div>
 
               <!-- Return Date (for Round Trip) -->
@@ -156,6 +162,7 @@
                 <div class="input-field-wrapper">
                   <input type="date" id="homeReturnDate" class="date-input" aria-label="Return date">
                 </div>
+                <div class="field-error-msg" id="returnDateError" role="alert" aria-live="polite"></div>
               </div>
 
               <!-- Travelers & Cabin Class (Interactive Popover) -->
@@ -169,6 +176,7 @@
                   </div>
                   <span class="trigger-chevron" aria-hidden="true">▾</span>
                 </div>
+                <div class="field-error-msg" id="passengersError" role="alert" aria-live="polite"></div>
 
                 <!-- Popover Panel -->
                 <div class="passenger-class-popover" id="passengerClassPopover" role="dialog" aria-label="Passenger and cabin selection">
@@ -243,7 +251,7 @@
 
               <!-- Submit Search Button -->
               <div class="form-group-submit">
-                <button class="btn-primary-search" id="btnHomeSearch" onclick="app.executeHomeSearch()" type="button">
+                <button class="btn-primary-search" id="btnHomeSearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { app.executeHomeSearch(); }" type="button">
                   <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                   <span>Search Flights</span>
                 </button>
@@ -254,12 +262,12 @@
             <div class="multicity-widget-form" id="multiCityContainer" style="display: none;">
               <div class="multicity-legs-list" id="multiCityLegsList"></div>
               <div class="multicity-bottom-bar">
-                <button type="button" class="btn-add-city" id="btnAddCityLeg" onclick="app.addMultiCityLeg()">
+                <button type="button" class="btn-add-city" id="btnAddCityLeg" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.addMultiCityLeg(); } else { app.addMultiCityLeg(); }">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
                   <span>Add Another City</span>
                 </button>
                 <div class="multicity-actions">
-                  <button class="btn-primary-search" id="btnMultiCitySearch" onclick="app.executeHomeSearch()" type="button">
+                  <button class="btn-primary-search" id="btnMultiCitySearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { app.executeHomeSearch(); }" type="button">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     <span>Search Multi-City Flights</span>
                   </button>
@@ -2139,5 +2147,6 @@
 
   <!-- App Script -->
   <script src="/js/app.js"></script>
+  <script src="/js/flight_search_widget.js"></script>
 </body>
 </html>
