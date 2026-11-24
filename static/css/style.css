@@ -6805,3 +6805,758 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   SHARED SITE SHELL & REUSABLE COMPONENT SYSTEM
+   ========================================================================== */
+
+/* 1. Skip to Content (Accessibility) */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 20px;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  z-index: 9999;
+  transition: top 0.2s;
+}
+
+.skip-to-content:focus {
+  top: 16px;
+}
+
+/* 2. Reusable Breadcrumb Navigation */
+.breadcrumb-nav {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 0;
+  font-size: 0.84rem;
+}
+
+.breadcrumb-container {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  list-style: none;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb-link {
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.breadcrumb-link:hover {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: var(--border-medium);
+  font-weight: 300;
+  user-select: none;
+}
+
+.breadcrumb-current {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+/* 3. Reusable Page Heading Block */
+.page-heading-block {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-heading-content {
+  flex: 1;
+  min-width: 260px;
+}
+
+.page-heading-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  margin-bottom: 4px;
+}
+
+[data-theme="dark"] .page-heading-eyebrow {
+  color: var(--accent-gold);
+}
+
+.page-heading-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-heading-title {
+  font-family: var(--font-heading);
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.page-heading-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(2, 132, 199, 0.08);
+  color: var(--accent-primary);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+[data-theme="dark"] .page-heading-badge {
+  background: rgba(197, 164, 109, 0.16);
+  color: #D9C39A;
+  border-color: rgba(197, 164, 109, 0.3);
+}
+
+.page-heading-subtitle {
+  font-size: 0.96rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  max-width: 720px;
+}
+
+.page-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 4. Reusable Booking Progress Stepper */
+.booking-stepper-nav {
+  padding: 16px 0 24px 0;
+  width: 100%;
+}
+
+.booking-stepper-list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.stepper-item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.stepper-item:last-child {
+  flex: 0 0 auto;
+}
+
+.stepper-bubble-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 2;
+  background: var(--bg-app);
+  padding: 0 4px;
+}
+
+.stepper-bubble {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.stepper-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.stepper-check-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Stepper States */
+.stepper-item.is-pending .stepper-bubble {
+  background: var(--bg-surface-elevated);
+  border: 2px solid var(--border-medium);
+  color: var(--text-muted);
+}
+
+.stepper-item.is-active .stepper-bubble {
+  background: var(--accent-primary);
+  border: 2px solid var(--accent-primary);
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.2);
+}
+
+.stepper-item.is-active .stepper-label {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+[data-theme="dark"] .stepper-item.is-active .stepper-bubble {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  color: #101D2C;
+  box-shadow: 0 0 0 4px rgba(197, 164, 109, 0.25);
+}
+
+.stepper-item.is-complete .stepper-bubble {
+  background: #0D9488;
+  border: 2px solid #0D9488;
+  color: #FFFFFF;
+}
+
+.stepper-item.is-complete .stepper-label {
+  color: var(--text-secondary);
+}
+
+.stepper-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border-subtle);
+  margin: 0 12px;
+  transition: background var(--transition-fast);
+}
+
+.stepper-connector.is-complete {
+  background: #0D9488;
+}
+
+/* 5. Reusable Empty State Card */
+.empty-state-card {
+  text-align: center;
+  padding: 48px 24px;
+  border-radius: var(--radius-xl);
+  max-width: 540px;
+  margin: 20px auto;
+}
+
+.empty-state-icon {
+  font-size: 3.2rem;
+  margin-bottom: 14px;
+}
+
+.empty-state-title {
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.empty-state-desc {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+/* 6. Reusable Loading State & Skeletons */
+.loading-state-card {
+  text-align: center;
+  padding: 40px 24px;
+  border-radius: var(--radius-xl);
+  margin: 20px 0;
+}
+
+.loading-spinner-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(2, 132, 199, 0.15);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state-text {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.skeleton-wrapper {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-line {
+  height: 14px;
+  background: linear-gradient(90deg, var(--bg-surface-elevated) 25%, var(--bg-surface-hover) 50%, var(--bg-surface-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-xs);
+}
+
+.skeleton-title { width: 50%; height: 20px; margin: 0 auto; }
+.skeleton-subtitle { width: 70%; margin: 0 auto; }
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.skeleton-box {
+  height: 80px;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 7. Reusable Error Banner */
+.error-banner-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  position: relative;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #991b1b;
+}
+
+[data-theme="dark"] .error-banner-card {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.error-banner-icon svg {
+  width: 20px;
+  height: 20px;
+  color: #dc2626;
+  margin-top: 2px;
+}
+
+.error-banner-body {
+  flex: 1;
+}
+
+.error-banner-title {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.error-banner-message {
+  font-size: 0.86rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.error-banner-close {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* 8. Demo Notice Banner Component */
+.demo-integration-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(2, 132, 199, 0.06);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: 22px;
+}
+
+[data-theme="dark"] .demo-integration-notice {
+  background: rgba(197, 164, 109, 0.1);
+  border-color: rgba(197, 164, 109, 0.25);
+}
+
+.demo-notice-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.demo-notice-content {
+  flex: 1;
+}
+
+.demo-notice-tag {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+  margin-bottom: 2px;
+}
+
+[data-theme="dark"] .demo-notice-tag {
+  color: var(--accent-gold);
+}
+
+.demo-notice-text {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* 9. Form Field Group Components */
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.form-field-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.field-required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.form-field-control-wrapper {
+  position: relative;
+}
+
+.form-field-input, .form-field-select {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.form-field-input:focus, .form-field-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  outline: none;
+}
+
+[data-theme="dark"] .form-field-input:focus, [data-theme="dark"] .form-field-select:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px rgba(197, 164, 109, 0.25);
+}
+
+.form-field-help {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.form-field-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* 10. Reusable UI Card */
+.ui-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-card-header {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+
+.ui-card-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ui-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.ui-card-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(2, 132, 199, 0.08);
+  color: var(--accent-primary);
+}
+
+.ui-card-subtitle {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* 11. Flight Details Layout (2-Column Grid) */
+.flight-details-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* 12. Accessible Mobile Navigation Drawer */
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+.hamburger-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 1090;
+}
+
+.mobile-nav-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 86vw;
+  background: var(--bg-surface);
+  box-shadow: -8px 0 28px rgba(15, 23, 42, 0.2);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav-drawer.is-open {
+  transform: translateX(0);
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mobile-nav-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mobile-nav-close:hover {
+  background: var(--bg-surface-hover);
+  color: var(--accent-primary);
+}
+
+.mobile-nav-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.mobile-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.mobile-nav-link:hover, .mobile-nav-link.active {
+  background: var(--bg-surface-hover);
+  color: var(--accent-primary);
+}
+
+.mobile-nav-icon {
+  font-size: 1.15rem;
+}
+
+.mobile-nav-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 18px 0;
+}
+
+.mobile-nav-meta {
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Page Container Spacing */
+.page-container {
+  padding-top: 24px;
+  padding-bottom: 60px;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS (1024px, 768px, 480px, 390px)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .flight-details-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+  .nav-links {
+    display: none !important;
+  }
+  .booking-stepper-list {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  .stepper-label {
+    display: none;
+  }
+  .stepper-bubble-wrapper {
+    padding: 0;
+  }
+  .stepper-connector {
+    margin: 0 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-heading-title {
+    font-size: 1.65rem;
+  }
+  .flight-time-point .point-time {
+    font-size: 1.2rem;
+  }
+}

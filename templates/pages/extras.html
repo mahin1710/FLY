@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Flight Extras & Ancillaries — FLY{% endblock %}
+{% block meta_description %}Customize your flight with baggage upgrades, meal choices, and preferred seat options.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Flight Results', 'url': '/flights/search'},
+  {'label': 'Traveller Details', 'url': '/booking/travellers'},
+  {'label': 'Extras', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container">
+  <!-- Stepper: Step 3: Travellers Active (Steps 1 & 2 complete) -->
+  {{ st.render_booking_stepper(current_step='travellers', completed_steps=['search', 'flight']) }}
+
+  {{ dn.render_demo_notice('Airline Ancillaries & Inflight Service Selection') }}
+
+  {{ ph.render_page_heading(
+    title='Optional Extras & Services',
+    subtitle='Enhance your flight with additional baggage allowance, gourmet meals, and travel insurance',
+    eyebrow='ANCILLARY SELECTION',
+    badge='Optional Upgrades'
+  ) }}
+
+  <div class="flight-details-layout">
+    <div class="details-main-col">
+      <form action="/booking/review" method="GET" class="card glassmorphism" style="padding: 28px;">
+        <!-- Option 1: Extra Baggage -->
+        <div class="benefit-card" style="margin-bottom: 18px; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">🧳 Additional Check-in Baggage</div>
+              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">20 kg is already included with your ticket. Need more luggage capacity?</p>
+            </div>
+            <span class="dest-fare-pill">+৳1,200 / 10kg</span>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+            <input type="checkbox" name="extraBaggage" value="10kg">
+            <span>Add +10 kg Prepaid Baggage (+৳1,200)</span>
+          </label>
+        </div>
+
+        <!-- Option 2: Meal Preference -->
+        <div class="benefit-card" style="margin-bottom: 18px; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">🍱 Inflight Gourmet Meal Selection</div>
+              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">Standard snack box is complimentary. Upgrade to a hot meal platter.</p>
+            </div>
+            <span class="dest-fare-pill">+৳650</span>
+          </div>
+          <select name="mealOption" class="form-field-select" style="max-width: 320px;">
+            <option value="standard">Standard Complimentary Snack Platter (Included)</option>
+            <option value="hot_biryani">Hyderabadi Chicken Biryani Platter (+৳650)</option>
+            <option value="vegetarian">Special Vegetarian Gourmet Box (+৳650)</option>
+            <option value="fruit">Seasonal Fresh Fruit Platter (+৳450)</option>
+          </select>
+        </div>
+
+        <!-- Option 3: Travel Protection Insurance -->
+        <div class="benefit-card" style="margin-bottom: 24px; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">🛡️ Comprehensive Travel Protection</div>
+              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">Covers baggage loss, flight delays (>2h), and emergency medical assistance.</p>
+            </div>
+            <span class="dest-fare-pill">+৳450</span>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+            <input type="checkbox" name="insurance" value="standard" checked>
+            <span>Add Comprehensive Travel Insurance Protection (+৳450)</span>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+          <a href="/booking/travellers" class="btn-secondary">Back to Travellers</a>
+          <button type="submit" class="btn-primary">
+            <span>Continue to Booking Review</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: Summary Sidebar -->
+    <aside class="details-side-col">
+      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Booking Summary</h4>
+        <div style="font-weight: 600; margin-bottom: 4px;">Dhaka (DAC) ➔ Cox's Bazar (CXB)</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Primary: Mahin Rahman</div>
+        
+        <div class="fare-breakdown-table" style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <div class="fare-row">
+            <span>Flight Fare</span>
+            <span class="fare-val">৳4,500</span>
+          </div>
+          <div class="fare-row">
+            <span>Travel Insurance</span>
+            <span class="fare-val">৳450</span>
+          </div>
+          <div class="fare-row total">
+            <span>Estimated Total</span>
+            <span class="fare-val">৳4,950</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+{% import "components/form_field.html" as ff %}
+
+{% block title %}Traveller Information — FLY{% endblock %}
+{% block meta_description %}Enter traveller details matching your passport or government-issued national ID.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Flight Results', 'url': '/flights/search'},
+  {'label': 'Traveller Details', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container">
+  <!-- Stepper: Step 3: Travellers Active (Steps 1 & 2 complete) -->
+  {{ st.render_booking_stepper(current_step='travellers', completed_steps=['search', 'flight']) }}
+
+  {{ dn.render_demo_notice('Government Travel Document Validation & PNR Creation') }}
+
+  {{ ph.render_page_heading(
+    title='Traveller Information',
+    subtitle='Please provide passenger information exactly as shown on government travel documentation',
+    eyebrow='PASSENGER 1 OF 1 &bull; PRIMARY TRAVELLER',
+    badge='Data Isolation Protected'
+  ) }}
+
+  <div class="flight-details-layout">
+    <div class="details-main-col">
+      <form action="/booking/extras" method="GET" class="card glassmorphism" style="padding: 28px;">
+        <div class="passenger-card-header" style="margin-bottom: 20px;">
+          <h3 style="font-size: 1.15rem; font-weight: 700;">Adult Passenger (Primary Contact)</h3>
+          <span class="dest-badge">Age 12+</span>
+        </div>
+
+        <div class="passenger-form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+          {{ ff.render_select_field('title', 'title', 'Title', options=[
+            {'value': 'MR', 'label': 'Mr.'},
+            {'value': 'MS', 'label': 'Ms.'},
+            {'value': 'MRS', 'label': 'Mrs.'},
+            {'value': 'DR', 'label': 'Dr.'}
+          ], selected_value='MR', required=True) }}
+
+          {{ ff.render_text_field('firstName', 'firstName', 'First & Given Name', value='Mahin', placeholder='e.g. Mahin', required=True) }}
+          {{ ff.render_text_field('lastName', 'lastName', 'Last / Surname', value='Rahman', placeholder='e.g. Rahman', required=True) }}
+          {{ ff.render_text_field('dob', 'dob', 'Date of Birth', type='date', value='1998-05-15', required=True) }}
+          {{ ff.render_select_field('nationality', 'nationality', 'Nationality', options=[
+            {'value': 'BD', 'label': 'Bangladesh (BD)'},
+            {'value': 'US', 'label': 'United States (US)'},
+            {'value': 'UK', 'label': 'United Kingdom (UK)'},
+            {'value': 'AE', 'label': 'United Arab Emirates (AE)'}
+          ], selected_value='BD', required=True) }}
+          {{ ff.render_text_field('passportNumber', 'passportNumber', 'Passport / NID Number', value='A09876543', placeholder='e.g. A09876543', required=True) }}
+          {{ ff.render_text_field('email', 'email', 'Contact Email Address', type='email', value='passenger@example.com', placeholder='name@domain.com', required=True) }}
+          {{ ff.render_text_field('phone', 'phone', 'Mobile Number', type='tel', value='+880 1700 000000', placeholder='+880 1XXX XXXXXX', required=True) }}
+        </div>
+
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <a href="/flights/search" class="btn-secondary">Back to Flight Results</a>
+          <button type="submit" class="btn-primary">
+            <span>Continue to Extras &amp; Ancillaries</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: Summary Sidebar -->
+    <aside class="details-side-col">
+      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Route Summary</h4>
+        <div style="font-weight: 600; margin-bottom: 4px;">Dhaka (DAC) ➔ Cox's Bazar (CXB)</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Flight BG-433 &bull; Non-Stop</div>
+        
+        <div class="fare-breakdown-table" style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <div class="fare-row">
+            <span>1 Adult Fare</span>
+            <span class="fare-val">৳4,500</span>
+          </div>
+          <div class="fare-row total">
+            <span>Current Total</span>
+            <span class="fare-val">৳4,500</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

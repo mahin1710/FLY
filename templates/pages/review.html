@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Booking Review & Price Verification — FLY{% endblock %}
+{% block meta_description %}Review your itinerary, passenger details, and transparent fare breakdown before seat hold and payment.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Flight Results', 'url': '/flights/search'},
+  {'label': 'Booking Review', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container">
+  <!-- Stepper: Step 4: Review Active (Steps 1, 2, 3 complete) -->
+  {{ st.render_booking_stepper(current_step='review', completed_steps=['search', 'flight', 'travellers']) }}
+
+  {{ dn.render_demo_notice('Atomic 15-Minute Seat Reservation & Fare Revalidation') }}
+
+  {{ ph.render_page_heading(
+    title='Final Booking Review',
+    subtitle='Verify all passenger information and journey parameters before payment processing',
+    eyebrow='STEP 4 OF 6 &bull; PRE-PAYMENT AUDIT',
+    badge='Price Guaranteed 15 Mins'
+  ) }}
+
+  <div class="flight-details-layout">
+    <div class="details-main-col">
+      <!-- Section 1: Journey Details -->
+      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+          <h3 style="font-size: 1.15rem; font-weight: 700;">Flight Itinerary</h3>
+          <span class="dest-badge">Outbound &bull; Confirmed</span>
+        </div>
+        <div class="flight-card-body" style="margin-bottom: 16px;">
+          <div class="flight-time-point">
+            <div class="point-time">10:30 AM</div>
+            <div class="point-city">Dhaka (DAC)</div>
+            <div class="point-sub">Hazrat Shahjalal Intl</div>
+          </div>
+          <div class="flight-duration-col">
+            <div class="duration-text">55m</div>
+            <div class="flight-track-line">
+              <span class="track-dot"></span>
+              <span class="track-line"></span>
+              <span class="track-dot"></span>
+            </div>
+            <div class="stops-text">Biman BG-433</div>
+          </div>
+          <div class="flight-time-point">
+            <div class="point-time">11:25 AM</div>
+            <div class="point-city">Cox's Bazar (CXB)</div>
+            <div class="point-sub">Cox's Bazar Airport</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-secondary); flex-wrap: wrap;">
+          <span>💺 Selected Seat: <strong>12A (Window)</strong></span>
+          <span>🧳 Checked Baggage: <strong>20 kg</strong></span>
+          <span>💼 Cabin Baggage: <strong>7 kg</strong></span>
+          <span>🛡️ Insurance: <strong>Included</strong></span>
+        </div>
+      </div>
+
+      <!-- Section 2: Passenger Details -->
+      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+          <h3 style="font-size: 1.15rem; font-weight: 700;">Passenger Verification</h3>
+          <span class="dest-badge">Primary Adult</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.9rem;">
+          <div>
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Full Name</span>
+            <strong>Mr. Mahin Rahman</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Date of Birth</span>
+            <strong>15 May 1998</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Nationality</span>
+            <strong>Bangladesh (BD)</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Passport / NID</span>
+            <strong>A09876543</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Contact Email</span>
+            <strong>passenger@example.com</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Mobile Number</span>
+            <strong>+880 1700 000000</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Navigation Buttons -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <a href="/booking/travellers" class="btn-secondary">Edit Traveller Details</a>
+        <a href="/booking/payment" class="btn-primary btn-large">
+          <span>Proceed to Payment Checkout</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: Itemized Fare Table Sidebar -->
+    <aside class="details-side-col">
+      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+        <h4 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Transparent Fare Breakdown</h4>
+        
+        <div class="fare-breakdown-table">
+          <div class="fare-row">
+            <span>Airfare (Base Tariff)</span>
+            <span class="fare-val">৳3,650</span>
+          </div>
+          <div class="fare-row">
+            <span>Airport Embarkation Fee</span>
+            <span class="fare-val">৳550</span>
+          </div>
+          <div class="fare-row">
+            <span>Government 15% VAT</span>
+            <span class="fare-val">৳300</span>
+          </div>
+          <div class="fare-row">
+            <span>Travel Protection Plan</span>
+            <span class="fare-val">৳450</span>
+          </div>
+          <div class="fare-row">
+            <span>Seat Reservation Lock (12A)</span>
+            <span class="fare-val free">FREE</span>
+          </div>
+          <div class="fare-row total">
+            <span>Total Payable</span>
+            <span class="fare-val">৳4,950</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          🛡️ By proceeding to payment, your chosen seat and fare are locked for 15 minutes.
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

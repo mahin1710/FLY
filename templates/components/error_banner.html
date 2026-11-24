@@ -1,0 +1,18 @@
+{# Reusable Error Banner Component #}
+{% macro render_error_banner(title='Connection Notice', message='An unexpected error occurred while contacting the server.', retry_url=None, dismissible=True) %}
+<div class="error-banner-card alert-error" role="alert">
+  <div class="error-banner-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  </div>
+  <div class="error-banner-body">
+    <strong class="error-banner-title">{{ title }}</strong>
+    <p class="error-banner-message">{{ message }}</p>
+  </div>
+  {% if retry_url %}
+    <a href="{{ retry_url }}" class="btn-secondary-sm error-banner-retry">Retry Action</a>
+  {% endif %}
+  {% if dismissible %}
+    <button type="button" class="error-banner-close" onclick="this.closest('.error-banner-card').remove()" aria-label="Dismiss message">&times;</button>
+  {% endif %}
+</div>
+{% endmacro %}

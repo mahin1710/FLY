@@ -1,0 +1,23 @@
+{# Reusable Breadcrumb Navigation Component #}
+{% macro render_breadcrumb(items) %}
+<nav class="breadcrumb-nav" aria-label="Breadcrumb">
+  <div class="container breadcrumb-container">
+    <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
+      {% for item in items %}
+      <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        {% if item.url and not loop.last %}
+          <a href="{{ item.url }}" class="breadcrumb-link" itemprop="item">
+            <span itemprop="name">{{ item.label }}</span>
+          </a>
+          <meta itemprop="position" content="{{ loop.index }}" />
+          <span class="breadcrumb-separator" aria-hidden="true">/</span>
+        {% else %}
+          <span class="breadcrumb-current" aria-current="page" itemprop="name">{{ item.label }}</span>
+          <meta itemprop="position" content="{{ loop.index }}" />
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+</nav>
+{% endmacro %}

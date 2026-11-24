@@ -1,0 +1,46 @@
+{# Reusable Form Field Component Macros #}
+{% macro render_text_field(id, name, label, value='', placeholder='', type='text', required=False, help_text=None, error_text=None, readonly=False) %}
+<div class="form-field-group {% if error_text %}has-error{% endif %}">
+  <label for="{{ id }}" class="form-field-label">
+    {{ label }}
+    {% if required %}<span class="field-required" aria-hidden="true">*</span>{% endif %}
+  </label>
+  <div class="form-field-control-wrapper">
+    <input type="{{ type }}" 
+           id="{{ id }}" 
+           name="{{ name }}" 
+           value="{{ value }}" 
+           placeholder="{{ placeholder }}" 
+           class="form-field-input" 
+           {% if required %}required aria-required="true"{% endif %}
+           {% if readonly %}readonly{% endif %}
+           {% if help_text %}aria-describedby="{{ id }}-help"{% endif %}
+           autocomplete="off">
+  </div>
+  {% if help_text %}
+    <div id="{{ id }}-help" class="form-field-help">{{ help_text }}</div>
+  {% endif %}
+  {% if error_text %}
+    <div class="form-field-error" role="alert">{{ error_text }}</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_select_field(id, name, label, options=[], selected_value='', required=False, help_text=None) %}
+<div class="form-field-group">
+  <label for="{{ id }}" class="form-field-label">
+    {{ label }}
+    {% if required %}<span class="field-required" aria-hidden="true">*</span>{% endif %}
+  </label>
+  <div class="form-field-control-wrapper">
+    <select id="{{ id }}" name="{{ name }}" class="form-field-select" {% if required %}required aria-required="true"{% endif %}>
+      {% for opt in options %}
+        <option value="{{ opt.value }}" {% if opt.value == selected_value %}selected{% endif %}>{{ opt.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if help_text %}
+    <div id="{{ id }}-help" class="form-field-help">{{ help_text }}</div>
+  {% endif %}
+</div>
+{% endmacro %}

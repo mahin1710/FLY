@@ -22,6 +22,7 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, 'static'),
     static_url_path=''
 )
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Initialize database schema and demo accounts on launch
 database.init_db()
@@ -72,17 +73,78 @@ def get_current_user():
     return None
 
 # -------------------------------------------------------------
-# FRONTEND TEMPLATE & STATIC ROUTES
+# FRONTEND TEMPLATE & PUBLIC PAGE ROUTES
 # -------------------------------------------------------------
 @app.route('/')
 def home_page():
-    """Serves the main FLY web application."""
-    return render_template('index.html')
+    """Serves the main FLY web application homepage."""
+    return render_template('pages/home.html')
 
-@app.route('/flight/list')
+@app.route('/flights/search')
 @app.route('/flight/search')
-def flight_list_page():
-    """Serves the flight search & listing page."""
+@app.route('/flight/list')
+def flight_search_page():
+    """Serves flight search results and comparison page."""
+    return render_template('pages/flight_search.html')
+
+@app.route('/flights/offer/<offer_id>')
+def flight_offer_page(offer_id):
+    """Serves detailed flight offer review and fare rules breakdown."""
+    return render_template('pages/offer_details.html', offer_id=offer_id)
+
+@app.route('/booking/travellers')
+def booking_travellers_page():
+    """Serves traveller details entry form."""
+    return render_template('pages/travellers.html')
+
+@app.route('/booking/extras')
+def booking_extras_page():
+    """Serves optional baggage, meals, and travel insurance selection."""
+    return render_template('pages/extras.html')
+
+@app.route('/booking/review')
+def booking_review_page():
+    """Serves final booking review and fare audit before payment."""
+    return render_template('pages/review.html')
+
+@app.route('/booking/payment')
+@app.route('/payment')
+def booking_payment_page():
+    """Serves payment checkout with 15-minute seat reservation timer."""
+    return render_template('pages/payment.html')
+
+@app.route('/booking/status/<reference>')
+def booking_status_page(reference):
+    """Serves booking confirmation and digital boarding pass view."""
+    return render_template('pages/booking_status.html', reference=reference)
+
+@app.route('/my-bookings')
+def my_bookings_page():
+    """Serves passenger's booked trips and temporary reservation status."""
+    return render_template('pages/my_bookings.html')
+
+@app.route('/manage-booking')
+def manage_booking_page():
+    """Serves public guest self-service booking retrieval by PNR & surname."""
+    return render_template('pages/manage_booking.html')
+
+@app.route('/support')
+@app.route('/help')
+def support_page():
+    """Serves passenger help desk, 24/7 hotline, and airline travel policies."""
+    return render_template('pages/support.html')
+
+@app.route('/login')
+@app.route('/register')
+@app.route('/profile')
+@app.route('/auth')
+def auth_pages():
+    """Serves login, registration, and user profile management view."""
+    return render_template('pages/auth.html')
+
+@app.route('/spa')
+def spa_legacy_page():
+    """Legacy single-page view container."""
     return render_template('index.html')
 
 @app.route('/seat-selection')
@@ -90,27 +152,12 @@ def seat_selection_page():
     """Serves seat selection view."""
     if os.path.exists(os.path.join(app.template_folder, 'seat_selection.html')):
         return render_template('seat_selection.html')
-    return render_template('index.html')
+    return render_template('pages/home.html')
 
-@app.route('/my-bookings')
-def my_bookings_page():
-    """Serves my bookings view."""
-    if os.path.exists(os.path.join(app.template_folder, 'my_bookings.html')):
-        return render_template('my_bookings.html')
-    return render_template('index.html')
-
-@app.route('/payment')
-def payment_page():
-    """Serves payment confirmation view."""
-    if os.path.exists(os.path.join(app.template_folder, 'payment.html')):
-        return render_template('payment.html')
-    return render_template('index.html')
-
-@app.route('/login')
-@app.route('/logout')
-def auth_pages():
-    """Serves auth pages."""
-    return render_template('index.html')
+@app.errorhandler(404)
+def page_not_found(e):
+    """Custom 404 error handler with friendly route recovery."""
+    return render_template('404.html'), 404
 
 # Explicit static file fallbacks to guarantee images, CSS, JS load seamlessly
 @app.route('/css/<path:filename>')

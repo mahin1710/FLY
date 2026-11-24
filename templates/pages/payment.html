@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Payment Checkout — FLY{% endblock %}
+{% block meta_description %}Complete secure payment for your locked flight reservation.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Booking Review', 'url': '/booking/review'},
+  {'label': 'Payment Checkout', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container" style="max-width: 840px;">
+  <!-- Stepper: Step 5: Payment Active (Steps 1-4 complete) -->
+  {{ st.render_booking_stepper(current_step='payment', completed_steps=['search', 'flight', 'travellers', 'review']) }}
+
+  {{ dn.render_demo_notice('Payment Gateway Integration (bKash, Nagad, Visa, Mastercard)') }}
+
+  {{ ph.render_page_heading(
+    title='Secure Payment Checkout',
+    subtitle='Select your preferred payment method to complete ticket issuance within your hold window',
+    eyebrow='STEP 5 OF 6 &bull; TEST MODE TRANSACTION',
+    badge='15-Min Lock Active'
+  ) }}
+
+  <!-- Reservation Timer Badge -->
+  <div class="card glassmorphism" style="padding: 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-left: 4px solid var(--accent-primary);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 2rem;">⏱️</span>
+      <div>
+        <div style="font-weight: 700; font-size: 1rem;">Temporary Seat Hold Active</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">Your seat 12A is exclusively held for your transaction</div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <span style="font-size: 1.6rem; font-weight: 800; font-family: var(--font-mono); color: var(--accent-primary);">14:32</span>
+      <span style="display: block; font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">TIME REMAINING</span>
+    </div>
+  </div>
+
+  <div class="card glassmorphism" style="padding: 28px; margin-bottom: 24px;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Select Payment Gateway</h3>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+      <!-- Option 1: Simulated Instant Verify -->
+      <label class="benefit-card" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; cursor: pointer; border-color: var(--accent-primary);">
+        <input type="radio" name="paymentMethod" value="test" checked>
+        <span style="font-size: 1.5rem;">⚡</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; font-size: 0.95rem;">Instant Verification (Demo / Test Mode)</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">Simulates instant CAAB banking clearance and issues official digital ticket</div>
+        </div>
+        <span class="dest-fare-pill">Instant</span>
+      </label>
+
+      <!-- Option 2: bKash -->
+      <label class="benefit-card" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; cursor: pointer;">
+        <input type="radio" name="paymentMethod" value="bkash">
+        <span style="font-size: 1.5rem;">📱</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; font-size: 0.95rem;">bKash Mobile Banking</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">Direct checkout with bKash personal wallet or merchant gateway</div>
+        </div>
+        <span class="dest-badge">0% Fee</span>
+      </label>
+
+      <!-- Option 3: Credit / Debit Card -->
+      <label class="benefit-card" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; cursor: pointer;">
+        <input type="radio" name="paymentMethod" value="card">
+        <span style="font-size: 1.5rem;">💳</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; font-size: 0.95rem;">Visa &bull; Mastercard &bull; Amex</div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">PCI-DSS compliant 3D-Secure 2.0 verified card checkout</div>
+        </div>
+        <span class="dest-badge">Encrypted</span>
+      </label>
+    </div>
+
+    <!-- Total Row -->
+    <div style="border-top: 1px solid var(--border-subtle); padding-top: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Total Amount to Charge</span>
+        <strong style="font-size: 1.45rem; font-family: var(--font-heading); color: var(--text-main);">৳4,950 BDT</strong>
+      </div>
+      <div style="text-align: right; font-size: 0.8rem; color: var(--accent-teal);">
+        ✓ No hidden transaction surcharge
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <a href="/booking/review" class="btn-secondary">Back to Review</a>
+      <a href="/booking/status/BK-DAC-7788" class="btn-primary btn-large">
+        <span>Confirm Payment &amp; Issue Ticket</span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+{% import "components/empty_state.html" as es %}
+
+{% block title %}Flight Search Results — FLY{% endblock %}
+{% block meta_description %}Compare and select available flights across Bangladesh and international destinations with FLY.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Flight Results', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container">
+  <!-- Booking Flow Stepper (Step 1: Search Active) -->
+  {{ st.render_booking_stepper(current_step='search', completed_steps=[]) }}
+
+  <!-- Demo Notice Banner -->
+  {{ dn.render_demo_notice('Live Flight GDS/NDC Search API') }}
+
+  <!-- Page Heading -->
+  {{ ph.render_page_heading(
+    title='Available Flight Offers',
+    subtitle='Showing verified domestic and international departures with real-time seat availability',
+    eyebrow='ROUND TRIP &bull; 1 PASSENGER &bull; ECONOMY',
+    badge='Live Inventory Simulated'
+  ) }}
+
+  <!-- Search Summary Filter Bar -->
+  <div class="results-summary-card glassmorphism" style="margin-bottom: 24px;">
+    <div class="summary-left-col">
+      <div class="summary-route-header">
+        <span class="summary-route-city">Dhaka (DAC)</span>
+        <span class="summary-plane-icon">✈</span>
+        <span class="summary-route-city">Cox's Bazar (CXB)</span>
+      </div>
+      <div class="summary-pills-row">
+        <span class="summary-pill">📅 Departure: Flexible</span>
+        <span class="summary-pill">👥 1 Passenger</span>
+        <span class="summary-pill">💺 Economy</span>
+      </div>
+    </div>
+    <div class="summary-actions-col">
+      <a href="/" class="btn-secondary-sm">Modify Search</a>
+    </div>
+  </div>
+
+  <!-- Flight Cards List -->
+  <div class="flights-list-container" id="flightOffersList">
+    <!-- Flight Offer 1: Biman Bangladesh Airlines -->
+    <article class="flight-card glassmorphism">
+      <div class="flight-card-header">
+        <div class="airline-brand-group">
+          <div class="airline-logo-box">✈️</div>
+          <div>
+            <h4 class="airline-title">Biman Bangladesh Airlines</h4>
+            <span class="flight-num-tag">BG-433 &bull; Boeing 737-800</span>
+          </div>
+        </div>
+        <div class="flight-badges-group">
+          <span class="dest-badge">Non-stop</span>
+          <span class="dest-fare-pill">Refundable</span>
+        </div>
+      </div>
+      <div class="flight-card-body">
+        <div class="flight-time-point">
+          <div class="point-time">10:30 AM</div>
+          <div class="point-city">Dhaka (DAC)</div>
+          <div class="point-sub">Hazrat Shahjalal Intl</div>
+        </div>
+        <div class="flight-duration-col">
+          <div class="duration-text">55m</div>
+          <div class="flight-track-line">
+            <span class="track-dot"></span>
+            <span class="track-line"></span>
+            <span class="track-dot"></span>
+          </div>
+          <div class="stops-text">Direct Flight</div>
+        </div>
+        <div class="flight-time-point">
+          <div class="point-time">11:25 AM</div>
+          <div class="point-city">Cox's Bazar (CXB)</div>
+          <div class="point-sub">Cox's Bazar Airport</div>
+        </div>
+      </div>
+      <div class="flight-card-footer">
+        <div class="baggage-pill">🧳 20 kg Check-in &bull; 7 kg Cabin</div>
+        <div class="price-cta-group">
+          <div class="price-box">
+            <span class="price-label">Total per passenger</span>
+            <span class="price-val">৳4,500</span>
+          </div>
+          <a href="/flights/offer/OFFER-DAC-CXB-433" class="btn-primary">
+            <span>Select Offer</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <!-- Flight Offer 2: US-Bangla Airlines -->
+    <article class="flight-card glassmorphism">
+      <div class="flight-card-header">
+        <div class="airline-brand-group">
+          <div class="airline-logo-box">🛫</div>
+          <div>
+            <h4 class="airline-title">US-Bangla Airlines</h4>
+            <span class="flight-num-tag">BS-141 &bull; ATR 72-600</span>
+          </div>
+        </div>
+        <div class="flight-badges-group">
+          <span class="dest-badge">Non-stop</span>
+          <span class="dest-fare-pill">Free Meal</span>
+        </div>
+      </div>
+      <div class="flight-card-body">
+        <div class="flight-time-point">
+          <div class="point-time">02:15 PM</div>
+          <div class="point-city">Dhaka (DAC)</div>
+          <div class="point-sub">Hazrat Shahjalal Intl</div>
+        </div>
+        <div class="flight-duration-col">
+          <div class="duration-text">1h 00m</div>
+          <div class="flight-track-line">
+            <span class="track-dot"></span>
+            <span class="track-line"></span>
+            <span class="track-dot"></span>
+          </div>
+          <div class="stops-text">Direct Flight</div>
+        </div>
+        <div class="flight-time-point">
+          <div class="point-time">03:15 PM</div>
+          <div class="point-city">Cox's Bazar (CXB)</div>
+          <div class="point-sub">Cox's Bazar Airport</div>
+        </div>
+      </div>
+      <div class="flight-card-footer">
+        <div class="baggage-pill">🧳 20 kg Check-in &bull; 7 kg Cabin</div>
+        <div class="price-cta-group">
+          <div class="price-box">
+            <span class="price-label">Total per passenger</span>
+            <span class="price-val">৳4,800</span>
+          </div>
+          <a href="/flights/offer/OFFER-DAC-CXB-141" class="btn-primary">
+            <span>Select Offer</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <!-- Flight Offer 3: Air Astra -->
+    <article class="flight-card glassmorphism">
+      <div class="flight-card-header">
+        <div class="airline-brand-group">
+          <div class="airline-logo-box">✨</div>
+          <div>
+            <h4 class="airline-title">Air Astra</h4>
+            <span class="flight-num-tag">2A-441 &bull; ATR 72-600</span>
+          </div>
+        </div>
+        <div class="flight-badges-group">
+          <span class="dest-badge">Non-stop</span>
+          <span class="dest-fare-pill">Popular</span>
+        </div>
+      </div>
+      <div class="flight-card-body">
+        <div class="flight-time-point">
+          <div class="point-time">05:40 PM</div>
+          <div class="point-city">Dhaka (DAC)</div>
+          <div class="point-sub">Hazrat Shahjalal Intl</div>
+        </div>
+        <div class="flight-duration-col">
+          <div class="duration-text">55m</div>
+          <div class="flight-track-line">
+            <span class="track-dot"></span>
+            <span class="track-line"></span>
+            <span class="track-dot"></span>
+          </div>
+          <div class="stops-text">Direct Flight</div>
+        </div>
+        <div class="flight-time-point">
+          <div class="point-time">06:35 PM</div>
+          <div class="point-city">Cox's Bazar (CXB)</div>
+          <div class="point-sub">Cox's Bazar Airport</div>
+        </div>
+      </div>
+      <div class="flight-card-footer">
+        <div class="baggage-pill">🧳 20 kg Check-in &bull; 7 kg Cabin</div>
+        <div class="price-cta-group">
+          <div class="price-box">
+            <span class="price-label">Total per passenger</span>
+            <span class="price-val">৳4,250</span>
+          </div>
+          <a href="/flights/offer/OFFER-DAC-CXB-441" class="btn-primary">
+            <span>Select Offer</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </article>
+  </div>
+</div>
+{% endblock %}

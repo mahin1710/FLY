@@ -1,0 +1,12 @@
+{# Reusable Incomplete / Live Integration Demo Notice Component #}
+{% macro render_demo_notice(feature_name='Live Airline GDS Connector') %}
+<aside class="demo-integration-notice" role="note" aria-label="Demo notice">
+  <div class="demo-notice-icon" aria-hidden="true">⚡</div>
+  <div class="demo-notice-content">
+    <strong class="demo-notice-tag">DEMO ENVIRONMENT &bull; STUBBED INTEGRATION</strong>
+    <p class="demo-notice-text">
+      The <strong>{{ feature_name }}</strong> is currently operating in local demo mode with deterministic mock fares and simulated flight inventory. No live tickets or real payment charges will be executed.
+    </p>
+  </div>
+</aside>
+{% endmacro %}

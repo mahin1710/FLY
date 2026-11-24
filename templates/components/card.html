@@ -1,0 +1,28 @@
+{# Reusable Card Component #}
+{% macro render_card(title=None, subtitle=None, badge=None, body_content='', footer_content=None, card_class='') %}
+<article class="ui-card glassmorphism {{ card_class }}">
+  {% if title or badge or subtitle %}
+    <header class="ui-card-header">
+      <div class="ui-card-title-group">
+        {% if title %}
+          <h3 class="ui-card-title">{{ title }}</h3>
+        {% endif %}
+        {% if badge %}
+          <span class="ui-card-badge">{{ badge }}</span>
+        {% endif %}
+      </div>
+      {% if subtitle %}
+        <p class="ui-card-subtitle">{{ subtitle }}</p>
+      {% endif %}
+    </header>
+  {% endif %}
+  <div class="ui-card-body">
+    {{ body_content | safe }}
+  </div>
+  {% if footer_content %}
+    <footer class="ui-card-footer">
+      {{ footer_content | safe }}
+    </footer>
+  {% endif %}
+</article>
+{% endmacro %}

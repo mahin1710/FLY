@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FLY — Premium International Flight Booking{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Experience seamless luxury flight booking, real-time interactive seat maps, airline fleet management, and instant digital boarding passes with FLY.{% endblock %}">
+  <meta name="author" content="mahin1710">
+  
+  <link rel="icon" type="image/svg+xml" href="/images/fly_icon.svg">
+  <link rel="alternate icon" type="image/png" href="/images/favicon.png">
+
+  <!-- Google Fonts: Playfair Display, Plus Jakarta Sans, Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/style.css">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="site-body">
+  <!-- Skip to Main Content Link for Keyboard Accessibility -->
+  <a href="#mainContent" class="skip-to-content">Skip to main content</a>
+
+  <!-- Global App Header / Navbar -->
+  <header class="app-header" id="appHeader" role="banner">
+    <div class="header-container">
+      <!-- Brand Logo -->
+      <a href="/" class="brand-wrapper" id="brandLogo" aria-label="FLY Homepage">
+        <div class="brand-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="brand-svg-icon" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">FLY</span>
+          <span class="brand-sub">Aviation &amp; Travel</span>
+        </div>
+      </a>
+
+      <!-- Desktop Primary Navigation -->
+      <nav class="nav-links" id="mainNav" aria-label="Primary Navigation">
+        <a href="/flights/search" class="nav-btn {% if request.path.startswith('/flights') %}active{% endif %}">
+          <span>Flights</span>
+        </a>
+        <a href="/manage-booking" class="nav-btn {% if request.path == '/manage-booking' %}active{% endif %}">
+          <span>Manage Booking</span>
+        </a>
+        <a href="/support" class="nav-btn {% if request.path == '/support' %}active{% endif %}" onclick="if (window.location.pathname === '/' && typeof app !== 'undefined') { app.scrollToHelpSupport(); }">
+          <span>Help</span>
+        </a>
+        <a href="/my-bookings" class="nav-btn {% if request.path == '/my-bookings' %}active{% endif %}" id="navBookingsBtn">
+          <span>My Bookings</span>
+          <span class="badge" id="bookingsCountBadge" style="display: none;">0</span>
+        </a>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <!-- Currency & Language Indicator -->
+        <div class="header-locale-pill" title="Currency: BDT (৳) • Language: English">
+          <span class="locale-flag" aria-hidden="true">🇧🇩</span>
+          <span class="locale-text">BDT (৳) • EN</span>
+        </div>
+
+        <!-- Dark/Light Theme Switcher -->
+        <button class="theme-toggle-btn" id="themeToggleBtn" type="button" title="Toggle Dark/Light Mode" aria-label="Toggle dark and light theme">
+          <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" x2="12" y1="1" y2="3"/><line x1="12" x2="12" y1="21" y2="23"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="1" x2="3" y1="12" y2="12"/><line x1="21" x2="23" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/></svg>
+          <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+
+        <!-- User Profile / Auth Area (Dynamic) -->
+        <div class="auth-area" id="authArea">
+          <a href="/login" class="btn-primary btn-sm" id="btnHeaderLogin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+            <span>Sign In</span>
+          </a>
+        </div>
+
+        <!-- Accessible Mobile Menu Hamburger Toggle -->
+        <button class="mobile-menu-toggle" 
+                id="mobileMenuToggle" 
+                type="button" 
+                aria-label="Open navigation menu" 
+                aria-expanded="false" 
+                aria-controls="mobileNavDrawer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="hamburger-icon" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Keyboard-Accessible Mobile Navigation Drawer -->
+  <div class="mobile-nav-overlay" id="mobileNavOverlay" aria-hidden="true"></div>
+  <nav class="mobile-nav-drawer" 
+       id="mobileNavDrawer" 
+       role="dialog" 
+       aria-modal="true" 
+       aria-label="Mobile Navigation Menu"
+       aria-hidden="true">
+    <div class="mobile-nav-header">
+      <div class="brand-wrapper">
+        <div class="brand-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="brand-svg-icon" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">FLY</span>
+          <span class="brand-sub">Navigation</span>
+        </div>
+      </div>
+      <button class="mobile-nav-close" id="mobileNavClose" type="button" aria-label="Close navigation menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 20px; height: 20px;" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="mobile-nav-body">
+      <div class="mobile-nav-list">
+        <a href="/" class="mobile-nav-link {% if request.path == '/' %}active{% endif %}">
+          <span class="mobile-nav-icon">🏠</span>
+          <span>Home</span>
+        </a>
+        <a href="/flights/search" class="mobile-nav-link {% if request.path.startswith('/flights') %}active{% endif %}">
+          <span class="mobile-nav-icon">✈️</span>
+          <span>Search Flights</span>
+        </a>
+        <a href="/manage-booking" class="mobile-nav-link {% if request.path == '/manage-booking' %}active{% endif %}">
+          <span class="mobile-nav-icon">📋</span>
+          <span>Manage Booking</span>
+        </a>
+        <a href="/my-bookings" class="mobile-nav-link {% if request.path == '/my-bookings' %}active{% endif %}">
+          <span class="mobile-nav-icon">🎟️</span>
+          <span>My Bookings</span>
+        </a>
+        <a href="/support" class="mobile-nav-link {% if request.path == '/support' %}active{% endif %}">
+          <span class="mobile-nav-icon">📞</span>
+          <span>Help &amp; Support</span>
+        </a>
+      </div>
+
+      <div class="mobile-nav-divider"></div>
+
+      <div class="mobile-nav-auth" id="mobileNavAuth">
+        <a href="/login" class="btn-primary w-100" style="text-align: center;">Sign In / Account</a>
+      </div>
+
+      <div class="mobile-nav-meta">
+        <div class="mobile-locale-indicator">
+          <span>🇧🇩 Currency: BDT (৳) &bull; Language: English</span>
+        </div>
+        <div class="mobile-compliance-indicator">
+          <span>🛡️ CAAB &amp; IATA Standard Compliant</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Route-Level Breadcrumbs Block -->
+  {% block breadcrumbs %}{% endblock %}
+
+  <!-- Route-Level Alert & Error Boundary Container -->
+  <div id="routeAlertBoundary" class="container route-alert-container" style="display: none;"></div>
+
+  <!-- Main View Container -->
+  <main class="main-content" id="mainContent" role="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Structured Modern Airline Footer -->
+  <footer class="app-main-footer" id="appMainFooter" role="contentinfo">
+    <div class="container footer-container">
+      <div class="footer-grid">
+        <!-- Col 1: Brand & Mission -->
+        <div class="footer-col footer-col-brand">
+          <a href="/" class="brand-wrapper" aria-label="FLY Homepage">
+            <div class="brand-logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="brand-svg-icon" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+            </div>
+            <div class="brand-text">
+              <span class="brand-title">FLY</span>
+              <span class="brand-sub">Aviation &amp; Travel</span>
+            </div>
+          </a>
+          <p class="footer-brand-desc">
+            International-standard flight booking platform delivering total fare transparency, atomic 15-minute seat guarantees, and strict customer privacy.
+          </p>
+          <div class="footer-compliance-tag">
+            <span>🛡️ CAAB &amp; IATA Standard Compliant Architecture</span>
+          </div>
+        </div>
+
+        <!-- Col 2: Flight Services -->
+        <div class="footer-col">
+          <h4 class="footer-heading">Flight Services</h4>
+          <ul class="footer-links-list">
+            <li><a href="/flights/search">Search Flights</a></li>
+            <li><a href="/manage-booking">Manage Booking</a></li>
+            <li><a href="/my-bookings">My Booked Trips</a></li>
+            <li><a href="/support#baggage">Baggage Allowance Policy</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Travel Information -->
+        <div class="footer-col">
+          <h4 class="footer-heading">Travel Information</h4>
+          <ul class="footer-links-list">
+            <li><a href="/support">Help &amp; Customer Desk</a></li>
+            <li><a href="/support#checkin">Airport Check-In Guidelines</a></li>
+            <li><a href="/support#refunds">Refund &amp; Cancellation Policies</a></li>
+            <li><a href="/support#advisory">Travel Advisories</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Trust & Privacy -->
+        <div class="footer-col">
+          <h4 class="footer-heading">Trust &amp; Privacy</h4>
+          <ul class="footer-links-list">
+            <li><a href="/support#privacy">Customer Privacy Policy</a></li>
+            <li><a href="/support#terms">Terms of Service</a></li>
+            <li><a href="/support#security">Data Security &amp; Compliance</a></li>
+            <li><a href="/manage-booking">Find Reservation by PNR</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom Sub-Footer -->
+      <div class="footer-bottom-bar">
+        <div class="footer-copy-text">
+          &copy; 2026 <strong>FLY Aviation &amp; Travel</strong>. All rights reserved. Built with Python Flask, HTML5, CSS3 &amp; Vanilla JavaScript.
+        </div>
+        <div class="footer-dev-text">
+          Engineering Author: <strong>mahin1710</strong> &bull; Version 1.0.0
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Shared Site Shell Script -->
+  <script src="/js/shell.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

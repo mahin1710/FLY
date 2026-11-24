@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/form_field.html" as ff %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Manage Booking — Retrieve Reservation by PNR — FLY{% endblock %}
+{% block meta_description %}Retrieve, review, and modify your flight bookings using your booking reference / PNR and passenger surname.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Manage Booking', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container" style="max-width: 760px;">
+  {{ dn.render_demo_notice('Global PNR Record Locator & Self-Service Portal') }}
+
+  {{ ph.render_page_heading(
+    title='Manage Your Booking',
+    subtitle='Enter your 6-digit PNR or Booking Reference and Passenger Last Name to access your journey',
+    eyebrow='SELF-SERVICE AIRLINE PORTAL',
+    badge='Public Guest Access'
+  ) }}
+
+  <div class="card glassmorphism" style="padding: 32px; margin-bottom: 32px;">
+    <form action="/booking/status/BK-DAC-7788" method="GET">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px;">
+        {{ ff.render_text_field(
+          id='bookingRefInput',
+          name='ref',
+          label='Booking Reference or PNR',
+          value=request.args.get('ref', 'BK-DAC-7788'),
+          placeholder='e.g. BK-1234 or 6-char PNR',
+          required=True,
+          help_text='Found in your booking confirmation email or SMS.'
+        ) }}
+
+        {{ ff.render_text_field(
+          id='passengerLastNameInput',
+          name='lastName',
+          label='Passenger Last Name',
+          value='Rahman',
+          placeholder='e.g. Rahman',
+          required=True,
+          help_text='As written on the booking ticket.'
+        ) }}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <a href="/" class="btn-secondary">Cancel</a>
+        <button type="submit" class="btn-primary">
+          <span>Find &amp; Manage Reservation</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Features list -->
+  <div class="card glassmorphism" style="padding: 24px;">
+    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">What can you do in Manage Booking?</h4>
+    <ul style="list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 0.88rem; color: var(--text-secondary);">
+      <li>✅ View and print digital boarding passes</li>
+      <li>✅ Change seats or review baggage limits</li>
+      <li>✅ Revalidate flight status and departure gate</li>
+      <li>✅ Request cancellation or fare refund quote</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

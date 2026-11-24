@@ -1,0 +1,16 @@
+{# Reusable Empty State Component #}
+{% macro render_empty_state(icon='✈️', title='No Records Found', message='There is currently no data matching your criteria.', action_text=None, action_url=None) %}
+<div class="empty-state-card glassmorphism" role="region" aria-label="{{ title }}">
+  <div class="empty-state-icon" aria-hidden="true">{{ icon }}</div>
+  <h3 class="empty-state-title">{{ title }}</h3>
+  <p class="empty-state-desc">{{ message }}</p>
+  {% if action_text and action_url %}
+    <div class="empty-state-action">
+      <a href="{{ action_url }}" class="btn-primary">
+        <span>{{ action_text }}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Booking Confirmation — {{ reference }} — FLY{% endblock %}
+{% block meta_description %}Your flight booking is confirmed. View your digital boarding pass and reservation details.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Booking Status', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container" style="max-width: 920px;">
+  <!-- Stepper: Step 6: Confirmation Complete (All 6 steps complete!) -->
+  {{ st.render_booking_stepper(current_step='confirmation', completed_steps=['search', 'flight', 'travellers', 'review', 'payment', 'confirmation']) }}
+
+  {{ dn.render_demo_notice('Airline PNR Generation & E-Ticket Issuance') }}
+
+  <div class="card glassmorphism" style="text-align: center; padding: 36px 24px; margin-bottom: 24px;">
+    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">🎉</div>
+    <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 8px;">TICKET ISSUED &bull; CONFIRMED</div>
+    <h1 style="font-family: var(--font-heading); font-size: 2.2rem; margin-bottom: 8px;">Your Booking is Confirmed!</h1>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 16px auto; font-size: 0.95rem;">
+      Thank you for booking with FLY. Your electronic ticket has been issued and stored in your reservation history.
+    </p>
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-surface-elevated); padding: 8px 18px; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle);">
+      <span style="font-size: 0.85rem; color: var(--text-muted);">Booking Reference:</span>
+      <strong style="font-family: var(--font-mono); font-size: 1.1rem; color: var(--accent-primary);">{{ reference }}</strong>
+    </div>
+  </div>
+
+  <!-- Digital Boarding Pass Ticket Component -->
+  <div class="boarding-pass-card glassmorphism" style="margin-bottom: 24px;">
+    <div class="ticket-main-section">
+      <div class="ticket-header-strip">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>✈️</span>
+          <strong>Biman Bangladesh Airlines &bull; Flight BG-433</strong>
+        </div>
+        <span class="ticket-class-badge">Economy Class</span>
+      </div>
+
+      <div class="ticket-flight-data">
+        <div>
+          <div class="ticket-city-code">DAC</div>
+          <div class="ticket-city-name">Dhaka</div>
+          <div class="ticket-time-bold">10:30 AM</div>
+        </div>
+        <div class="ticket-arrow-col">
+          <span>55m Non-Stop</span>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+        <div>
+          <div class="ticket-city-code">CXB</div>
+          <div class="ticket-city-name">Cox's Bazar</div>
+          <div class="ticket-time-bold">11:25 AM</div>
+        </div>
+      </div>
+
+      <div class="ticket-meta-grid">
+        <div>
+          <span class="ticket-meta-label">PASSENGER</span>
+          <span class="ticket-meta-val">Mahin Rahman</span>
+        </div>
+        <div>
+          <span class="ticket-meta-label">SEAT</span>
+          <span class="ticket-meta-val">12A (Window)</span>
+        </div>
+        <div>
+          <span class="ticket-meta-label">BOARDING TIME</span>
+          <span class="ticket-meta-val">10:00 AM</span>
+        </div>
+        <div>
+          <span class="ticket-meta-label">GATE</span>
+          <span class="ticket-meta-val">Gate 4</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticket-stub">
+      <div class="stub-header">BOARDING PASS</div>
+      <div class="stub-pax-name">Mahin Rahman</div>
+      <div class="stub-route">DAC ➔ CXB</div>
+      <div class="stub-seat-number">12A</div>
+      <div class="stub-barcode-container">
+        <div class="simulated-barcode"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 40px;">
+    <button type="button" class="btn-primary" onclick="window.print()">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+      <span>Print Boarding Pass</span>
+    </button>
+    <a href="/my-bookings" class="btn-secondary">
+      View in My Bookings
+    </a>
+    <a href="/" class="btn-secondary-outline">
+      Book Another Journey
+    </a>
+  </div>
+</div>
+{% endblock %}

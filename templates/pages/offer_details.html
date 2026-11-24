@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Offer Details — {{ offer_id }} — FLY{% endblock %}
+{% block meta_description %}Review flight details, fare breakdown, baggage rules, and cancellation terms for offer {{ offer_id }}.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Flight Results', 'url': '/flights/search'},
+  {'label': 'Offer ' ~ offer_id, 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container">
+  <!-- Stepper: Step 2: Flight Active (Step 1 complete) -->
+  {{ st.render_booking_stepper(current_step='flight', completed_steps=['search']) }}
+
+  {{ dn.render_demo_notice('Real-time Airline Fare Lock & Baggage Revalidation') }}
+
+  {{ ph.render_page_heading(
+    title='Flight Offer Review',
+    subtitle='Detailed itinerary breakdown, fare rules, and seat allocation parameters',
+    eyebrow='OFFER ' ~ offer_id,
+    badge='Verified Availability'
+  ) }}
+
+  <div class="flight-details-layout">
+    <!-- Left: Flight Details Card -->
+    <div class="details-main-col">
+      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+        <div class="flight-card-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 20px;">
+          <div class="airline-brand-group">
+            <div class="airline-logo-box">✈️</div>
+            <div>
+              <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2px;">Biman Bangladesh Airlines</h3>
+              <span class="flight-num-tag">Flight BG-433 &bull; Aircraft Boeing 737-800</span>
+            </div>
+          </div>
+          <span class="dest-badge">Guaranteed Non-Stop</span>
+        </div>
+
+        <div class="flight-card-body" style="margin-bottom: 24px;">
+          <div class="flight-time-point">
+            <div class="point-time">10:30 AM</div>
+            <div class="point-city">Dhaka (DAC)</div>
+            <div class="point-sub">Terminal 1, Hazrat Shahjalal Intl</div>
+          </div>
+          <div class="flight-duration-col">
+            <div class="duration-text">55 minutes</div>
+            <div class="flight-track-line">
+              <span class="track-dot"></span>
+              <span class="track-line"></span>
+              <span class="track-dot"></span>
+            </div>
+            <div class="stops-text">Direct Route</div>
+          </div>
+          <div class="flight-time-point">
+            <div class="point-time">11:25 AM</div>
+            <div class="point-city">Cox's Bazar (CXB)</div>
+            <div class="point-sub">Cox's Bazar Airport</div>
+          </div>
+        </div>
+
+        <!-- Baggage & Fare Conditions -->
+        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px;">Baggage &amp; Included Amenities</h4>
+        <div class="amenities-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px;">
+          <div class="benefit-card" style="padding: 14px;">
+            <div style="font-weight: 700; font-size: 0.9rem;">🧳 Cabin Baggage</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">7 kg per passenger included</div>
+          </div>
+          <div class="benefit-card" style="padding: 14px;">
+            <div style="font-weight: 700; font-size: 0.9rem;">📦 Checked Baggage</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">20 kg per passenger included</div>
+          </div>
+          <div class="benefit-card" style="padding: 14px;">
+            <div style="font-weight: 700; font-size: 0.9rem;">🍽️ Inflight Snack</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Complimentary beverage & snack</div>
+          </div>
+          <div class="benefit-card" style="padding: 14px;">
+            <div style="font-weight: 700; font-size: 0.9rem;">⏱️ 15-Min Seat Lock</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">Guaranteed hold upon selection</div>
+          </div>
+        </div>
+
+        <!-- Policy Notes -->
+        <div class="alert alert-info" style="background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.2); padding: 14px 18px; border-radius: var(--radius-md); font-size: 0.88rem; color: var(--text-secondary);">
+          <strong>Refund Policy:</strong> Cancellation permitted up to 24 hours prior to scheduled departure subject to standard airline processing fees. Name changes are not permitted after ticket issuance.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Fare Summary Sidebar -->
+    <aside class="details-side-col">
+      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Fare Summary</h3>
+        
+        <div class="fare-breakdown-table">
+          <div class="fare-row">
+            <span>Base Fare (1 Adult)</span>
+            <span class="fare-val">৳3,650</span>
+          </div>
+          <div class="fare-row">
+            <span>Taxes &amp; Airport Embarkation</span>
+            <span class="fare-val">৳550</span>
+          </div>
+          <div class="fare-row">
+            <span>Government 15% VAT</span>
+            <span class="fare-val">৳300</span>
+          </div>
+          <div class="fare-row">
+            <span>Seat Reservation Lock</span>
+            <span class="fare-val free">FREE</span>
+          </div>
+          <div class="fare-row total">
+            <span>Total Payable</span>
+            <span class="fare-val">৳4,500</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
+          <a href="/booking/travellers?offer_id={{ offer_id }}" class="btn-primary w-100" style="text-align: center;">
+            <span>Continue to Travellers</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a href="/flights/search" class="btn-secondary w-100" style="text-align: center;">
+            Choose Different Flight
+          </a>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

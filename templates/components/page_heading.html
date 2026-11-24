@@ -1,0 +1,24 @@
+{# Reusable Page Heading Component #}
+{% macro render_page_heading(title, subtitle=None, eyebrow=None, badge=None, actions_html=None) %}
+<div class="page-heading-block">
+  <div class="page-heading-content">
+    {% if eyebrow %}
+      <div class="page-heading-eyebrow">{{ eyebrow }}</div>
+    {% endif %}
+    <div class="page-heading-title-row">
+      <h1 class="page-heading-title">{{ title }}</h1>
+      {% if badge %}
+        <span class="page-heading-badge">{{ badge }}</span>
+      {% endif %}
+    </div>
+    {% if subtitle %}
+      <p class="page-heading-subtitle">{{ subtitle }}</p>
+    {% endif %}
+  </div>
+  {% if actions_html %}
+    <div class="page-heading-actions">
+      {{ actions_html | safe }}
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}

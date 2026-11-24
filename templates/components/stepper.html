@@ -1,0 +1,43 @@
+{# Reusable Booking Flow Progress Stepper Component #}
+{# Steps: Search -> Flight -> Travellers -> Review -> Payment -> Confirmation #}
+{% macro render_booking_stepper(current_step='search', completed_steps=[]) %}
+{% set steps = [
+  {'id': 'search', 'number': 1, 'label': 'Search', 'url': '/flights/search'},
+  {'id': 'flight', 'number': 2, 'label': 'Flight', 'url': None},
+  {'id': 'travellers', 'number': 3, 'label': 'Travellers', 'url': '/booking/travellers'},
+  {'id': 'review', 'number': 4, 'label': 'Review', 'url': '/booking/review'},
+  {'id': 'payment', 'number': 5, 'label': 'Payment', 'url': '/booking/payment'},
+  {'id': 'confirmation', 'number': 6, 'label': 'Confirmation', 'url': None}
+] %}
+
+<nav class="booking-stepper-nav" aria-label="Booking Progress">
+  <div class="container">
+    <ol class="booking-stepper-list">
+      {% for step in steps %}
+        {% set is_active = (step.id == current_step) %}
+        {% set is_complete = (step.id in completed_steps) %}
+        {% set is_pending = (not is_active and not is_complete) %}
+        
+        <li class="stepper-item {% if is_active %}is-active{% elif is_complete %}is-complete{% else %}is-pending{% endif %}"
+            {% if is_active %}aria-current="step"{% endif %}>
+          <div class="stepper-bubble-wrapper">
+            <span class="stepper-bubble">
+              {% if is_complete %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="stepper-check-icon" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="sr-only">Step {{ step.number }} Complete: </span>
+              {% else %}
+                <span class="stepper-num">{{ step.number }}</span>
+                <span class="sr-only">{% if is_active %}Current Step {{ step.number }}: {% else %}Step {{ step.number }}: {% endif %}</span>
+              {% endif %}
+            </span>
+            <span class="stepper-label">{{ step.label }}</span>
+          </div>
+          {% if not loop.last %}
+            <div class="stepper-connector {% if is_complete %}is-complete{% endif %}" aria-hidden="true"></div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+</nav>
+{% endmacro %}
