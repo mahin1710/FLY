@@ -266,7 +266,7 @@ class BookingController extends Controller
             if ($code === 404) {
                 return ApiResponse::error($e->getMessage(), 404, null, [], 'NOT_FOUND');
             }
-            return ApiResponse::error($e->getMessage(), $code >= 400 && $code < 600 ? $code : 422, null, [], 'PASSENGER_VALIDATION_ERROR');
+            return ApiResponse::error($e->getMessage(), $code >= 400 && $code < 600 ? $code : 422, null, [], 'VALIDATION_ERROR');
         }
     }
 
@@ -275,7 +275,7 @@ class BookingController extends Controller
      */
     public function getStatus(string $ulid, Request $request): JsonResponse
     {
-        $booking = Booking::with('passengers')->where('ulid', $ulid)->first();
+        $booking = Booking::with(['passengers', 'segments'])->where('ulid', $ulid)->first();
 
         if (!$booking) {
             return ApiResponse::error("Booking not found for ULID {$ulid}", 404, null, [], 'NOT_FOUND');
@@ -297,6 +297,13 @@ class BookingController extends Controller
             'hold_expires_at'           => $booking->hold_expires_at?->toIso8601String(),
             'currency'                  => $booking->currency,
             'total_amount'              => (float) $booking->total_amount,
+            'contact'                   => [
+                'email'        => $booking->contact_email,
+                'phone'        => $booking->contact_phone,
+                'country_code' => $booking->contact_country_code,
+            ],
+            'passengers'                => $booking->passengers,
+            'segments'                  => $booking->segments,
             'passengers_count'          => $booking->passengers->count(),
             'has_verified_pnr'          => !empty($booking->provider_booking_ref),
         ], 'Booking status retrieved successfully', 200);

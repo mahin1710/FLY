@@ -326,7 +326,6 @@ class CustomerServicingTest extends TestCase
             'servicing_capability' => 'online_supplier',
         ]);
 
-        dump($response->json());
         $response->assertStatus(422)
             ->assertJsonPath('error_code', 'SUPPLIER_REJECTED');
 

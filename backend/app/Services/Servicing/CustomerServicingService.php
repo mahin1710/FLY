@@ -109,8 +109,9 @@ class CustomerServicingService
     public function generateRefundQuote(Booking $booking, array $options = []): array
     {
         $fareSnapshot = $this->resolveFareRuleSnapshot($booking);
+        $pnr = $booking->provider_booking_reference ?: $booking->provider_booking_ref ?: $booking->reference;
         $isNonRefundable = empty($fareSnapshot['refundable'])
-            || str_contains(strtoupper((string) $booking->provider_booking_ref), 'NONREF');
+            || str_contains(strtoupper((string) $pnr), 'NONREF');
 
         $totalPaid = (float) $booking->total_amount;
         $currency = $booking->currency ?: 'BDT';

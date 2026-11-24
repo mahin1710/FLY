@@ -10,7 +10,7 @@ class ProviderCancellationDTO
         public readonly bool $isCancelled,
         public readonly ?string $cancellationRef,
         public readonly string $status, // 'CANCELLED', 'VOIDED', 'PENDING_CONFIRMATION'
-        public readonly string $cancelledAt,
+        public readonly ?string $cancelledAt = null,
         public readonly array $penalties = [],
         public readonly ?string $disclaimer = 'Sandbox cancellation'
     ) {}

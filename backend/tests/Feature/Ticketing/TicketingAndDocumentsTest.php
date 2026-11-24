@@ -374,6 +374,21 @@ class TicketingAndDocumentsTest extends TestCase
             'cabin_class'            => 'economy',
         ]);
 
+        // Create verified issued ticket and set booking to ticketed
+        $passenger = Passenger::where('booking_id', $this->booking->id)->first();
+        Ticket::create([
+            'ulid'          => (string) Str::ulid(),
+            'booking_id'    => $this->booking->id,
+            'passenger_id'  => $passenger->id,
+            'ticket_number' => '077-1234567890',
+            'ticket_status' => 'issued',
+            'status'        => 'issued',
+            'currency'      => 'BDT',
+            'fare_amount'   => 4850.00,
+            'issued_at'     => now(),
+        ]);
+        $this->booking->update(['ticket_status' => 'ticketed']);
+
         // Generate PDF
         $relPath = $this->documentService->generateCustomerItineraryPdf($this->booking);
         $this->assertTrue(Storage::disk('local')->exists($relPath));

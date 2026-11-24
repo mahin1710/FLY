@@ -31,6 +31,7 @@ class Booking extends Model
         'contact_country_code',
         'airline_pnr',
         'provider_booking_ref',
+        'provider_booking_reference',
         'remarks',
         'requires_manual_review',
         'manual_review_reason',
@@ -46,7 +47,18 @@ class Booking extends Model
     protected $hidden = [
         // Protect provider internal references from leaking to public serialization
         'provider_booking_ref',
+        'provider_booking_reference',
     ];
+
+    public function getProviderBookingReferenceAttribute(): ?string
+    {
+        return $this->attributes['provider_booking_ref'] ?? null;
+    }
+
+    public function setProviderBookingReferenceAttribute(?string $value): void
+    {
+        $this->attributes['provider_booking_ref'] = $value;
+    }
 
     protected static function booted(): void
     {
