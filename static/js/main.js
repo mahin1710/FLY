@@ -112,6 +112,10 @@ const app = {
     const initialPage = this.getPageFromHash() || 'home';
     this.navigate(initialPage, false);
 
+    if (!this.state.currentTripType) {
+      this.setTripType('roundtrip');
+    }
+
     // Pre-populate Bangladesh Dhaka as default departure if empty
     const homeOrig = document.getElementById('homeOriginInput');
     if (homeOrig && !homeOrig.value) {
@@ -1509,6 +1513,44 @@ const app = {
       dest.dataset.city = destCity;
     }
     this.executeHomeSearch();
+  },
+
+  selectPopularDestination(fromCity, toCity, toCode) {
+    const orig = document.getElementById('homeOriginInput');
+    const dest = document.getElementById('homeDestInput');
+    if (orig && !orig.value) {
+      orig.value = `${fromCity} (DAC)`;
+      orig.dataset.city = fromCity;
+      orig.dataset.code = 'DAC';
+    }
+    if (dest) {
+      dest.value = `${toCity} (${toCode})`;
+      dest.dataset.city = toCity;
+      dest.dataset.code = toCode;
+    }
+    const searchWidget = document.querySelector('.search-widget-card');
+    if (searchWidget) {
+      searchWidget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    const destGroup = document.getElementById('destGroup');
+    if (destGroup) {
+      destGroup.classList.add('highlight-glow');
+      setTimeout(() => destGroup.classList.remove('highlight-glow'), 1200);
+    }
+    this.showToast(`Selected destination: ${toCity} (${toCode}). Choose dates and click Search Flights.`, 'info');
+  },
+
+  scrollToHelpSupport() {
+    const el = document.getElementById('helpSupportStrip');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      this.navigate('home');
+      setTimeout(() => {
+        const target = document.getElementById('helpSupportStrip');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
   },
 
   // -------------------------------------------------------------

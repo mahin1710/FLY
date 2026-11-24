@@ -27,64 +27,66 @@
    LIGHT THEME (Default: Premium Warm Ivory & Deep Midnight Navy)
    -------------------------------------------------------------------------- */
 [data-theme="light"] {
-  --bg-app: #F8F6F1;             /* Warm Ivory */
+  --bg-app: #F8FAFC;             /* Calm Off-White / Light Slate */
   --bg-surface: #FFFFFF;         /* Crisp White Card */
   --bg-surface-elevated: #FFFFFF;
-  --bg-surface-hover: #F2EDE4;   /* Subtle soft cream */
-  --bg-secondary: #EFEAE0;       /* Soft Cream */
+  --bg-surface-hover: #F1F5F9;   /* Subtle soft slate */
+  --bg-secondary: #F1F5F9;       /* Soft Surface */
   --bg-input: #FFFFFF;
-  --bg-navy: #101D2C;            /* Deep Midnight Navy */
-  --bg-navy-dark: #17283B;       /* Dark Navy */
+  --bg-navy: #0F172A;            /* Deep Midnight Navy */
+  --bg-navy-dark: #1E293B;       /* Dark Navy */
 
-  --border-subtle: #E5DFD5;      /* Warm subtle border */
-  --border-medium: #D8D0C2;
-  --border-focus: #C5A46D;       /* Champagne Gold */
+  --border-subtle: #E2E8F0;      /* Subtle clean border */
+  --border-medium: #CBD5E1;
+  --border-focus: #0284C7;       /* Restrained Aviation Blue */
   --border-gold: rgba(197, 164, 109, 0.4);
 
-  --text-main: #1C2733;          /* Primary Dark Navy/Slate Text */
-  --text-secondary: #5A6673;     /* Readable elegant dark text */
-  --text-muted: #78818A;         /* Secondary Text */
+  --text-main: #0F172A;          /* Deep Navy Primary Text */
+  --text-secondary: #334155;     /* Readable elegant dark text */
+  --text-muted: #64748B;         /* Secondary Slate Text */
   --text-inverse: #FFFFFF;
 
-  --accent-primary: #101D2C;     /* Deep Midnight Navy Primary Button/Headers */
-  --accent-primary-hover: #17283B;
-  --accent-gold: #C5A46D;        /* Muted Champagne Gold */
+  --accent-primary: #0284C7;     /* Restrained Aviation Blue */
+  --accent-primary-hover: #0369A1;
+  --accent-teal: #0D9488;        /* Calm Teal Accent */
+  --accent-teal-subtle: #F0FDFA;
+  --accent-gold: #C5A46D;        /* Champagne Gold for Badges/Classes */
   --accent-gold-hover: #B49258;
-  --accent-gold-soft: #D9C39A;   /* Soft Gold */
+  --accent-gold-soft: #D9C39A;
   --accent-gold-light: rgba(197, 164, 109, 0.12);
-  --accent-gradient: linear-gradient(135deg, #101D2C 0%, #17283B 100%);
+  --accent-gradient: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
   --accent-gold-gradient: linear-gradient(135deg, #C5A46D 0%, #D9C39A 100%);
-  --accent-glow: rgba(197, 164, 109, 0.25);
+  --accent-glow: rgba(2, 132, 199, 0.2);
 
-  --badge-bg: rgba(16, 29, 44, 0.06);
-  --badge-text: #101D2C;
+  --badge-bg: rgba(2, 132, 199, 0.08);
+  --badge-text: #0284C7;
   --badge-gold-bg: rgba(197, 164, 109, 0.16);
   --badge-gold-text: #8C6D37;
 
   --color-first-class: #A37E3E;  /* Champagne Gold */
   --color-first-bg: rgba(197, 164, 109, 0.14);
-  --color-business: #17283B;    /* Dark Navy */
-  --color-business-bg: rgba(23, 40, 59, 0.08);
+  --color-business: #0F172A;    /* Dark Navy */
+  --color-business-bg: rgba(15, 23, 42, 0.08);
   --color-economy: #475569;     /* Slate */
   --color-economy-bg: rgba(71, 85, 105, 0.08);
 
-  --seat-available: #F8F6F1;
-  --seat-available-border: #D8D0C2;
-  --seat-taken: #101D2C;         /* Deep Midnight Navy */
-  --seat-taken-border: #17283B;
-  --seat-selected: #C5A46D;      /* Champagne Gold */
-  --seat-selected-glow: rgba(197, 164, 109, 0.45);
+  --seat-available: #F8FAFC;
+  --seat-available-border: #CBD5E1;
+  --seat-taken: #0F172A;         /* Deep Midnight Navy */
+  --seat-taken-border: #1E293B;
+  --seat-selected: #0284C7;      /* Restrained Blue */
+  --seat-selected-glow: rgba(2, 132, 199, 0.4);
   --seat-held: #D97706;          /* Amber */
   --seat-held-border: #B45309;
 
-  --shadow-sm: 0 1px 3px rgba(16, 29, 44, 0.05);
-  --shadow-md: 0 4px 16px rgba(16, 29, 44, 0.07);
-  --shadow-lg: 0 12px 32px rgba(16, 29, 44, 0.09);
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
   --shadow-gold: 0 4px 20px rgba(197, 164, 109, 0.25);
 
   --ticket-bg: #FFFFFF;
-  --ticket-border: #E5DFD5;
-  --ticket-stub-bg: #F8F6F1;
+  --ticket-border: #E2E8F0;
+  --ticket-stub-bg: #F8FAFC;
 }
 
 /* --------------------------------------------------------------------------
@@ -394,6 +396,30 @@ input, select, textarea {
   user-select: none;
 }
 
+.brand-logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #0284C7 0%, #0D9488 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.brand-wrapper:hover .brand-logo-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+}
+
+.brand-svg-icon {
+  width: 22px;
+  height: 22px;
+}
+
 .brand-logo-glow {
   position: relative;
   width: 42px;
@@ -423,18 +449,49 @@ input, select, textarea {
   font-family: var(--font-heading);
   font-size: 1.45rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--text-main);
   line-height: 1.1;
 }
 
 .brand-sub {
   font-size: 0.68rem;
-  color: var(--accent-gold);
+  color: var(--accent-primary);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-top: 1px;
+}
+
+/* Header Locale Pill (Currency / Language) */
+.header-locale-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.header-locale-pill:hover {
+  border-color: var(--border-medium);
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+}
+
+.locale-flag {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.locale-text {
+  letter-spacing: 0.02em;
 }
 
 /* Nav Links */
