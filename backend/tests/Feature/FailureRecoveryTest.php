@@ -47,7 +47,7 @@ class FailureRecoveryTest extends TestCase
             'user_id'                   => $this->customer->id,
             'booking_price_snapshot_id' => $snapshot->id,
             'booking_status'            => 'pending_payment',
-            'payment_status'            => 'pending',
+            'payment_status'            => 'unpaid',
             'ticket_status'             => 'unissued',
             'servicing_status'          => 'none',
             'hold_expires_at'           => now()->addMinutes(15),
@@ -71,7 +71,7 @@ class FailureRecoveryTest extends TestCase
         // "App restart" happens here: state is re-fetched from database
         $reloadedBooking = Booking::where('ulid', $booking->ulid)->first();
         $this->assertSame('pending_payment', $reloadedBooking->booking_status);
-        $this->assertSame('pending', $reloadedBooking->payment_status);
+        $this->assertSame('unpaid', $reloadedBooking->payment_status);
         $this->assertCount(1, $reloadedBooking->passengers);
 
         // Resume confirmation after restart
@@ -133,7 +133,7 @@ class FailureRecoveryTest extends TestCase
             'booking_price_snapshot_id' => $snapshot->id,
             'booking_status'            => 'confirmed',
             'payment_status'            => 'captured',
-            'ticket_status'             => 'pending',
+            'ticket_status'             => 'queued_for_issuance',
             'servicing_status'          => 'none',
             'provider_booking_ref'      => 'PROV-PAID-PEND-01',
             'currency'                  => 'BDT',
@@ -179,7 +179,7 @@ class FailureRecoveryTest extends TestCase
             'booking_price_snapshot_id' => $snapshot->id,
             'booking_status'            => 'confirmed',
             'payment_status'            => 'captured',
-            'ticket_status'             => 'pending',
+            'ticket_status'             => 'queued_for_issuance',
             'servicing_status'          => 'none',
             'provider_booking_ref'      => 'PROV-ALREADY-TICK-01',
             'currency'                  => 'BDT',
@@ -201,12 +201,15 @@ class FailureRecoveryTest extends TestCase
 
         // Pre-create one ticket
         Ticket::create([
-            'ulid'          => (string) Str::ulid(),
-            'booking_id'    => $booking->id,
-            'passenger_id'  => $pax->id,
-            'ticket_number' => '077-9998887771',
-            'ticket_status' => 'issued',
-            'issued_at'     => now(),
+            'ulid'                 => (string) Str::ulid(),
+            'booking_id'           => $booking->id,
+            'passenger_id'         => $pax->id,
+            'ticket_number'        => '077-9998887771',
+            'masked_ticket_number' => '077-******7771',
+            'fare_amount'          => 4850.00,
+            'currency'             => 'BDT',
+            'ticket_status'        => 'issued',
+            'issued_at'            => now(),
         ]);
 
         $initialTicketCount = Ticket::where('booking_id', $booking->id)->count();
@@ -244,26 +247,29 @@ class FailureRecoveryTest extends TestCase
         ]);
 
         $payment = Payment::create([
-            'ulid'                     => (string) Str::ulid(),
-            'booking_id'               => $booking->id,
-            'user_id'                  => $this->customer->id,
-            'amount'                   => 4850.00,
-            'currency'                 => 'BDT',
-            'status'                   => 'captured',
-            'gateway_name'             => 'simulated',
-            'merchant_transaction_ref' => 'TXN-DELAYED-WH-001',
-            'idempotency_key'          => (string) Str::uuid(),
+            'ulid'                   => (string) Str::ulid(),
+            'booking_id'             => $booking->id,
+            'user_id'                => $this->customer->id,
+            'amount'                 => 4850.00,
+            'currency'               => 'BDT',
+            'status'                 => 'captured',
+            'payment_method'         => 'card',
+            'gateway_provider'       => 'SIMULATED',
+            'gateway_transaction_id' => 'TXN-DELAYED-WH-001',
+            'idempotency_key'        => (string) Str::uuid(),
         ]);
 
         FinancialLedgerEntry::create([
-            'ulid'            => (string) Str::ulid(),
-            'payment_id'      => $payment->id,
-            'booking_id'      => $booking->id,
-            'account_type'    => 'CASH_GATEWAY_RECEIVABLE',
-            'entry_type'      => 'DEBIT',
-            'amount'          => 4850.00,
-            'currency'        => 'BDT',
-            'description'     => 'Initial payment capture ledger entry',
+            'ulid'          => (string) Str::ulid(),
+            'payment_id'    => $payment->id,
+            'booking_id'    => $booking->id,
+            'account_code'  => '1010-CASH',
+            'entry_type'    => 'credit',
+            'debit_amount'  => 0,
+            'credit_amount' => 4850.00,
+            'currency'      => 'BDT',
+            'description'   => 'Initial payment capture ledger entry',
+            'recorded_at'   => now(),
         ]);
 
         $initialLedgerCount = FinancialLedgerEntry::where('payment_id', $payment->id)->count();

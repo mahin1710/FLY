@@ -29,7 +29,7 @@ class BookingController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user('sanctum') ?? $request->user();
         if (!$user) {
             return ApiResponse::error('Authentication required to view customer bookings.', 401, null, [], 'UNAUTHENTICATED');
         }
@@ -214,7 +214,7 @@ class BookingController extends Controller
 
             $booking = $draftService->createDraft(
                 $request->validated(),
-                $request->user(),
+                $request->user('sanctum') ?? $request->user(),
                 $idempotencyKey
             );
 
@@ -250,7 +250,7 @@ class BookingController extends Controller
             $passengers = $passengerService->addPassengers(
                 $ulid,
                 $request->input('passengers'),
-                $request->user()
+                $request->user('sanctum') ?? $request->user()
             );
 
             return ApiResponse::success(
@@ -281,7 +281,8 @@ class BookingController extends Controller
             return ApiResponse::error("Booking not found for ULID {$ulid}", 404, null, [], 'NOT_FOUND');
         }
 
-        if ($booking->user_id && $request->user() && $booking->user_id !== $request->user()->id && !$request->user()->hasRole('admin', 'super_admin')) {
+        $user = $request->user('sanctum') ?? $request->user();
+        if ($booking->user_id && $user && $booking->user_id !== $user->id && !$user->hasRole('admin', 'super_admin')) {
             return ApiResponse::error('Unauthorized access to booking reservation', 403, null, [], 'FORBIDDEN');
         }
 

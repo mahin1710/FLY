@@ -136,7 +136,9 @@ class EndToEndBookingFlowTest extends TestCase
         $currency = (string) $paymentInit->json('data.currency');
 
         // 7. Booking Confirmation Orchestration (Reprice -> Reservation -> Payment Capture -> Ticketing)
+        $confirmIdempKey = 'E2E-CONFIRM-' . Str::random(12);
         $confirmResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->withHeader('Idempotency-Key', $confirmIdempKey)
             ->postJson("/api/v1/bookings/{$bookingUlid}/confirm", [
                 'payment' => [
                     'method'                    => 'card',
@@ -147,8 +149,6 @@ class EndToEndBookingFlowTest extends TestCase
                     'cardholder_name'           => 'Mahin Rahman',
                 ],
             ]);
-
-        dump($confirmResponse->json());
 
         $confirmResponse->assertStatus(200)
             ->assertJsonPath('success', true)

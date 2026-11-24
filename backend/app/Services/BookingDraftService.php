@@ -26,7 +26,9 @@ class BookingDraftService
     {
         // 1. Idempotency Check
         if (!empty($idempotencyKey)) {
-            $existing = IdempotencyRecord::where('idempotency_key', $idempotencyKey)->first();
+            $existing = IdempotencyRecord::where('idempotency_key', $idempotencyKey)
+                ->whereIn('scope', ['flight_hold', 'booking_draft'])
+                ->first();
             if ($existing) {
                 $savedBooking = Booking::where('ulid', $existing->response_body['ulid'] ?? '')->first();
                 if ($savedBooking) {

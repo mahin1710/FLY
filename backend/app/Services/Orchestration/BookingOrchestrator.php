@@ -42,7 +42,9 @@ class BookingOrchestrator
     ): Booking {
         // 1. Idempotency Check
         if (!empty($idempotencyKey)) {
-            $existing = IdempotencyRecord::where('idempotency_key', $idempotencyKey)->first();
+            $existing = IdempotencyRecord::where('idempotency_key', $idempotencyKey)
+                ->where('scope', 'booking_confirm')
+                ->first();
             if ($existing) {
                 return $booking->fresh(['segments', 'priceSnapshot', 'passengers.document', 'payments', 'tickets', 'workflowSteps']);
             }
