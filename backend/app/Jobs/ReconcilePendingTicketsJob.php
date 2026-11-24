@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Models\Booking;
 use App\Services\Orchestration\OperationsQueueService;
+use App\Services\Providers\FlightProviderInterface;
+use App\Services\StateMachine\BookingStateMachine;
 use App\Services\Ticketing\TicketingService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,9 +19,14 @@ class ReconcilePendingTicketsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function handle(
-        TicketingService $ticketingService,
-        OperationsQueueService $operationsQueue
+        TicketingService|FlightProviderInterface $ticketingService,
+        ?BookingStateMachine $stateMachine = null,
+        ?OperationsQueueService $operationsQueue = null
     ): void {
+        if ($ticketingService instanceof FlightProviderInterface) {
+            $ticketingService = app(TicketingService::class);
+        }
+
         // Find bookings paid and confirmed, awaiting e-ticket issuance
         $pendingTickets = Booking::where('booking_status', 'confirmed')
             ->where('payment_status', 'captured')
