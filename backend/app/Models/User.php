@@ -63,6 +63,12 @@ class User extends Authenticatable
     /**
      * Role checks
      */
+    public function hasRole(string|array $roles): bool
+    {
+        $roleList = is_array($roles) ? $roles : func_get_args();
+        return in_array($this->role, $roleList, true);
+    }
+
     public function isAdmin(): bool
     {
         return in_array($this->role, ['admin', 'super_admin'], true);
