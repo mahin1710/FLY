@@ -79,6 +79,12 @@ def home_page():
     """Serves the main FLY web application."""
     return render_template('index.html')
 
+@app.route('/flight/list')
+@app.route('/flight/search')
+def flight_list_page():
+    """Serves the flight search & listing page."""
+    return render_template('index.html')
+
 @app.route('/seat-selection')
 def seat_selection_page():
     """Serves seat selection view."""
@@ -243,6 +249,48 @@ def api_airports_countries():
     conn.close()
     return jsonify(countries)
 
+@app.route('/api/airports/search', methods=['GET'])
+def api_airports_search():
+    """Searches real airports in SQLite by query string or returns top airports."""
+    q = (request.args.get('q') or '').strip()
+    conn = database.get_db()
+    cursor = conn.cursor()
+
+    if not q:
+        cursor.execute("""
+            SELECT id, name, city, country, IATA, ICAO 
+            FROM airports 
+            WHERE country = 'Bangladesh' OR IATA IN ('JFK', 'LHR', 'DXB', 'SIN', 'BKK', 'KUL', 'DOH')
+            ORDER BY (CASE WHEN country = 'Bangladesh' THEN 0 ELSE 1 END), IATA ASC
+            LIMIT 15
+        """)
+    else:
+        like_q = f"%{q}%"
+        cursor.execute("""
+            SELECT id, name, city, country, IATA, ICAO 
+            FROM airports 
+            WHERE name LIKE ? OR city LIKE ? OR country LIKE ? OR IATA LIKE ? OR ICAO LIKE ?
+            ORDER BY (CASE WHEN country = 'Bangladesh' THEN 0 ELSE 1 END),
+                     (CASE WHEN UPPER(IATA) = UPPER(?) THEN 0 ELSE 1 END),
+                     (CASE WHEN UPPER(city) LIKE UPPER(?) THEN 0 ELSE 1 END),
+                     name ASC
+            LIMIT 15
+        """, (like_q, like_q, like_q, like_q, like_q, q, f"{q}%"))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for r in rows:
+        d = dict(r)
+        if d.get('name'):
+            d['name'] = d['name'].replace('?stanbul', 'Istanbul').replace('Da?oguz', 'Dashoguz')
+        if d.get('city'):
+            d['city'] = d['city'].replace('?stanbul', 'Istanbul')
+        results.append(d)
+
+    return jsonify(results)
+
 @app.route('/api/flights/featured', methods=['GET'])
 def api_flights_featured():
     conn = database.get_db()
@@ -276,52 +324,175 @@ def api_flights_featured():
 
 @app.route('/api/flights', methods=['GET'])
 def api_search_flights():
-    """Searches flights with filters."""
-    dep_city = request.args.get('depCity', '').strip()
-    arr_city = request.args.get('arrCity', '').strip()
+    """Searches flights with filters, pagination, and sorting."""
+    database.cleanup_expired_holds()
+
+    dep_city = (request.args.get('depCity') or request.args.get('from') or '').strip()
+    arr_city = (request.args.get('arrCity') or request.args.get('to') or '').strip()
+    dep_country = request.args.get('depCountry', '').strip()
+    arr_country = request.args.get('arrCountry', '').strip()
+    date_after = (request.args.get('dateAfter') or request.args.get('departure') or '').strip()
+    date_before = (request.args.get('dateBefore') or request.args.get('return') or '').strip()
+    cabin_class = (request.args.get('cabinClass') or request.args.get('cabin') or '').strip().lower()
+    q = (request.args.get('q') or request.args.get('search') or '').strip()
     airline_id = request.args.get('airlineId')
+    account_id = request.args.get('accountId')
+    sort_by = request.args.get('sortBy', 'closestDate')
+
+    try:
+        limit = min(int(request.args.get('limit', 12)), 100)
+    except (ValueError, TypeError):
+        limit = 12
+    try:
+        offset = max(int(request.args.get('offset', 0)), 0)
+    except (ValueError, TypeError):
+        offset = 0
 
     conn = database.get_db()
     cursor = conn.cursor()
 
-    query = """
-        SELECT f.*,
-               al.name as airlineName, al.IATA as airlineIATA,
-               da.name as depAirportName, da.IATA as depIATA, da.city as depCity, da.country as depCountry,
-               aa.name as arrAirportName, aa.IATA as arrIATA, aa.city as arrCity, aa.country as arrCountry,
-               (SELECT COUNT(*) FROM reservations r WHERE r.id_flight = f.id AND r.status = 'CONFIRMED') as bookedCount
+    where_clauses = ["1=1"]
+    params = []
+
+    if dep_country:
+        where_clauses.append("da.country = ?")
+        params.append(dep_country)
+    if arr_country:
+        where_clauses.append("aa.country = ?")
+        params.append(arr_country)
+
+    if dep_city:
+        where_clauses.append("(da.city LIKE ? OR da.IATA = ? OR da.name LIKE ?)")
+        params.extend([f"%{dep_city}%", dep_city.upper(), f"%{dep_city}%"])
+    if arr_city:
+        where_clauses.append("(aa.city LIKE ? OR aa.IATA = ? OR aa.name LIKE ?)")
+        params.extend([f"%{arr_city}%", arr_city.upper(), f"%{arr_city}%"])
+
+    if date_after:
+        where_clauses.append("f.dep_datetime >= ?")
+        params.append(f"{date_after} 00:00")
+    if date_before:
+        where_clauses.append("f.dep_datetime <= ?")
+        params.append(f"{date_before} 23:59")
+
+    if cabin_class and cabin_class not in ('all', ''):
+        if 'economy' in cabin_class:
+            where_clauses.append("f.economy_price > 0")
+        elif 'business' in cabin_class:
+            where_clauses.append("f.business_price > 0")
+        elif 'first' in cabin_class:
+            where_clauses.append("f.first_price > 0")
+
+    if airline_id:
+        where_clauses.append("f.id_airline = ?")
+        params.append(airline_id)
+
+    if q:
+        kw = f"%{q}%"
+        where_clauses.append("""(
+            da.name LIKE ? OR da.city LIKE ? OR da.country LIKE ? OR da.IATA LIKE ? OR
+            aa.name LIKE ? OR aa.city LIKE ? OR aa.country LIKE ? OR aa.IATA LIKE ? OR
+            al.name LIKE ? OR al.IATA LIKE ?
+        )""")
+        params.extend([kw] * 10)
+
+    where_sql = " AND ".join(where_clauses)
+
+    order_sql = "ORDER BY f.dep_datetime ASC"
+    if sort_by == 'furthestDate':
+        order_sql = "ORDER BY f.dep_datetime DESC"
+    elif sort_by == 'priceAsc':
+        order_sql = "ORDER BY f.economy_price ASC"
+    elif sort_by == 'priceDesc':
+        order_sql = "ORDER BY f.economy_price DESC"
+
+    # Count total
+    count_query = f"""
+        SELECT COUNT(*) as total
         FROM flights f
         JOIN airLines al ON f.id_airline = al.id
         JOIN airports da ON f.dep_airport = da.id
         JOIN airports aa ON f.arr_airport = aa.id
-        WHERE 1=1
+        WHERE {where_sql}
     """
-    params = []
-    if dep_city:
-        query += " AND (da.city LIKE ? OR da.IATA LIKE ?)"
-        params.extend([f"%{dep_city}%", f"%{dep_city}%"])
-    if arr_city:
-        query += " AND (aa.city LIKE ? OR aa.IATA LIKE ?)"
-        params.extend([f"%{arr_city}%", f"%{arr_city}%"])
-    if airline_id:
-        query += " AND f.id_airline = ?"
-        params.append(airline_id)
+    cursor.execute(count_query, params)
+    total_count = cursor.fetchone()['total']
 
-    query += " ORDER BY f.dep_datetime ASC LIMIT 50"
-    cursor.execute(query, params)
+    # Fetch data
+    fav_sql = "0 as isFavorite"
+    if account_id:
+        try:
+            acc_id_int = int(account_id)
+            fav_sql = f"(SELECT COUNT(*) FROM favorites fav WHERE fav.id_flight = f.id AND fav.id_account = {acc_id_int}) > 0 as isFavorite"
+        except (ValueError, TypeError):
+            pass
+
+    data_query = f"""
+        SELECT f.*,
+               al.name as airlineName, al.IATA as airlineIATA,
+               da.name as depAirportName, da.IATA as depIATA, da.ICAO as depICAO, da.city as depCity, da.country as depCountry,
+               aa.name as arrAirportName, aa.IATA as arrIATA, aa.ICAO as arrICAO, aa.city as arrCity, aa.country as arrCountry,
+               (SELECT COUNT(*) FROM reservations r WHERE r.id_flight = f.id AND r.status IN ('CONFIRMED', 'HELD')) as bookedCount,
+               {fav_sql}
+        FROM flights f
+        JOIN airLines al ON f.id_airline = al.id
+        JOIN airports da ON f.dep_airport = da.id
+        JOIN airports aa ON f.arr_airport = aa.id
+        WHERE {where_sql}
+        {order_sql}
+        LIMIT ? OFFSET ?
+    """
+    cursor.execute(data_query, params + [limit, offset])
     rows = cursor.fetchall()
     conn.close()
 
     flights = []
+    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
     for r in rows:
         d = dict(r)
-        d['flightNumber'] = f"{d['airlineIATA']}-{d['id']}"
-        d['flightStatus'] = 'ON TIME'
+        airline_code = (d.get('airlineIATA') or 'FL').strip().upper()
+        d['flightNumber'] = f"{airline_code}-{100 + (d['id'] % 900)}"
         d['totalSeats'] = 120
-        d['availableSeats'] = max(0, 120 - d['bookedCount'])
+        booked = int(d.get('bookedCount') or 0)
+        d['availableSeats'] = max(0, 120 - booked)
+
+        dep_time = d.get('dep_datetime') or ''
+        if dep_time and dep_time <= now_iso:
+            d['flightStatus'] = 'BOARDING'
+        else:
+            d['flightStatus'] = 'ON TIME'
+
+        arr_time = d.get('arr_datetime') or ''
+        d['durationFormatted'] = 'Non-stop'
+        if dep_time and arr_time:
+            try:
+                dt_dep = datetime.strptime(dep_time.replace('T', ' ')[:16], "%Y-%m-%d %H:%M")
+                dt_arr = datetime.strptime(arr_time.replace('T', ' ')[:16], "%Y-%m-%d %H:%M")
+                diff_mins = int((dt_arr - dt_dep).total_seconds() / 60)
+                if diff_mins > 0:
+                    hrs = diff_mins // 60
+                    mins = diff_mins % 60
+                    d['durationFormatted'] = f"{hrs}h {mins}m" if hrs and mins else (f"{hrs}h" if hrs else f"{mins}m")
+            except Exception:
+                pass
+
+        if d.get('depAirportName'):
+            d['depAirportName'] = d['depAirportName'].replace('?stanbul', 'Istanbul').replace('Da?oguz', 'Dashoguz')
+        if d.get('arrAirportName'):
+            d['arrAirportName'] = d['arrAirportName'].replace('?stanbul', 'Istanbul').replace('Da?oguz', 'Dashoguz')
+        if d.get('depCity'):
+            d['depCity'] = d['depCity'].replace('?stanbul', 'Istanbul')
+        if d.get('arrCity'):
+            d['arrCity'] = d['arrCity'].replace('?stanbul', 'Istanbul')
+
         flights.append(d)
 
-    return jsonify(flights)
+    return jsonify({
+        'total': total_count,
+        'flights': flights,
+        'limit': limit,
+        'offset': offset
+    })
 
 @app.route('/api/flights/<int:flight_id>', methods=['GET'])
 def api_flight_detail(flight_id):
