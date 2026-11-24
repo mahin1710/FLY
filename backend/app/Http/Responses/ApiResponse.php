@@ -41,17 +41,19 @@ class ApiResponse
         string $message = 'An error occurred',
         int $statusCode = 400,
         mixed $errors = null,
-        array $meta = []
+        array $meta = [],
+        ?string $errorCode = null
     ): JsonResponse {
         $correlationId = request()->attributes->get('correlation_id')
             ?? request()->header('X-Correlation-ID')
             ?? (string) Str::uuid();
 
         $payload = [
-            'success' => false,
-            'message' => $message,
-            'errors'  => $errors,
-            'meta'    => array_merge([
+            'success'    => false,
+            'error_code' => $errorCode,
+            'message'    => $message,
+            'errors'     => $errors,
+            'meta'       => array_merge([
                 'correlation_id' => $correlationId,
                 'timestamp'      => now()->toIso8601String(),
             ], $meta),

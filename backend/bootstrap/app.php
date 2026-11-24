@@ -46,7 +46,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 return ApiResponse::error(
                     'The given data was invalid.',
                     422,
-                    $e->errors()
+                    $e->errors(),
+                    [],
+                    'VALIDATION_ERROR'
                 );
             }
         });
@@ -56,7 +58,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 return ApiResponse::error(
                     'Unauthenticated. A valid Bearer token is required.',
-                    401
+                    401,
+                    null,
+                    [],
+                    'UNAUTHENTICATED'
                 );
             }
         });
@@ -66,7 +71,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 return ApiResponse::error(
                     'Forbidden. You do not have the required permissions for this action.',
-                    403
+                    403,
+                    null,
+                    [],
+                    'FORBIDDEN'
                 );
             }
         });
@@ -76,7 +84,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 return ApiResponse::error(
                     'Resource or endpoint not found.',
-                    404
+                    404,
+                    null,
+                    [],
+                    'NOT_FOUND'
                 );
             }
         });
@@ -86,7 +97,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 return ApiResponse::error(
                     'Too many requests. Please slow down and try again later.',
-                    429
+                    429,
+                    null,
+                    [],
+                    'RATE_LIMITED'
                 );
             }
         });
@@ -110,7 +124,8 @@ return Application::configure(basePath: dirname(__DIR__))
                     $message,
                     500,
                     null,
-                    $meta
+                    $meta,
+                    'INTERNAL_ERROR'
                 );
             }
         });

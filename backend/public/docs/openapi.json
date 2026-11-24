@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FLY Aviation REST API",
-    "description": "Backend API foundation for the FLY Flight Ticketing Platform.\n\n### Key Architectural Features:\n- **API Versioning:** All endpoints namespaced under `/api/v1`\n- **Consistent Envelope:** All responses follow a standardized JSON envelope with correlation tracking\n- **Request Correlation IDs:** Incoming and outgoing `X-Correlation-ID` header injection\n- **Authentication:** Laravel Sanctum bearer tokens with role-based abilities\n- **Security:** Strict CORS, rate limiting, and defensive HTTP security headers",
+    "description": "Backend API foundation for the FLY Flight Ticketing Platform.\n\n### Key Architectural Features:\n- **API Versioning:** All endpoints namespaced under `/api/v1`\n- **Consistent Envelope:** Standardized JSON envelope with correlation tracking\n- **Request Correlation IDs:** Incoming and outgoing `X-Correlation-ID` header injection\n- **Standardized Error Codes:** Strict machine-readable codes (`INVALID_SEARCH`, `NO_OFFERS`, `OFFER_EXPIRED`, `PRICE_CHANGED`, `PROVIDER_UNAVAILABLE`, `VALIDATION_ERROR`, `FORBIDDEN`, `HOLD_EXPIRED`)\n- **Authentication:** Laravel Sanctum bearer tokens with role-based policies\n- **Idempotency:** `Idempotency-Key` header enforced on booking draft creation",
     "version": "1.0.0",
     "contact": {
       "name": "FLY Aviation Platform Team",
@@ -55,7 +55,26 @@
         "type": "object",
         "properties": {
           "success": { "type": "boolean", "example": false },
-          "message": { "type": "string", "example": "Validation failed" },
+          "error_code": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "INVALID_SEARCH",
+              "NO_OFFERS",
+              "OFFER_EXPIRED",
+              "PRICE_CHANGED",
+              "PROVIDER_UNAVAILABLE",
+              "VALIDATION_ERROR",
+              "FORBIDDEN",
+              "HOLD_EXPIRED",
+              "NOT_FOUND",
+              "UNAUTHENTICATED",
+              "RATE_LIMITED",
+              "INTERNAL_ERROR"
+            ],
+            "example": "OFFER_EXPIRED"
+          },
+          "message": { "type": "string", "example": "The selected flight offer has expired." },
           "errors": { "type": "object", "nullable": true },
           "meta": { "$ref": "#/components/schemas/MetaEnvelope" }
         },
@@ -67,7 +86,7 @@
     "/health": {
       "get": {
         "summary": "System Health & Diagnostics",
-        "description": "Returns operational status of app runtime, database, cache, and queue. Avoids leaking internal credentials or connection strings.",
+        "description": "Returns operational status of app runtime, database, cache, and queue.",
         "responses": {
           "200": {
             "description": "All subsystems healthy",
@@ -78,7 +97,279 @@
             }
           },
           "503": {
-            "description": "One or more subsystems degraded",
+            "description": "Subsystem degraded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/search": {
+      "post": {
+        "summary": "Search Flight Offers",
+        "description": "Validates flight route, travel dates, passenger counts, and cabin class. Queries provider and returns normalized offers with request correlation and expiry.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "origin": { "type": "string", "example": "DAC" },
+                  "destination": { "type": "string", "example": "CXB" },
+                  "departure_date": { "type": "string", "format": "date", "example": "2026-12-01" },
+                  "return_date": { "type": "string", "format": "date", "nullable": true },
+                  "trip_type": { "type": "string", "enum": ["one_way", "round_trip", "multi_city"], "example": "one_way" },
+                  "cabin_class": { "type": "string", "enum": ["economy", "premium_economy", "business", "first"], "example": "economy" },
+                  "adults": { "type": "integer", "minimum": 1, "maximum": 9, "example": 1 },
+                  "children": { "type": "integer", "minimum": 0, "maximum": 8, "example": 0 },
+                  "infants": { "type": "integer", "minimum": 0, "maximum": 4, "example": 0 }
+                },
+                "required": ["origin", "destination", "departure_date", "trip_type", "cabin_class", "adults"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Offers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error (invalid route, dates, or passenger ratio)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/offers/{uuid}": {
+      "get": {
+        "summary": "Retrieve Flight Offer Details",
+        "description": "Returns full details of an offer by internal UUID with session ownership and expiry validation.",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offer details retrieved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "410": {
+            "description": "Offer has expired (error_code: OFFER_EXPIRED)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Offer not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/offers/{uuid}/reprice": {
+      "post": {
+        "summary": "Reprice Flight Offer",
+        "description": "Recalculates fare bucket against provider before booking commitment. Creates an immutable BookingPriceSnapshot.",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reprice calculation complete",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "410": {
+            "description": "Offer expired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/draft": {
+      "post": {
+        "summary": "Create Booking Draft & Seat Hold",
+        "description": "Initiates a reservation draft with a 15-minute hold guarantee. Price is resolved strictly from the server-side FlightOffer record, NEVER from client input. Supports Idempotency-Key.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Client-generated unique key to prevent duplicate booking creation."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "offer_uuid": { "type": "string", "format": "uuid" },
+                  "contact_email": { "type": "string", "format": "email", "example": "customer@example.com" },
+                  "contact_phone": { "type": "string", "example": "+8801700000000" },
+                  "contact_country_code": { "type": "string", "example": "+880" },
+                  "remarks": { "type": "string", "nullable": true }
+                },
+                "required": ["offer_uuid", "contact_email", "contact_phone"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booking draft created and seats held",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "410": {
+            "description": "Offer expired (error_code: OFFER_EXPIRED)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{ulid}/passengers": {
+      "post": {
+        "summary": "Attach Passengers & Documents",
+        "description": "Validates passenger types (adult 12+, child 2-11, infant <2), enforces passport details on international routes, and encrypts document numbers at rest.",
+        "parameters": [
+          {
+            "name": "ulid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "passengers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": { "type": "string", "enum": ["adult", "child", "infant"] },
+                        "title": { "type": "string", "example": "Mr" },
+                        "first_name": { "type": "string", "example": "Mahin" },
+                        "last_name": { "type": "string", "example": "Rahman" },
+                        "date_of_birth": { "type": "string", "format": "date", "example": "1995-05-15" },
+                        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+                        "nationality": { "type": "string", "example": "BD" },
+                        "wheelchair_required": { "type": "boolean", "example": false },
+                        "document": {
+                          "type": "object",
+                          "properties": {
+                            "document_type": { "type": "string", "example": "passport" },
+                            "document_number": { "type": "string", "example": "A12345678" },
+                            "issuing_country": { "type": "string", "example": "BD" },
+                            "expiry_date": { "type": "string", "format": "date", "example": "2030-10-20" }
+                          }
+                        }
+                      },
+                      "required": ["type", "title", "first_name", "last_name", "date_of_birth"]
+                    }
+                  }
+                },
+                "required": ["passengers"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Passengers attached successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Age bracket violation, infant ratio violation, or missing passport",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{ulid}/status": {
+      "get": {
+        "summary": "Get Booking Lifecycle Status",
+        "description": "Returns decoupled statuses: Booking, Payment, Ticket, and Servicing with itinerary and passengers. Protected against IDOR.",
+        "parameters": [
+          {
+            "name": "ulid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking status retrieved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking not found",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }

@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Api\V1\Admin\AdminController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\DocsController;
+use App\Http\Controllers\Api\V1\FlightController;
 use App\Http\Controllers\Api\V1\HealthController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,7 +31,25 @@ Route::prefix('v1')->group(function () {
     Route::get('/docs', [DocsController::class, 'spec'])->name('v1.docs');
 
     // -------------------------------------------------------------
-    // 3. AUTHENTICATION (RATE LIMITED: 10 ATTEMPTS / MINUTE)
+    // 3. FLIGHT SEARCH, OFFERS & REPRICING (PUBLIC / RATE LIMITED)
+    // -------------------------------------------------------------
+    Route::prefix('flights')->group(function () {
+        Route::post('/search', [FlightController::class, 'search'])->name('v1.flights.search');
+        Route::get('/offers/{uuid}', [FlightController::class, 'getOffer'])->name('v1.flights.offer');
+        Route::post('/offers/{uuid}/reprice', [FlightController::class, 'reprice'])->name('v1.flights.reprice');
+    });
+
+    // -------------------------------------------------------------
+    // 4. BOOKING RESERVATION DRAFT & PASSENGERS (PUBLIC / OPTIONAL AUTH)
+    // -------------------------------------------------------------
+    Route::prefix('bookings')->group(function () {
+        Route::post('/draft', [BookingController::class, 'createDraft'])->name('v1.bookings.draft');
+        Route::post('/{ulid}/passengers', [BookingController::class, 'addPassengers'])->name('v1.bookings.passengers');
+        Route::get('/{ulid}/status', [BookingController::class, 'getStatus'])->name('v1.bookings.status');
+    });
+
+    // -------------------------------------------------------------
+    // 5. AUTHENTICATION (RATE LIMITED: 10 ATTEMPTS / MINUTE)
     // -------------------------------------------------------------
     Route::middleware('throttle:10,1')->prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register'])->name('v1.auth.register');
@@ -37,7 +57,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // -------------------------------------------------------------
-    // 4. AUTHENTICATED USER ROUTES (SANCTUM PROTECTED)
+    // 6. AUTHENTICATED USER ROUTES (SANCTUM PROTECTED)
     // -------------------------------------------------------------
     Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('auth')->group(function () {
@@ -46,7 +66,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // ---------------------------------------------------------
-        // 5. ADMINISTRATIVE RESTRICTED ENDPOINTS
+        // 7. ADMINISTRATIVE RESTRICTED ENDPOINTS
         // ---------------------------------------------------------
         Route::prefix('admin')
             ->middleware('role:admin,super_admin')
