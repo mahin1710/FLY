@@ -375,6 +375,15 @@
           </div>
         </div>
 
+        <!-- Trip Selection Step Progress Indicator (Round-Trip / Multi-City) -->
+        <div class="trip-selection-progress-bar glassmorphism" id="tripSelectionProgressBanner" style="display: none;">
+          <div class="trip-step-info">
+            <span class="trip-step-badge" id="tripStepBadge">Step 1 of 2</span>
+            <span class="trip-step-title" id="tripStepTitle">Select Outbound Flight (Dhaka ➔ Cox's Bazar)</span>
+          </div>
+          <div class="trip-selected-summary" id="tripSelectedSummary" style="display: none;"></div>
+        </div>
+
         <!-- Inline Collapsible Search Modification Panel -->
         <div class="modify-search-panel glassmorphism" id="modifySearchPanel" style="display: none;">
           <div class="modify-search-grid">
@@ -842,8 +851,8 @@
             </div>
 
             <!-- Action Buttons -->
-            <button class="btn-primary w-100 btn-large" id="btnProceedPayment" onclick="app.proceedToPayment()" disabled>
-              <span id="btnProceedPaymentText">Reserve Seats & Continue to Payment</span>
+            <button class="btn-primary w-100 btn-large" id="btnProceedPayment" onclick="app.proceedToBookingReview()" disabled>
+              <span id="btnProceedPaymentText">Review Booking & Lock Seats</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
             <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 8px;">
@@ -1797,6 +1806,89 @@
           </div>
           <button type="submit" class="btn-primary w-100 btn-large">Create Account</button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: FLIGHT DETAILS & TRANSPARENT FARE BREAKDOWN -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalFlightDetails" style="display: none;">
+    <div class="modal-box modal-lg glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>✈️</span>
+          <span>Flight Details & Fare Breakdown</span>
+        </h3>
+        <button class="modal-close" onclick="app.closeModal('modalFlightDetails')">&times;</button>
+      </div>
+      <div class="modal-body" id="flightDetailsModalBody">
+        <!-- Rendered dynamically via JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="app.closeModal('modalFlightDetails')">Change Selection</button>
+        <button type="button" class="btn-primary" onclick="app.openPassengerInfoModal()">
+          <span>Enter Passenger Information</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: PASSENGER INFORMATION ENTRY -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalPassengerInfo" style="display: none;">
+    <div class="modal-box modal-lg glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>👥</span>
+          <span>Passenger Information</span>
+        </h3>
+        <button class="modal-close" onclick="app.closeModal('modalPassengerInfo')">&times;</button>
+      </div>
+      <form onsubmit="app.submitPassengerInfo(event)">
+        <div class="modal-body">
+          <div class="alert alert-info" style="margin-bottom: 16px; font-size: 0.86rem; display: flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); color: var(--text-main); padding: 12px 16px; border-radius: var(--radius-md);">
+            <span style="font-size: 1.1rem;">ℹ️</span>
+            <span>Please enter traveler details matching your government-issued ID / passport. Information is validated before reservation.</span>
+          </div>
+          <div id="passengerCardsContainer">
+            <!-- Dynamic passenger input cards -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="app.backToFlightDetails()">Back to Flight Details</button>
+          <button type="submit" class="btn-primary">
+            <span>Continue to Seat Selection</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: FINAL BOOKING REVIEW & FARE REVALIDATION -->
+  <!-- ============================================== -->
+  <div class="modal-backdrop" id="modalBookingReview" style="display: none;">
+    <div class="modal-box modal-lg glassmorphism">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📋</span>
+          <span>Review Booking & Revalidate Fare</span>
+        </h3>
+        <button class="modal-close" onclick="app.closeModal('modalBookingReview')">&times;</button>
+      </div>
+      <div class="modal-body" id="bookingReviewModalBody">
+        <!-- Rendered dynamically via JS -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="app.closeModal('modalBookingReview')">Edit Booking</button>
+        <button type="button" class="btn-primary btn-large" id="btnConfirmReviewAndHold" onclick="app.confirmHoldFromReview()">
+          <span>Confirm & Lock Seats (15-Min Hold)</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
       </div>
     </div>
   </div>

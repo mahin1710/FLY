@@ -702,7 +702,20 @@ def get_ticket_data(booking_ref: str):
     conn.close()
 
     passenger_name = f"{b['firstName'] or ''} {b['lastName'] or ''}".strip()
-    if not passenger_name:
+    passenger_names = []
+    if b['passenger_data']:
+        try:
+            p_data = json.loads(b['passenger_data'])
+            if isinstance(p_data, list):
+                for p in p_data:
+                    pname = f"{p.get('title', '')} {p.get('firstName', '')} {p.get('lastName', '')}".strip()
+                    if pname:
+                        passenger_names.append(pname)
+        except Exception:
+            pass
+    if passenger_names:
+        passenger_name = passenger_names[0]
+    elif not passenger_name:
         passenger_name = b['display_name'] or b['username']
 
     seat_codes = [f"{s['column']}{s['row']}" for s in seats]
@@ -712,6 +725,9 @@ def get_ticket_data(booking_ref: str):
         'bookingReference': booking_ref,
         'flightNumber': f"{b['airlineIATA']}-{b['flightId']}",
         'passengerName': passenger_name,
+        'passengerNames': passenger_names if passenger_names else [passenger_name],
+        'tripType': b['trip_type'] or 'one_way',
+        'fareBreakdown': json.loads(b['fare_breakdown']) if b['fare_breakdown'] else None,
         'airlineName': b['airlineName'],
         'airlineIATA': b['airlineIATA'],
         'airlineId': b['airlineId'],

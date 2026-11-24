@@ -719,6 +719,134 @@ def api_flight_seats(flight_id):
     })
 
 # -------------------------------------------------------------
+# FARE BREAKDOWN & PRICE VALIDATION ENDPOINTS
+# -------------------------------------------------------------
+@app.route('/api/flights/fare-breakdown', methods=['GET', 'POST'])
+def api_fare_breakdown():
+    """
+    Transparent fare breakdown calculation endpoint.
+    Returns base fare, taxes, carrier charges, service charge, and total.
+    """
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        flight_ids = data.get('flightIds') or []
+        if not flight_ids and data.get('flightId'):
+            flight_ids = [data['flightId']]
+        cabin = data.get('cabinClass') or 'Economy'
+        adults = int(data.get('adults') or 1)
+        children = int(data.get('children') or 0)
+        infants = int(data.get('infants') or 0)
+        luggage_count = int(data.get('luggageCount') or 0)
+        luggage_weight = float(data.get('luggageWeight') or 0.0)
+    else:
+        flight_ids_str = request.args.get('flightIds') or request.args.get('flightId') or '1'
+        flight_ids = [int(x.strip()) for x in flight_ids_str.split(',') if x.strip().isdigit()]
+        cabin = request.args.get('cabinClass') or 'Economy'
+        adults = int(request.args.get('adults') or 1)
+        children = int(request.args.get('children') or 0)
+        infants = int(request.args.get('infants') or 0)
+        luggage_count = int(request.args.get('luggageCount') or 0)
+        luggage_weight = float(request.args.get('luggageWeight') or 0.0)
+
+    breakdown = database.calculate_fare_breakdown(
+        flight_ids=flight_ids,
+        cabin_class=cabin,
+        adults=adults,
+        children=children,
+        infants=infants,
+        luggage_count=luggage_count,
+        luggage_weight=luggage_weight
+    )
+    return jsonify(breakdown)
+
+@app.route('/api/bookings/validate', methods=['POST'])
+def api_validate_booking():
+    """
+    Revalidates flight availability, current fare, and passenger information.
+    Alerts customer if price or availability has changed.
+    """
+    data = request.get_json() or {}
+    flight_ids = data.get('flightIds') or []
+    if not flight_ids and data.get('flightId'):
+        flight_ids = [data['flightId']]
+
+    if not flight_ids:
+        return jsonify({'valid': False, 'error': 'At least one flight must be selected.'}), 400
+
+    seat_ids = data.get('seatIds') or []
+    cabin = data.get('cabinClass') or 'Economy'
+    adults = int(data.get('adults') or 1)
+    children = int(data.get('children') or 0)
+    infants = int(data.get('infants') or 0)
+    expected_total = data.get('expectedTotal')
+    passengers = data.get('passengerData') or data.get('passengers') or []
+
+    # 1. Validate passenger information
+    if passengers and isinstance(passengers, list):
+        for idx, p in enumerate(passengers):
+            first_name = (p.get('firstName') or '').strip()
+            last_name = (p.get('lastName') or '').strip()
+            if not first_name or not last_name:
+                return jsonify({
+                    'valid': False,
+                    'error': f'Passenger {idx + 1}: First Name and Last Name are required.',
+                    'code': 'INVALID_PASSENGER_DATA'
+                }), 400
+
+    # 2. Check flight existence and available seats
+    conn = database.get_db()
+    cursor = conn.cursor()
+    for fid in flight_ids:
+        cursor.execute("SELECT id FROM flights WHERE id = ?", (int(fid),))
+        frow = cursor.fetchone()
+        if not frow:
+            conn.close()
+            return jsonify({'valid': False, 'error': f'Flight #{fid} is no longer available.', 'code': 'FLIGHT_NOT_FOUND'}), 404
+
+    # 3. If seats selected, check if any are already confirmed
+    if seat_ids:
+        int_seat_ids = [int(s['id'] if isinstance(s, dict) else s) for s in seat_ids]
+        placeholders = ",".join("?" for _ in int_seat_ids)
+        cursor.execute(f"""
+            SELECT id_seat, status, expires_at FROM reservations
+            WHERE id_flight = ? AND id_seat IN ({placeholders}) AND status = 'CONFIRMED'
+        """, [int(flight_ids[0])] + int_seat_ids)
+        booked = cursor.fetchall()
+        if booked:
+            conn.close()
+            return jsonify({
+                'valid': False,
+                'error': 'One or more of your selected seats have already been booked by another customer.',
+                'code': 'SEAT_UNAVAILABLE'
+            }), 409
+    conn.close()
+
+    # 4. Revalidate current fare
+    current_fare = database.calculate_fare_breakdown(
+        flight_ids=flight_ids,
+        cabin_class=cabin,
+        adults=adults,
+        children=children,
+        infants=infants
+    )
+
+    if expected_total is not None and float(expected_total) > 0:
+        if abs(float(expected_total) - float(current_fare['totalPayable'])) > 1.0:
+            return jsonify({
+                'valid': False,
+                'priceChanged': True,
+                'error': f"Flight fare has changed from ৳{int(expected_total):,} to ৳{int(current_fare['totalPayable']):,}. Please review the updated fare before proceeding.",
+                'code': 'FARE_CHANGED',
+                'currentFare': current_fare
+            }), 200
+
+    return jsonify({
+        'valid': True,
+        'message': 'Flight availability and fare revalidated successfully.',
+        'currentFare': current_fare
+    })
+
+# -------------------------------------------------------------
 # SEAT HOLDING & BOOKING SYSTEM (CORE 15-MIN LOCKING ENGINE)
 # -------------------------------------------------------------
 @app.route('/api/bookings/hold', methods=['POST'])
@@ -726,6 +854,7 @@ def api_hold_seats():
     """
     Atomically locks selected seats for 15 minutes.
     Prevents race conditions and duplicate holds by other users.
+    Supports Passenger Data, Return Flights, Multi-Leg and Cabin Classes.
     """
     user = get_current_user()
     if not user:
@@ -740,7 +869,6 @@ def api_hold_seats():
     if not seat_ids or not isinstance(seat_ids, list):
         return jsonify({'error': 'seatIds must be a non-empty array.'}), 400
 
-    # Ensure integer seat IDs
     int_seat_ids = []
     for s in seat_ids:
         try:
@@ -753,18 +881,30 @@ def api_hold_seats():
 
     nbr_luggages = int(data.get('nbrLuggages') or data.get('nbr_luggages') or 0)
     weight = float(data.get('weight') or 0.0)
+    passenger_data = data.get('passengerData') or data.get('passengers') or []
+    return_flight_id = data.get('returnFlightId')
+    multi_leg_data = data.get('multiLegData') or []
+    cabin_class = data.get('cabinClass') or 'Economy'
+    trip_type = data.get('tripType') or 'one_way'
+    expected_fare = data.get('expectedFare') or data.get('totalAmount')
 
     success, msg, code, hold_info = database.hold_seats_atomic(
         flight_id=int(flight_id),
         seat_ids=int_seat_ids,
         account_id=user['id'],
         nbr_luggages=nbr_luggages,
-        weight=weight
+        weight=weight,
+        passenger_data=passenger_data,
+        return_flight_id=return_flight_id,
+        multi_leg_data=multi_leg_data,
+        cabin_class=cabin_class,
+        trip_type=trip_type,
+        expected_fare=expected_fare
     )
 
     if not success:
         status_code = 409 if code == 'SEAT_UNAVAILABLE' else 400
-        return jsonify({'error': msg, 'code': code}), status_code
+        return jsonify({'error': msg, 'code': code, 'details': hold_info}), status_code
 
     return jsonify({
         'success': True,
@@ -832,6 +972,40 @@ def api_get_booking(booking_ref):
     expires_dt = datetime.strptime(b_dict['expires_at'], "%Y-%m-%d %H:%M:%S")
     remaining = max(0, int((expires_dt - now_dt).total_seconds()))
     b_dict['secondsRemaining'] = remaining
+
+    if b_dict.get('passenger_data'):
+        try:
+            b_dict['passengerData'] = json.loads(b_dict['passenger_data'])
+        except Exception:
+            b_dict['passengerData'] = []
+
+    if b_dict.get('fare_breakdown'):
+        try:
+            b_dict['fareBreakdown'] = json.loads(b_dict['fare_breakdown'])
+        except Exception:
+            b_dict['fareBreakdown'] = None
+
+    if b_dict.get('return_flight_id'):
+        try:
+            conn_ret = database.get_db()
+            cur_ret = conn_ret.cursor()
+            cur_ret.execute("""
+                SELECT f.id, f.dep_datetime, f.arr_datetime,
+                       al.name as airlineName, al.IATA as airlineIATA,
+                       da.name as depAirportName, da.IATA as depIATA, da.city as depCity,
+                       aa.name as arrAirportName, aa.IATA as arrIATA, aa.city as arrCity
+                FROM flights f
+                JOIN airLines al ON f.id_airline = al.id
+                JOIN airports da ON f.dep_airport = da.id
+                JOIN airports aa ON f.arr_airport = aa.id
+                WHERE f.id = ?
+            """, (b_dict['return_flight_id'],))
+            ret_row = cur_ret.fetchone()
+            conn_ret.close()
+            if ret_row:
+                b_dict['returnFlight'] = dict(ret_row)
+        except Exception:
+            pass
 
     return jsonify(b_dict)
 
@@ -933,6 +1107,7 @@ def api_my_reservations():
     cursor.execute("""
         SELECT b.id as bookingId, b.booking_reference as bookingReference, b.status,
                b.total_amount, b.nbr_luggages, b.weight, b.created_at, b.expires_at, b.paid_at,
+               b.passenger_data, b.return_flight_id, b.trip_type, b.fare_breakdown,
                f.id as flightId, f.dep_datetime, f.arr_datetime,
                al.id as airlineId, al.name as airlineName, al.IATA as airlineIATA,
                da.name as depAirportName, da.IATA as depIATA, da.city as depCity, da.country as depCountry,

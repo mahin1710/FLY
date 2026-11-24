@@ -5846,3 +5846,262 @@ html, body {
     justify-content: center;
   }
 }
+
+/* ============================================================= */
+/* PROMPT 3: FLIGHT SELECTION, FARE BREAKDOWN & PASSENGER MODALS */
+/* ============================================================= */
+
+/* Multi-Trip Selection Progress Banner */
+.trip-selection-progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  margin-top: 14px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 4px 16px rgba(197, 164, 109, 0.12);
+}
+
+.trip-step-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trip-step-badge {
+  background: var(--accent-gold);
+  color: #101D2C;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.trip-step-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.trip-selected-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.selected-leg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #059669;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Flight Details & Transparent Fare Breakdown */
+.flight-segment-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.flight-segment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.segment-leg-tag {
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+}
+
+.segment-airline-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fare-breakdown-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.fare-breakdown-title {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fare-breakdown-table {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fare-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+.fare-row.subhead {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  padding-top: 6px;
+}
+
+.fare-row.total {
+  border-top: 1px dashed var(--border-medium);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.fare-row.total .fare-val {
+  color: var(--accent-gold);
+  font-size: 1.45rem;
+  font-family: var(--font-heading);
+}
+
+.fare-val {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.fare-val.free {
+  color: #059669;
+  font-weight: 700;
+}
+
+/* Passenger Information Cards */
+.passenger-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.passenger-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.passenger-type-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(197, 164, 109, 0.15);
+  color: var(--text-main);
+  border: 1px solid var(--border-gold);
+}
+
+.passenger-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.passenger-form-grid .full-span {
+  grid-column: 1 / -1;
+}
+
+.passenger-form-grid .two-span {
+  grid-column: span 2;
+}
+
+/* Booking Review Summary */
+.review-section-box {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.review-section-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.review-pax-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.review-pax-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.review-pax-item:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .trip-selection-progress-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .passenger-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .passenger-form-grid .two-span {
+    grid-column: 1;
+  }
+  .fare-row.total .fare-val {
+    font-size: 1.25rem;
+  }
+}

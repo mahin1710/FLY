@@ -60,6 +60,12 @@ const app = {
       refundPolicies: new Set(),
       baggageOptions: new Set()
     },
+    selectedOutboundFlight: null,
+    selectedReturnFlight: null,
+    selectedMultiCityLegs: [],
+    selectedTripStep: 0,
+    passengerData: [],
+    fareBreakdown: null,
     airportsCache: [],
     countriesCache: [],
     airlineAirportsCache: []
@@ -1956,6 +1962,7 @@ const app = {
 
     this.toggleModifySearch(false);
     this.updateSearchSummaryBar();
+    this.updateTripProgressBar();
     this.executeSearchQuery();
   },
 
@@ -2024,6 +2031,7 @@ const app = {
     }
 
     this.updateSearchSummaryBar();
+    this.updateTripProgressBar();
     this.executeSearchQuery();
   },
 
@@ -2033,6 +2041,7 @@ const app = {
     if (!listContainer) return;
 
     this.updateSearchSummaryBar();
+    this.updateTripProgressBar();
 
     listContainer.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle);">
@@ -2723,7 +2732,7 @@ const app = {
           <div class="card-total-price-box">
             <span class="price-subtext">Total Price (${paxText})</span>
             <span class="price-total-large">${this.formatCurrency(totalPrice)}</span>
-            <button class="btn-select-flight-main" onclick="app.openSeatMap(${f.id})">
+            <button class="btn-select-flight-main" onclick="app.onSelectFlight(${f.id})">
               <span>Select Flight</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </button>
@@ -2788,6 +2797,633 @@ const app = {
     } catch (e) {
       this.showToast('Error updating favorite', 'error');
     }
+  },
+
+  // -------------------------------------------------------------
+  // PROMPT 3: FLIGHT SELECTION, MULTI-TRIP & FARE BREAKDOWN FLOW
+  // -------------------------------------------------------------
+  updateTripProgressBar() {
+    const banner = document.getElementById('tripSelectionProgressBanner');
+    const badge = document.getElementById('tripStepBadge');
+    const title = document.getElementById('tripStepTitle');
+    const summary = document.getElementById('tripSelectedSummary');
+    if (!banner) return;
+
+    if (this.state.currentTripType === 'roundtrip') {
+      banner.style.display = 'flex';
+      if (!this.state.selectedOutboundFlight) {
+        if (badge) badge.innerText = 'Step 1 of 2';
+        if (title) title.innerText = `Select Outbound Flight (${this.state.searchParams.depCity || 'Origin'} ➔ ${this.state.searchParams.arrCity || 'Destination'})`;
+        if (summary) summary.style.display = 'none';
+      } else {
+        if (badge) badge.innerText = 'Step 2 of 2';
+        if (title) title.innerText = `Select Return Flight (${this.state.selectedOutboundFlight.arrCity} ➔ ${this.state.selectedOutboundFlight.depCity})`;
+        if (summary) {
+          summary.style.display = 'flex';
+          const ob = this.state.selectedOutboundFlight;
+          summary.innerHTML = `
+            <span class="selected-leg-pill">
+              ✓ Outbound: ${ob.airlineName} (${ob.flightNumber}) • ${this.formatCurrency(ob.economy_price)}
+            </span>
+          `;
+        }
+      }
+    } else if (this.state.currentTripType === 'multicity') {
+      banner.style.display = 'flex';
+      const legs = this.state.multiCityLegs || [];
+      const currentLegIdx = (this.state.selectedMultiCityLegs || []).length;
+      if (currentLegIdx < legs.length) {
+        const curLeg = legs[currentLegIdx];
+        if (badge) badge.innerText = `Leg ${currentLegIdx + 1} of ${legs.length}`;
+        if (title) title.innerText = `Select Flight for Segment ${currentLegIdx + 1}: ${curLeg.fromCity || curLeg.fromCode} ➔ ${curLeg.toCity || curLeg.toCode}`;
+      }
+      if (summary) {
+        if ((this.state.selectedMultiCityLegs || []).length > 0) {
+          summary.style.display = 'flex';
+          summary.innerHTML = this.state.selectedMultiCityLegs.map((fl, i) => `
+            <span class="selected-leg-pill">
+              ✓ Leg ${i + 1}: ${fl.flightNumber} (${fl.depCity} ➔ ${fl.arrCity})
+            </span>
+          `).join('');
+        } else {
+          summary.style.display = 'none';
+        }
+      }
+    } else {
+      banner.style.display = 'none';
+    }
+  },
+
+  resetTripSelection() {
+    this.state.selectedOutboundFlight = null;
+    this.state.selectedReturnFlight = null;
+    this.state.selectedMultiCityLegs = [];
+    this.state.selectedTripStep = 0;
+    this.state.passengerData = [];
+    this.state.fareBreakdown = null;
+    this.updateTripProgressBar();
+  },
+
+  async onSelectFlight(flightId) {
+    let flight = (this.state.rawSearchResults || []).find(f => f.id === flightId);
+    if (!flight) {
+      try {
+        const res = await fetch(`/api/flights/${flightId}`);
+        flight = await res.json();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    if (!flight) {
+      this.showToast('Could not load flight details', 'error');
+      return;
+    }
+
+    if (this.state.currentTripType === 'roundtrip') {
+      if (!this.state.selectedOutboundFlight) {
+        this.state.selectedOutboundFlight = flight;
+        this.state.selectedTripStep = 1;
+        this.showToast(`Outbound flight selected: ${flight.airlineName} (${flight.flightNumber}). Now select your Return Flight.`, 'success');
+        this.updateTripProgressBar();
+
+        // Switch route to return flight
+        const origCity = flight.depCity;
+        const destCity = flight.arrCity;
+        this.state.searchParams.depCity = destCity;
+        this.state.searchParams.arrCity = origCity;
+        if (this.state.searchParams.depDateBefore) {
+          this.state.searchParams.depDateAfter = this.state.searchParams.depDateBefore;
+        }
+        this.executeSearchQuery();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      } else {
+        this.state.selectedReturnFlight = flight;
+        this.updateTripProgressBar();
+        await this.openFlightDetailsModal([this.state.selectedOutboundFlight, this.state.selectedReturnFlight]);
+        return;
+      }
+    } else if (this.state.currentTripType === 'multicity') {
+      if (!this.state.selectedMultiCityLegs) this.state.selectedMultiCityLegs = [];
+      this.state.selectedMultiCityLegs.push(flight);
+      const totalLegs = (this.state.multiCityLegs && this.state.multiCityLegs.length) || 2;
+      if (this.state.selectedMultiCityLegs.length < totalLegs) {
+        const nextIdx = this.state.selectedMultiCityLegs.length;
+        this.showToast(`Segment ${nextIdx} selected! Now choose flight for Segment ${nextIdx + 1}.`, 'success');
+        this.updateTripProgressBar();
+        const nextLeg = this.state.multiCityLegs[nextIdx];
+        if (nextLeg) {
+          this.state.searchParams.depCity = nextLeg.fromCity || nextLeg.fromCode;
+          this.state.searchParams.arrCity = nextLeg.toCity || nextLeg.toCode;
+          this.state.searchParams.depDateAfter = nextLeg.date || '';
+        }
+        this.executeSearchQuery();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      } else {
+        await this.openFlightDetailsModal(this.state.selectedMultiCityLegs);
+        return;
+      }
+    } else {
+      // One Way
+      this.state.selectedOutboundFlight = flight;
+      this.state.selectedReturnFlight = null;
+      this.state.selectedMultiCityLegs = [];
+      await this.openFlightDetailsModal([flight]);
+    }
+  },
+
+  async openFlightDetailsModal(flights) {
+    if (!flights || flights.length === 0) return;
+    const modalBody = document.getElementById('flightDetailsModalBody');
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div style="padding: 32px; text-align: center; color: var(--text-muted);">
+        <div class="pulsing-dot" style="margin: 0 auto 12px auto;"></div>
+        Calculating transparent fare breakdown and flight details...
+      </div>
+    `;
+    this.openModal('modalFlightDetails');
+
+    try {
+      const flightIds = flights.map(f => f.id);
+      const pax = this.state.passengers || { adults: 1, children: 0, infants: 0 };
+      const cabin = this.state.cabinClass || 'Economy';
+
+      const res = await fetch('/api/flights/fare-breakdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flightIds: flightIds,
+          cabinClass: cabin,
+          adults: pax.adults,
+          children: pax.children,
+          infants: pax.infants,
+          luggageCount: this.state.luggageCount || 0,
+          luggageWeight: this.state.luggageWeight || 0
+        })
+      });
+
+      const breakdown = await res.json();
+      this.state.fareBreakdown = breakdown;
+
+      // Render flight cards
+      const segmentsHtml = flights.map((f, idx) => {
+        let legLabel = 'Flight Details';
+        if (flights.length === 2 && idx === 0) legLabel = 'Outbound Flight';
+        else if (flights.length === 2 && idx === 1) legLabel = 'Return Flight';
+        else if (flights.length > 2) legLabel = `Journey Segment ${idx + 1}`;
+
+        const depTime = f.dep_datetime ? f.dep_datetime.substring(11, 16) : '00:00';
+        const depDate = f.dep_datetime ? f.dep_datetime.substring(0, 10) : '';
+        const arrTime = f.arr_datetime ? f.arr_datetime.substring(11, 16) : '00:00';
+        const arrDate = f.arr_datetime ? f.arr_datetime.substring(0, 10) : '';
+        const duration = f.durationFormatted || this.calculateDuration(f.dep_datetime, f.arr_datetime);
+        const stopsCount = typeof f.stops === 'number' ? f.stops : 0;
+        const stopsLabel = stopsCount === 0 ? 'Non-stop' : `${stopsCount} Stop(s)`;
+        const baggage = f.baggageAllowance || 'Check-in: 20 kg • Cabin: 7 kg';
+        const refund = f.refundability || 'Refundable';
+        let refundColor = '#059669';
+        if (refund === 'Partially Refundable') refundColor = '#b45309';
+        else if (refund === 'Non-refundable') refundColor = '#64748b';
+
+        return `
+          <div class="flight-segment-card">
+            <div class="flight-segment-header">
+              <span class="segment-leg-tag">${legLabel}</span>
+              <div class="segment-airline-meta">
+                <img src="/api/airlines/${f.id_airline}/logo" class="airline-logo-img" alt="${f.airlineName}" onerror="this.src='/images/default_logo.png'" style="width: 24px; height: 24px;">
+                <strong style="font-size: 0.92rem;">${f.airlineName}</strong>
+                <span class="flight-code">${f.flightNumber}</span>
+                <span class="aircraft-pill">${f.aircraft || 'Boeing 737-800'}</span>
+              </div>
+            </div>
+
+            <div class="flight-timeline" style="margin-bottom: 12px;">
+              <div class="timeline-point">
+                <div class="point-time">${depTime}</div>
+                <div class="point-iata">${f.depIATA || 'DEP'}</div>
+                <div class="point-city">${f.depCity}, ${f.depCountry}</div>
+                <div class="point-date">${depDate}</div>
+              </div>
+
+              <div class="timeline-path">
+                <span class="duration-text">${duration}</span>
+                <div class="flight-path-graphic">
+                  <div class="path-line"></div>
+                  <span class="path-plane-icon">✈</span>
+                </div>
+                <span class="nonstop-badge">${stopsLabel}</span>
+                ${f.transitInfo ? `<div class="transit-info-badge">${f.transitInfo}</div>` : ''}
+              </div>
+
+              <div class="timeline-point text-right">
+                <div class="point-time">${arrTime}</div>
+                <div class="point-iata">${f.arrIATA || 'ARR'}</div>
+                <div class="point-city">${f.arrCity}, ${f.arrCountry}</div>
+                <div class="point-date">${arrDate}</div>
+              </div>
+            </div>
+
+            <div class="flight-card-features-row" style="border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+              <span class="baggage-pill">🧳 ${baggage}</span>
+              <span class="baggage-pill">💺 ${cabin}</span>
+              <span class="refund-badge" style="color: ${refundColor}; border-color: ${refundColor};">
+                ✓ ${refund} Policy
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render transparent fare breakdown card
+      const totalPax = breakdown.totalPassengers || 1;
+      const fareCardHtml = `
+        <div class="fare-breakdown-card">
+          <div class="fare-breakdown-title">
+            <span>🧾</span>
+            <span>Transparent Fare Breakdown (${totalPax} Traveler${totalPax > 1 ? 's' : ''} • ${cabin})</span>
+          </div>
+
+          <div class="fare-breakdown-table">
+            <div class="fare-row subhead">
+              <span>Fare Component</span>
+              <span>Amount (BDT)</span>
+            </div>
+
+            <div class="fare-row">
+              <span>Base Fare (${breakdown.adults} Adult${breakdown.adults > 1 ? 's' : ''}${breakdown.children ? ` • ${breakdown.children} Child` : ''}${breakdown.infants ? ` • ${breakdown.infants} Infant` : ''})</span>
+              <span class="fare-val">${this.formatCurrency(breakdown.baseFare)}</span>
+            </div>
+
+            <div class="fare-row">
+              <span>Government Taxes & Airport Embarkation Fees (15% VAT + Airport Tax)</span>
+              <span class="fare-val">${this.formatCurrency(breakdown.taxes)}</span>
+            </div>
+
+            <div class="fare-row">
+              <span>Carrier Fuel Surcharge & Airline Fees</span>
+              <span class="fare-val">${this.formatCurrency(breakdown.airlineCharges)}</span>
+            </div>
+
+            <div class="fare-row">
+              <span>Platform Service Charges</span>
+              <span class="fare-val free">৳0 (Free)</span>
+            </div>
+
+            ${breakdown.discounts > 0 ? `
+              <div class="fare-row">
+                <span>Special Promotional Discount</span>
+                <span class="fare-val free">-${this.formatCurrency(breakdown.discounts)}</span>
+              </div>
+            ` : ''}
+
+            <div class="fare-row total">
+              <span>Total Payable Amount (incl. all taxes & fees)</span>
+              <span class="fare-val">${this.formatCurrency(breakdown.totalPayable)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalBody.innerHTML = `
+        <div>
+          ${segmentsHtml}
+          ${fareCardHtml}
+        </div>
+      `;
+    } catch (e) {
+      console.error(e);
+      modalBody.innerHTML = `<div style="color: #ef4444; padding: 24px; text-align: center;">Unable to calculate fare breakdown. Please retry.</div>`;
+    }
+  },
+
+  closeFlightDetailsModal() {
+    this.closeModal('modalFlightDetails');
+  },
+
+  openPassengerInfoModal() {
+    this.closeFlightDetailsModal();
+    if (!this.state.user) {
+      this.openAuthModal('login');
+      this.showToast('Please sign in to proceed with traveler details', 'info');
+      return;
+    }
+
+    const container = document.getElementById('passengerCardsContainer');
+    if (!container) return;
+
+    const pax = this.state.passengers || { adults: 1, children: 0, infants: 0 };
+    const adults = Math.max(1, pax.adults || 1);
+    const children = Math.max(0, pax.children || 0);
+    const infants = Math.max(0, pax.infants || 0);
+
+    const passengerTypes = [];
+    for (let i = 0; i < adults; i++) passengerTypes.push({ type: 'Adult', index: i + 1, minAge: 12 });
+    for (let i = 0; i < children; i++) passengerTypes.push({ type: 'Child', index: i + 1, maxAge: 11, minAge: 2 });
+    for (let i = 0; i < infants; i++) passengerTypes.push({ type: 'Infant', index: i + 1, maxAge: 2 });
+
+    const u = this.state.user;
+    const defaultUserFirst = u ? (u.firstName || (u.display_name || u.username).split(' ')[0]) : '';
+    const defaultUserLast = u ? (u.lastName || (u.display_name || '').split(' ').slice(1).join(' ') || 'Traveler') : '';
+    const defaultEmail = u ? (u.emailAddress || u.email || '') : '';
+
+    container.innerHTML = passengerTypes.map((pt, idx) => {
+      const isLead = idx === 0;
+      const fNameVal = isLead ? defaultUserFirst : '';
+      const lNameVal = isLead ? defaultUserLast : '';
+      const emailVal = isLead ? defaultEmail : '';
+
+      return `
+        <div class="passenger-card" data-pax-index="${idx}" data-pax-type="${pt.type.toLowerCase()}">
+          <div class="passenger-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700;">Passenger ${idx + 1}</span>
+              <span class="passenger-type-badge">${pt.type}${isLead ? ' (Lead Traveler)' : ''}</span>
+            </div>
+            <span style="font-size: 0.76rem; color: var(--text-muted);">${pt.type === 'Adult' ? '12+ years' : (pt.type === 'Child' ? '2–11 years' : 'Under 2 years')}</span>
+          </div>
+
+          <div class="passenger-form-grid">
+            <div class="form-field">
+              <label class="field-label">Title *</label>
+              <select class="field-select pax-title" required>
+                <option value="Mr" ${pt.type === 'Adult' ? 'selected' : ''}>Mr</option>
+                <option value="Mrs">Mrs</option>
+                <option value="Ms">Ms</option>
+                <option value="Mstr" ${pt.type !== 'Adult' ? 'selected' : ''}>Master</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">First / Given Name *</label>
+              <input type="text" class="field-input pax-first-name" placeholder="e.g. John" value="${fNameVal}" required>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Last / Surname *</label>
+              <input type="text" class="field-input pax-last-name" placeholder="e.g. Doe" value="${lNameVal}" required>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Date of Birth *</label>
+              <input type="date" class="field-input pax-dob" required value="${pt.type === 'Adult' ? '1995-06-15' : (pt.type === 'Child' ? '2016-08-10' : '2025-01-10')}">
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Gender *</label>
+              <select class="field-select pax-gender" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Document Type *</label>
+              <select class="field-select pax-doc-type" required>
+                <option value="National ID">National ID (NID)</option>
+                <option value="Passport">Passport</option>
+                <option value="Birth Certificate">Birth Certificate</option>
+              </select>
+            </div>
+
+            <div class="form-field ${isLead ? 'two-span' : 'full-span'}">
+              <label class="field-label">Document Number *</label>
+              <input type="text" class="field-input pax-doc-num" placeholder="e.g. NID / Passport #" value="${isLead ? 'A12893847' : 'B98472910'}" required>
+            </div>
+
+            ${isLead ? `
+              <div class="form-field">
+                <label class="field-label">Contact Phone *</label>
+                <input type="tel" class="field-input pax-phone" placeholder="e.g. +8801712345678" value="+8801712345678" required>
+              </div>
+              <div class="form-field full-span">
+                <label class="field-label">Contact Email (for E-Ticket) *</label>
+                <input type="email" class="field-input pax-email" placeholder="e.g. name@example.com" value="${emailVal}" required>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.openModal('modalPassengerInfo');
+  },
+
+  backToFlightDetails() {
+    this.closeModal('modalPassengerInfo');
+    const flights = [];
+    if (this.state.selectedOutboundFlight) flights.push(this.state.selectedOutboundFlight);
+    if (this.state.selectedReturnFlight) flights.push(this.state.selectedReturnFlight);
+    if (this.state.selectedMultiCityLegs) this.state.selectedMultiCityLegs.forEach(f => { if (!flights.find(x => x.id === f.id)) flights.push(f); });
+    if (flights.length > 0) {
+      this.openFlightDetailsModal(flights);
+    }
+  },
+
+  submitPassengerInfo(event) {
+    if (event) event.preventDefault();
+
+    const cards = document.querySelectorAll('.passenger-card');
+    const paxList = [];
+
+    let hasError = false;
+    cards.forEach((c, idx) => {
+      const type = c.dataset.paxType || 'adult';
+      const title = c.querySelector('.pax-title')?.value || 'Mr';
+      const firstName = (c.querySelector('.pax-first-name')?.value || '').trim();
+      const lastName = (c.querySelector('.pax-last-name')?.value || '').trim();
+      const dob = c.querySelector('.pax-dob')?.value || '';
+      const gender = c.querySelector('.pax-gender')?.value || 'Male';
+      const docType = c.querySelector('.pax-doc-type')?.value || 'National ID';
+      const docNum = (c.querySelector('.pax-doc-num')?.value || '').trim();
+      const phone = c.querySelector('.pax-phone')?.value || '';
+      const email = c.querySelector('.pax-email')?.value || '';
+
+      if (!firstName || !lastName || !dob || !docNum) {
+        this.showToast(`Please fill all required fields for Passenger ${idx + 1}`, 'error');
+        hasError = true;
+        return;
+      }
+
+      paxList.push({
+        passengerNumber: idx + 1,
+        type: type,
+        title: title,
+        firstName: firstName,
+        lastName: lastName,
+        fullName: `${title} ${firstName} ${lastName}`,
+        birthDate: dob,
+        gender: gender,
+        documentType: docType,
+        documentNumber: docNum,
+        phone: phone,
+        email: email
+      });
+    });
+
+    if (hasError) return;
+
+    this.state.passengerData = paxList;
+    this.closeModal('modalPassengerInfo');
+    this.showToast('Passenger details saved successfully!', 'success');
+
+    // Open Seat Map for the primary flight
+    const primaryFlight = this.state.selectedOutboundFlight || (this.state.selectedMultiCityLegs && this.state.selectedMultiCityLegs[0]);
+    if (primaryFlight) {
+      this.openSeatMap(primaryFlight.id);
+    }
+  },
+
+  async proceedToBookingReview() {
+    if (!this.state.user) {
+      this.openAuthModal('login');
+      this.showToast('Please sign in to proceed with booking', 'info');
+      return;
+    }
+
+    const f = this.state.selectedFlight;
+    const seats = this.state.selectedSeats || [];
+    if (!f || seats.length === 0) {
+      this.showToast('Please select at least one seat to proceed', 'warning');
+      return;
+    }
+
+    // Check if passenger count matches seats
+    const paxCount = (this.state.passengerData && this.state.passengerData.length) || 1;
+    if (seats.length < paxCount) {
+      this.showToast(`Please select ${paxCount} seats (1 seat for each traveler). Currently selected: ${seats.length}`, 'warning');
+      return;
+    }
+
+    // Call server revalidation
+    const flightIds = [];
+    if (this.state.selectedOutboundFlight) flightIds.push(this.state.selectedOutboundFlight.id);
+    if (this.state.selectedReturnFlight) flightIds.push(this.state.selectedReturnFlight.id);
+    if (this.state.selectedMultiCityLegs) this.state.selectedMultiCityLegs.forEach(fl => { if (!flightIds.includes(fl.id)) flightIds.push(fl.id); });
+    if (flightIds.length === 0) flightIds.push(f.id);
+
+    const pax = this.state.passengers || { adults: 1, children: 0, infants: 0 };
+    const expectedTotal = this.state.fareBreakdown ? this.state.fareBreakdown.totalPayable : null;
+
+    try {
+      const valRes = await fetch('/api/bookings/validate', {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({
+          flightIds: flightIds,
+          seatIds: seats.map(s => s.id),
+          cabinClass: this.state.cabinClass || 'Economy',
+          adults: pax.adults,
+          children: pax.children,
+          infants: pax.infants,
+          expectedTotal: expectedTotal,
+          passengerData: this.state.passengerData
+        })
+      });
+
+      const valData = await valRes.json();
+      if (!valRes.ok || !valData.valid) {
+        if (valData.priceChanged) {
+          this.showToast(valData.error, 'warning');
+          this.state.fareBreakdown = valData.currentFare;
+        } else {
+          this.showToast(valData.error || 'Seat availability conflict occurred.', 'error');
+          this.pollSeatAvailability(true);
+          return;
+        }
+      } else {
+        this.state.fareBreakdown = valData.currentFare;
+      }
+
+      // Render Booking Review Modal
+      const reviewBody = document.getElementById('bookingReviewModalBody');
+      if (!reviewBody) return;
+
+      const seatCodes = seats.map(s => s.code).join(', ');
+      const breakdown = this.state.fareBreakdown;
+      const totalAmount = breakdown ? breakdown.totalPayable : (this.state.calculatedTotal || 0);
+
+      const paxSummaryHtml = (this.state.passengerData || []).map((p, i) => `
+        <div class="review-pax-item">
+          <div>
+            <strong>${p.fullName}</strong>
+            <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: 8px;">(${p.type.toUpperCase()} • ${p.documentType}: ${p.documentNumber})</span>
+          </div>
+          <span class="seat-badge" style="font-weight: 700; color: var(--accent-gold);">Seat: ${seats[i] ? seats[i].code : 'Auto-assigned'}</span>
+        </div>
+      `).join('') || `<div>Traveler: ${this.state.user.display_name || this.state.user.username} (Seat: ${seatCodes})</div>`;
+
+      reviewBody.innerHTML = `
+        <div class="review-section-box">
+          <div class="review-section-title">Itinerary & Route Details</div>
+          <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 4px;">
+            ${f.depCity} (${f.depIATA || 'DEP'}) ➔ ${f.arrCity} (${f.arrIATA || 'ARR'})
+          </div>
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            ${f.airlineName} • Flight #${f.flightNumber} • 📅 ${f.dep_datetime}
+          </div>
+          ${this.state.selectedReturnFlight ? `
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-subtle);">
+              <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 4px;">
+                ${this.state.selectedReturnFlight.depCity} (${this.state.selectedReturnFlight.depIATA || 'DEP'}) ➔ ${this.state.selectedReturnFlight.arrCity} (${this.state.selectedReturnFlight.arrIATA || 'ARR'})
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-secondary);">
+                ${this.state.selectedReturnFlight.airlineName} • Flight #${this.state.selectedReturnFlight.flightNumber} • 📅 ${this.state.selectedReturnFlight.dep_datetime}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="review-section-box">
+          <div class="review-section-title">Passenger & Assigned Seats (${paxCount})</div>
+          <div class="review-pax-list">
+            ${paxSummaryHtml}
+          </div>
+        </div>
+
+        <div class="review-section-box">
+          <div class="review-section-title">Verified Transparent Fare Breakdown</div>
+          <div class="fare-breakdown-table">
+            <div class="fare-row">
+              <span>Base Fare (${breakdown ? breakdown.adults : 1} Adults${breakdown && breakdown.children ? ` • ${breakdown.children} Children` : ''})</span>
+              <span class="fare-val">${this.formatCurrency(breakdown ? breakdown.baseFare : totalAmount * 0.8)}</span>
+            </div>
+            <div class="fare-row">
+              <span>Government Taxes & Airport Fees (15% VAT + Embarkation)</span>
+              <span class="fare-val">${this.formatCurrency(breakdown ? breakdown.taxes : totalAmount * 0.15)}</span>
+            </div>
+            <div class="fare-row">
+              <span>Airline Carrier Surcharges</span>
+              <span class="fare-val">${this.formatCurrency(breakdown ? breakdown.airlineCharges : totalAmount * 0.05)}</span>
+            </div>
+            <div class="fare-row">
+              <span>Luggage & Weight Fees</span>
+              <span class="fare-val">${this.formatCurrency((this.state.luggageCount * (f.luggage_price || 350)) + (this.state.luggageWeight * (f.weight_price || 120)))}</span>
+            </div>
+            <div class="fare-row total">
+              <span>Total Payable Amount</span>
+              <span class="fare-val">${this.formatCurrency(totalAmount)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info" style="font-size: 0.82rem; background: rgba(197, 164, 109, 0.1); border: 1px solid var(--border-gold); padding: 10px 14px; border-radius: var(--radius-md);">
+          ⏱️ <strong>15-Minute Seat Lock:</strong> When you click confirm below, your selected seats will be exclusively locked for 15 minutes to guarantee availability while you complete payment.
+        </div>
+      `;
+
+      this.openModal('modalBookingReview');
+    } catch (e) {
+      console.error(e);
+      this.showToast('Validation failed. Please verify server connection.', 'error');
+    }
+  },
+
+  async confirmHoldFromReview() {
+    this.closeModal('modalBookingReview');
+    await this.proceedToPayment();
   },
 
   // -------------------------------------------------------------
@@ -3131,7 +3767,13 @@ const app = {
           accountId: this.state.user.id,
           seatIds: seats.map(s => s.id),
           nbrLuggages: this.state.luggageCount,
-          weight: this.state.luggageWeight
+          weight: this.state.luggageWeight,
+          passengerData: this.state.passengerData,
+          returnFlightId: this.state.selectedReturnFlight ? this.state.selectedReturnFlight.id : null,
+          multiLegData: this.state.selectedMultiCityLegs,
+          cabinClass: (this.state.cabinClass || 'Economy').toLowerCase(),
+          tripType: this.state.currentTripType || 'oneway',
+          expectedFare: this.state.fareBreakdown ? this.state.fareBreakdown.totalPayable : null
         })
       });
 
@@ -3162,7 +3804,10 @@ const app = {
         nbr_luggages: this.state.luggageCount,
         weight: this.state.luggageWeight,
         totalAmount: holdData.totalAmount,
-        expiresAt: holdData.expiresAt
+        expiresAt: holdData.expiresAt,
+        passengerData: this.state.passengerData,
+        fareBreakdown: this.state.fareBreakdown,
+        returnFlight: this.state.selectedReturnFlight
       });
 
       this.showToast('Seats reserved exclusively for you for 15 minutes!', 'success');
@@ -3218,6 +3863,13 @@ const app = {
     const nbrLuggages = booking.nbr_luggages !== undefined ? booking.nbr_luggages : (this.state.luggageCount || 0);
     const weight = booking.weight !== undefined ? booking.weight : (this.state.luggageWeight || 0);
 
+    const paxList = (booking.passengerData && Array.isArray(booking.passengerData))
+      ? booking.passengerData
+      : (this.state.passengerData || []);
+    const paxNames = paxList.map(p => p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim()).filter(Boolean).join(', ');
+
+    const returnFlight = booking.returnFlight || this.state.selectedReturnFlight;
+
     const recapEl = document.getElementById('checkoutRecapCard');
     if (recapEl) {
       recapEl.innerHTML = `
@@ -3233,6 +3885,16 @@ const app = {
         <div style="font-size: 0.9rem; margin-bottom: 6px; font-weight: 600;">
           ${depCity} (${depIATA}) ➔ ${arrCity} (${arrIATA})
         </div>
+        ${returnFlight ? `
+          <div style="font-size: 0.85rem; margin-bottom: 6px; font-weight: 600; color: var(--accent-gold);">
+            🔄 Return: ${returnFlight.depCity} (${returnFlight.depIATA || ''}) ➔ ${returnFlight.arrCity} (${returnFlight.arrIATA || ''}) • ${returnFlight.airlineName}
+          </div>
+        ` : ''}
+        ${paxNames ? `
+          <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">
+            👤 Travelers: <strong>${paxNames}</strong>
+          </div>
+        ` : ''}
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 10px;">
           📅 ${depDate} • Seats: <strong>${seatCodes}</strong> • Baggage: ${nbrLuggages} bags (${weight}kg)
         </div>
