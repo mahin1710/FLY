@@ -14,6 +14,11 @@ class ReconcilePendingPaymentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public function __construct()
+    {
+        $this->onQueue('critical_recovery');
+    }
+
     public function handle(BookingStateMachine $stateMachine): void
     {
         // Expire holds where customer failed to pay before hold expiration

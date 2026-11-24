@@ -18,6 +18,11 @@ class ReconcilePendingTicketsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public function __construct()
+    {
+        $this->onQueue('critical_recovery');
+    }
+
     public function handle(
         TicketingService|FlightProviderInterface $ticketingService,
         ?BookingStateMachine $stateMachine = null,

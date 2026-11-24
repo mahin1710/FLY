@@ -7,6 +7,7 @@ use App\Models\FlightOffer;
 use App\Models\FlightSearch;
 use App\Models\User;
 use App\Services\Providers\FlightProviderInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class FlightSearchService
@@ -35,8 +36,20 @@ class FlightSearchService
             'ip_address'     => $ipAddress,
         ]);
 
-        // 2. Query flight provider (MockFlightProvider in non-production)
-        $offers = $this->provider->search($criteria);
+        // 2. Query flight provider with contract-permitted short-lived search cache (10 mins max)
+        // STRICT MANDATE: Never treat cache as final fare/availability; live provider reprice is mandatory before hold/payment.
+        $cacheKey = 'flight_search_cache:' . md5(json_encode([
+            $criteria['origin'] ?? '',
+            $criteria['destination'] ?? '',
+            $criteria['departure_date'] ?? '',
+            $criteria['return_date'] ?? '',
+            $criteria['cabin_class'] ?? 'economy',
+            $criteria['adults'] ?? 1,
+        ]));
+
+        $offers = Cache::remember($cacheKey, 600, function () use ($criteria) {
+            return $this->provider->search($criteria);
+        });
 
         // 3. Persist offers to database for immutable offer retrieval & repricing boundaries
         foreach ($offers as $offerDTO) {
@@ -46,8 +59,7 @@ class FlightSearchService
                 $duration += $seg->durationMinutes + $seg->layoverMinutes;
             }
 
-            FlightOffer::create([
-                'uuid'               => $offerDTO->uuid,
+            FlightOffer::firstOrCreate(['uuid' => $offerDTO->uuid], [
                 'flight_search_id'   => $flightSearch->id,
                 'provider_code'      => $offerDTO->providerCode,
                 'provider_offer_ref' => $offerDTO->providerOfferRef,

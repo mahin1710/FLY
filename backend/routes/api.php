@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\DocsController;
 use App\Http\Controllers\Api\V1\FlightController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\MetricsController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,7 @@ Route::prefix('v1')->group(function () {
     // 1. HEALTH & SYSTEM DIAGNOSTICS (PUBLIC)
     // -------------------------------------------------------------
     Route::get('/health', [HealthController::class, 'check'])->name('v1.health');
+    Route::get('/metrics', [MetricsController::class, 'index'])->name('v1.metrics');
 
     // -------------------------------------------------------------
     // 2. OPENAPI DOCUMENTATION SPECIFICATION (PUBLIC)

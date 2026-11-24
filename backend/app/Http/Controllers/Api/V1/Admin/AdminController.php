@@ -246,6 +246,20 @@ class AdminController extends Controller
             }
         });
 
+        // Document access logging for compliance audit
+        if ($booking->passengers->whereNotNull('document')->isNotEmpty()) {
+            $this->auditService->log(
+                $request->user(),
+                'document_access',
+                'bookings',
+                $booking->id,
+                'Operator viewed booking containing sensitive passenger documents',
+                null,
+                ['passengers_count' => $booking->passengers->count()],
+                $request
+            );
+        }
+
         return ApiResponse::success($booking, 'Booking detail retrieved successfully.');
     }
 

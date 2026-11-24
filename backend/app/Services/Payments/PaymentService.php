@@ -106,6 +106,18 @@ class PaymentService
 
         // 3. Deduplication Check: Webhook processing must be idempotent
         if (in_array($payment->status, ['captured', 'refunded'], true)) {
+            PaymentEvent::create([
+                'payment_id'  => $payment->id,
+                'event_type'  => 'duplicate_webhook_rejected',
+                'status_from' => $payment->status,
+                'status_to'   => 'duplicate_rejected',
+                'payload'     => [
+                    'gateway_transaction_id' => $verification->gatewayTransactionId,
+                    'note'                   => 'Duplicate IPN callback deduplicated idempotently.',
+                ],
+                'recorded_at' => now(),
+            ]);
+
             return [
                 'status'         => 'already_processed',
                 'message'        => 'Transaction was already verified and captured.',

@@ -22,7 +22,9 @@ class SendCustomerNotificationJob implements ShouldQueue
         public readonly string $channel,      // email, sms
         public readonly string $recipient,
         public readonly array $metadata = []
-    ) {}
+    ) {
+        $this->onQueue('bulk');
+    }
 
     public function handle(): void
     {
