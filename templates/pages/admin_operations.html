@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Operations Console — FLY Aviation{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/css/admin.css">
+{% endblock %}
+
+{% block content %}
+<div class="admin-console-wrapper">
+  <!-- Desktop / Tablet Operational Sidebar -->
+  <aside class="admin-sidebar" role="navigation" aria-label="Operations Navigation">
+    <div class="admin-sidebar-header">
+      <div class="admin-console-title">
+        <span>Operations Console</span>
+        <span class="admin-console-badge">OPS</span>
+      </div>
+      <div class="admin-role-selector-box">
+        <label for="adminRoleSelect">Simulate Access Role:</label>
+        <select id="adminRoleSelect" class="admin-role-select" aria-label="Simulate Administrative Role">
+          <option value="super_admin">Super Administrator</option>
+          <option value="operations_admin">Operations Admin</option>
+          <option value="ticketing_agent">Ticketing Agent</option>
+          <option value="finance_admin">Finance Admin</option>
+          <option value="support_agent">Support Agent</option>
+          <option value="pricing_manager">Pricing Manager</option>
+          <option value="content_manager">Content Manager</option>
+        </select>
+      </div>
+    </div>
+
+    <ul class="admin-nav-menu" id="adminNavMenu">
+      <li class="admin-nav-item">
+        <a class="admin-nav-link active" data-module="dashboard" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Dashboard</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="bookings" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Bookings</span>
+          </span>
+          <span class="admin-nav-badge">125</span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="ticketing" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+            <span>Ticketing Queue</span>
+          </span>
+          <span class="admin-nav-badge" style="background: rgba(245, 158, 11, 0.2); color: #b45309;">5</span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="payments" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Payments</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="servicing" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Refunds &amp; Servicing</span>
+          </span>
+          <span class="admin-nav-badge">4</span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="customers" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Customers</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="providers" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 22v-4"/><path d="m19.07 19.07-2.83-2.83"/><path d="M22 12h-4"/><path d="m19.07 4.93-2.83 2.83"/></svg>
+            <span>Provider Settings</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="pricing" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Pricing &amp; Markups</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="content" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Content Banners</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="users" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Users &amp; Roles</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="reports" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Financial Reports</span>
+          </span>
+        </a>
+      </li>
+      <li class="admin-nav-item">
+        <a class="admin-nav-link" data-module="approvals" role="button">
+          <span class="admin-nav-label">
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Dual Approvals</span>
+          </span>
+          <span class="admin-nav-badge" style="background: rgba(16, 185, 129, 0.2); color: #065f46;">1</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Viewport -->
+  <main class="admin-main-container" id="adminMainContent">
+    <div id="adminModuleContainer">
+      <!-- Dynamically Rendered by admin_console.js -->
+    </div>
+  </main>
+</div>
+
+<!-- Modal 1: Mandatory Reason Prompt for Sensitive Administrative Actions -->
+<div class="admin-modal-overlay" id="adminReasonModal" role="dialog" aria-modal="true" aria-labelledby="reasonModalTitle">
+  <div class="admin-modal-dialog">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="reasonModalTitle">Administrative Confirmation</h3>
+      <button class="admin-modal-close" id="closeReasonModal" type="button" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="admin-modal-body">
+      <p id="reasonModalMessage" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;"></p>
+      <div class="admin-form-group">
+        <label for="reasonModalInput">Mandatory Justification Reason (Audit Record):</label>
+        <textarea id="reasonModalInput" class="admin-form-control" placeholder="Provide a detailed operational justification (min 5 characters)..." required></textarea>
+        <small style="font-size: 0.72rem; color: var(--text-muted);">This action is cryptographically tied to your operator ID and recorded in immutable compliance audit logs.</small>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn-admin btn-admin-outline" id="cancelReasonModal" type="button">Cancel</button>
+      <button class="btn-admin btn-admin-primary" id="submitReasonModal" type="button">Confirm &amp; Audit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Generic Detail View (Booking Lifecycle Timeline / Masked Customer Profile) -->
+<div class="admin-modal-overlay" id="adminDetailModal" role="dialog" aria-modal="true" aria-labelledby="adminDetailModalTitle">
+  <div class="admin-modal-dialog" style="max-width: 600px;">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="adminDetailModalTitle">Detail Record</h3>
+      <button class="admin-modal-close" id="closeDetailModal" type="button" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="admin-modal-body" id="adminDetailModalBody">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+</div>
+
+<script src="/js/admin_console.js"></script>
+{% endblock %}

@@ -51,6 +51,9 @@
           <span>My Bookings</span>
           <span class="badge" id="bookingsCountBadge" style="display: none;">0</span>
         </a>
+        <a href="/admin" class="nav-btn {% if request.path.startswith('/admin') %}active{% endif %}" id="navAdminBtn">
+          <span>Operations Console</span>
+        </a>
       </nav>
 
       <!-- Header Actions -->

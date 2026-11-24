@@ -95,7 +95,7 @@ Route::prefix('v1')->group(function () {
             ->middleware('role:admin,super_admin,operations_admin,ticketing_agent,finance_admin,support_agent,pricing_manager,content_manager')
             ->group(function () {
                 // Legacy compatibility
-                Route::get('/overview', [AdminController::class, 'dashboard'])->name('v1.admin.overview');
+                Route::get('/overview', [AdminController::class, 'overview'])->name('v1.admin.overview');
                 Route::post('/payments/{ulid}/refund', [PaymentController::class, 'refund'])->name('v1.admin.payments.refund');
 
                 // 1. Dashboard

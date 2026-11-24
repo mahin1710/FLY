@@ -22,12 +22,14 @@ use App\Services\Audit\AdminAuditService;
 use App\Services\Operations\DualApprovalService;
 use App\Services\Payments\PaymentService;
 use App\Services\Providers\FlightProviderInterface;
+use App\Services\Servicing\CustomerServicingService;
 use App\Services\Ticketing\TicketingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Throwable;
 
 class AdminController extends Controller
@@ -36,6 +38,25 @@ class AdminController extends Controller
         protected AdminAuditService $auditService,
         protected DualApprovalService $dualApprovalService
     ) {}
+
+    /**
+     * Legacy overview endpoint for compatibility.
+     */
+    public function overview(Request $request): JsonResponse
+    {
+        $this->authorizeAction('viewDashboard', $request->user());
+
+        $metrics = [
+            'total_users'     => User::count(),
+            'customers_count' => User::where('role', 'customer')->count(),
+            'admins_count'    => User::whereIn('role', ['admin', 'super_admin'])->count(),
+            'active_accounts' => User::where('status', 'active')->count(),
+            'system_time'     => now()->toIso8601String(),
+            'environment'     => config('app.env'),
+        ];
+
+        return ApiResponse::success($metrics, 'Admin metrics overview retrieved successfully.');
+    }
 
     /**
      * 1. DASHBOARD OVERVIEW METRICS
@@ -997,7 +1018,9 @@ class AdminController extends Controller
         }
 
         // Authorize via policy (checks segregation of duties and role)
-        if (!Gate::forUser($request->user())->allows('decideDualApproval', [AdminPolicy::class, $approval])) {
+        try {
+            $this->authorizeAction('decideDualApproval', $request->user(), $approval);
+        } catch (Throwable $e) {
             return ApiResponse::error('Forbidden: You are not authorized to decide on this dual approval request, or you are the initiator.', 403);
         }
 
@@ -1037,7 +1060,7 @@ class AdminController extends Controller
             : $policy->$ability($user);
 
         if (!$allowed) {
-            abort(403, "Forbidden: Your role '{$user->role}' does not have permission for: {$ability}");
+            throw new AccessDeniedHttpException("Forbidden: Your role '{$user->role}' does not have permission for: {$ability}");
         }
     }
 }
