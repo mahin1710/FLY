@@ -55,6 +55,11 @@ class BookingPriceSnapshot extends Model
         return $this->belongsTo(FlightOffer::class, 'flight_offer_id');
     }
 
+    public function flightOffer(): BelongsTo
+    {
+        return $this->offer();
+    }
+
     public function booking(): HasOne
     {
         return $this->hasOne(Booking::class);

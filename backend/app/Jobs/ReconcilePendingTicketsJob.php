@@ -36,12 +36,14 @@ class ReconcilePendingTicketsJob implements ShouldQueue
 
                 if ($ticketResult->status === 'ISSUED' && !empty($ticketResult->ticketNumber)) {
                     Ticket::create([
-                        'ulid'         => (string) \Illuminate\Support\Str::ulid(),
-                        'booking_id'   => $booking->id,
-                        'passenger_id' => $booking->passengers->first()?->id ?? 1,
-                        'ticket_number'=> $ticketResult->ticketNumber,
-                        'status'       => 'issued',
-                        'issued_at'    => now(),
+                        'ulid'          => (string) \Illuminate\Support\Str::ulid(),
+                        'booking_id'    => $booking->id,
+                        'passenger_id'  => $booking->passengers->first()?->id ?? 1,
+                        'ticket_number' => $ticketResult->ticketNumber,
+                        'ticket_status' => 'issued',
+                        'fare_amount'   => (float) $booking->total_amount,
+                        'currency'      => $booking->currency,
+                        'issued_at'     => now(),
                     ]);
 
                     $stateMachine->transitionTicketStatus($booking, 'ticketed', [

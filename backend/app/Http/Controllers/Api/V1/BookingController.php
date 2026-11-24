@@ -8,7 +8,10 @@ use App\Http\Requests\V1\CreateBookingDraftRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Booking;
 use App\Services\BookingDraftService;
+use App\Services\Orchestration\BookingOrchestrator;
+use App\Services\Orchestration\PriceChangedException;
 use App\Services\PassengerService;
+use App\Services\StateMachine\InvalidStateTransitionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -137,5 +140,75 @@ class BookingController extends Controller
             'created_at'       => $booking->created_at?->toIso8601String(),
             'updated_at'       => $booking->updated_at?->toIso8601String(),
         ], 'Booking status retrieved successfully');
+    }
+
+    /**
+     * Confirm booking orchestration: reprice, create supplier PNR, verify payment, and fulfill ticketing.
+     */
+    public function confirm(
+        string $ulid,
+        Request $request,
+        BookingOrchestrator $orchestrator
+    ): JsonResponse {
+        $booking = Booking::with(['priceSnapshot.flightOffer', 'passengers.document'])
+            ->where('ulid', $ulid)
+            ->first();
+
+        if (!$booking) {
+            return ApiResponse::error('Booking record not found.', 404, null, [], 'NOT_FOUND');
+        }
+
+        $idempotencyKey = $request->header('Idempotency-Key');
+
+        try {
+            $confirmedBooking = $orchestrator->confirmBooking(
+                $booking,
+                $request->all(),
+                $idempotencyKey
+            );
+
+            return ApiResponse::success(
+                $confirmedBooking,
+                'Booking confirmed and processed successfully',
+                200
+            );
+        } catch (PriceChangedException $e) {
+            return ApiResponse::error(
+                $e->getMessage(),
+                409,
+                [
+                    'old_amount'        => $e->oldAmount,
+                    'new_amount'        => $e->newAmount,
+                    'difference'        => $e->difference,
+                    'currency'          => $e->currency,
+                    'new_snapshot_ulid' => $e->newSnapshotUlid,
+                ],
+                [],
+                'PRICE_CHANGED'
+            );
+        } catch (InvalidStateTransitionException $e) {
+            return ApiResponse::error(
+                $e->getMessage(),
+                422,
+                [
+                    'dimension'           => $e->dimension,
+                    'from_status'         => $e->fromStatus,
+                    'to_status'           => $e->toStatus,
+                    'allowed_transitions' => $e->allowedTransitions,
+                ],
+                [],
+                'INVALID_STATE_TRANSITION'
+            );
+        } catch (Throwable $e) {
+            $code = $e->getCode();
+            $statusCode = $code >= 400 && $code < 600 ? $code : 500;
+            return ApiResponse::error(
+                $e->getMessage(),
+                $statusCode,
+                null,
+                [],
+                'ORCHESTRATION_ERROR'
+            );
+        }
     }
 }

@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/draft', [BookingController::class, 'createDraft'])->name('v1.bookings.draft');
         Route::post('/{ulid}/passengers', [BookingController::class, 'addPassengers'])->name('v1.bookings.passengers');
         Route::get('/{ulid}/status', [BookingController::class, 'getStatus'])->name('v1.bookings.status');
+        Route::post('/{ulid}/confirm', [BookingController::class, 'confirm'])->name('v1.bookings.confirm');
     });
 
     // -------------------------------------------------------------

@@ -118,30 +118,43 @@ class BookingOrchestrator
                 $reprice = $this->provider->reprice($offer->provider_offer_ref, $offerDTO);
 
                 if ($reprice->hasPriceChanged && abs($reprice->newAmount - $currentAmount) > 0.01) {
-                    // Create new price snapshot
-                    $newSnapshot = BookingPriceSnapshot::create([
-                        'ulid'              => (string) Str::ulid(),
-                        'flight_offer_id'   => $offer->id,
-                        'currency'          => $reprice->currency,
-                        'base_fare'         => $reprice->newAmount * 0.85,
-                        'taxes'             => $reprice->newAmount * 0.15,
-                        'airline_fees'      => 0,
-                        'service_fees'      => 0,
-                        'ancillaries_total' => 0,
-                        'discounts_total'   => 0,
-                        'grand_total'       => $reprice->newAmount,
-                        'breakdown_payload' => [
-                            'currency'     => $reprice->currency,
-                            'total_amount' => $reprice->newAmount,
-                            'difference'   => $reprice->difference,
-                        ],
-                        'created_at'        => now(),
-                    ]);
-
                     $accepted = (bool) ($input['accepted_price_change'] ?? false);
-                    $expectedSnapshot = (string) ($input['expected_snapshot_ulid'] ?? '');
+                    $expectedSnapshotUlid = (string) ($input['expected_snapshot_ulid'] ?? '');
 
-                    if (!$accepted || $expectedSnapshot !== $newSnapshot->ulid) {
+                    // Check if customer explicitly accepted a pre-quoted snapshot matching this reprice
+                    $matchingSnapshot = null;
+                    if ($accepted && !empty($expectedSnapshotUlid)) {
+                        $matchingSnapshot = BookingPriceSnapshot::where('ulid', $expectedSnapshotUlid)
+                            ->where('flight_offer_id', $offer->id)
+                            ->first();
+                    }
+
+                    if ($matchingSnapshot && abs((float) $matchingSnapshot->grand_total - $reprice->newAmount) < 0.01) {
+                        // Verified customer acceptance of the exact quoted price change
+                        $booking->total_amount = $matchingSnapshot->grand_total;
+                        $booking->booking_price_snapshot_id = $matchingSnapshot->id;
+                        $booking->save();
+                    } else {
+                        // Create new price snapshot and halt workflow for customer review
+                        $newSnapshot = BookingPriceSnapshot::create([
+                            'ulid'              => (string) Str::ulid(),
+                            'flight_offer_id'   => $offer->id,
+                            'currency'          => $reprice->currency,
+                            'base_fare'         => $reprice->newAmount * 0.85,
+                            'taxes'             => $reprice->newAmount * 0.15,
+                            'airline_fees'      => 0,
+                            'service_fees'      => 0,
+                            'ancillaries_total' => 0,
+                            'discounts_total'   => 0,
+                            'grand_total'       => $reprice->newAmount,
+                            'breakdown_payload' => [
+                                'currency'     => $reprice->currency,
+                                'total_amount' => $reprice->newAmount,
+                                'difference'   => $reprice->difference,
+                            ],
+                            'created_at'        => now(),
+                        ]);
+
                         $this->markStepFailed($step, 'PRICE_CHANGED', 'Price change detected; customer acceptance required.', [
                             'old_amount'        => $currentAmount,
                             'new_amount'        => $reprice->newAmount,
@@ -157,11 +170,6 @@ class BookingOrchestrator
                             reason: $reprice->reason
                         );
                     }
-
-                    // Explicit customer acceptance verified -> update booking price
-                    $booking->total_amount = $newSnapshot->grand_total;
-                    $booking->booking_price_snapshot_id = $newSnapshot->id;
-                    $booking->save();
                 }
             }
 
@@ -349,12 +357,14 @@ class BookingOrchestrator
             if ($ticketResult->status === 'ISSUED' && !empty($ticketResult->ticketNumber)) {
                 // Verified ticket issuance from supplier
                 Ticket::create([
-                    'ulid'               => (string) Str::ulid(),
-                    'booking_id'         => $booking->id,
-                    'passenger_id'       => $booking->passengers->first()?->id ?? 1,
-                    'ticket_number'      => $ticketResult->ticketNumber,
-                    'status'             => 'issued',
-                    'issued_at'          => now(),
+                    'ulid'          => (string) Str::ulid(),
+                    'booking_id'    => $booking->id,
+                    'passenger_id'  => $booking->passengers->first()?->id ?? 1,
+                    'ticket_number' => $ticketResult->ticketNumber,
+                    'ticket_status' => 'issued',
+                    'fare_amount'   => (float) $booking->total_amount,
+                    'currency'      => $booking->currency,
+                    'issued_at'     => now(),
                 ]);
 
                 $this->stateMachine->transitionTicketStatus($booking, 'ticketed', [
