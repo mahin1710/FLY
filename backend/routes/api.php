@@ -48,6 +48,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/{ulid}/passengers', [BookingController::class, 'addPassengers'])->name('v1.bookings.passengers');
         Route::get('/{ulid}/status', [BookingController::class, 'getStatus'])->name('v1.bookings.status');
         Route::post('/{ulid}/confirm', [BookingController::class, 'confirm'])->name('v1.bookings.confirm');
+        Route::get('/{ulid}/tickets', [BookingController::class, 'getTickets'])->name('v1.bookings.tickets');
+        Route::get('/{ulid}/document', [BookingController::class, 'downloadDocument'])->name('v1.bookings.document.download');
     });
 
     // -------------------------------------------------------------

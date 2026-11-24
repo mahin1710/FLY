@@ -15,7 +15,9 @@ class Ticket extends Model
         'ulid',
         'booking_id',
         'passenger_id',
+        'booking_segment_id',
         'ticket_number',
+        'masked_ticket_number',
         'pnr_reference',
         'ticket_status',
         'issuing_carrier_id',
@@ -39,6 +41,35 @@ class Ticket extends Model
                 $ticket->ulid = (string) Str::ulid();
             }
         });
+
+        static::saving(function (Ticket $ticket) {
+            if (!empty($ticket->ticket_number) && empty($ticket->masked_ticket_number)) {
+                $ticket->masked_ticket_number = self::maskTicketNumber($ticket->ticket_number);
+            }
+        });
+    }
+
+    /**
+     * Securely mask IATA 13-digit ticket number for public display (e.g. 098-******7890).
+     */
+    public static function maskTicketNumber(?string $ticketNumber): ?string
+    {
+        if (empty($ticketNumber)) {
+            return null;
+        }
+
+        $clean = str_replace([' ', '-'], '', $ticketNumber);
+        $len = strlen($clean);
+        if ($len <= 4) {
+            return $ticketNumber;
+        }
+
+        $prefix = substr($clean, 0, 3);
+        $suffix = substr($clean, -4);
+        $maskedLength = max(4, $len - 7);
+        $maskedPart = str_repeat('*', $maskedLength);
+
+        return "{$prefix}-{$maskedPart}{$suffix}";
     }
 
     public function booking(): BelongsTo
@@ -49,6 +80,11 @@ class Ticket extends Model
     public function passenger(): BelongsTo
     {
         return $this->belongsTo(Passenger::class);
+    }
+
+    public function bookingSegment(): BelongsTo
+    {
+        return $this->belongsTo(BookingSegment::class, 'booking_segment_id');
     }
 
     public function issuingCarrier(): BelongsTo

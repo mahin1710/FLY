@@ -509,23 +509,89 @@ class MockFlightProvider implements FlightProviderInterface
     }
 
     /**
-     * Issue simulated ticket.
+     * Issue simulated ticket. Supports multiple passengers, segments, and simulation modes.
      */
     public function issueTicket(
         string $providerBookingRef,
         array $paymentDetails
     ): ProviderTicketDTO {
+        $simMode = $paymentDetails['simulation_mode'] ?? null;
+
+        if ($simMode === 'TIMEOUT') {
+            throw new \RuntimeException('Mock provider gateway timed out waiting for ticketing server response (504).');
+        }
+
+        if ($simMode === 'TICKETING_PENDING' || $simMode === 'MISSING_TICKET') {
+            return new ProviderTicketDTO(
+                providerCode: self::PROVIDER_CODE,
+                ticketNumber: null,
+                passengerName: 'CONSOLIDATOR/PENDING',
+                status: 'TICKETING_PENDING',
+                issuedAt: null,
+                coupons: [],
+                documentType: 'ELECTRONIC_TICKET',
+                disclaimer: 'Sandbox ticket – not valid for live passenger boarding',
+                tickets: []
+            );
+        }
+
+        $passengers = $paymentDetails['passengers'] ?? [
+            ['id' => 1, 'name' => 'DEMO/PASSENGER'],
+        ];
+
+        $tickets = [];
+        $overallStatus = 'ISSUED';
+        $mainTicketNum = null;
+
+        foreach ($passengers as $idx => $p) {
+            $pId = is_array($p) ? ($p['id'] ?? ($idx + 1)) : $p->id;
+            $pName = is_array($p) ? ($p['name'] ?? "PASSENGER/{$pId}") : "{$p->last_name}/{$p->first_name}";
+
+            if ($simMode === 'PARTIAL' && $idx > 0) {
+                // Partial failure simulation: subsequent passengers remain pending
+                $tickets[] = [
+                    'passenger_id'       => $pId,
+                    'passenger_name'     => $pName,
+                    'booking_segment_id' => null,
+                    'ticket_number'      => null,
+                    'status'             => 'TICKETING_PENDING',
+                    'fare_amount'        => 2425.00,
+                    'currency'           => 'BDT',
+                    'coupons'            => [],
+                ];
+                $overallStatus = 'PARTIAL';
+            } else {
+                $tNum = '098-' . rand(1000000000, 9999999999);
+                if ($mainTicketNum === null) {
+                    $mainTicketNum = $tNum;
+                }
+                $tickets[] = [
+                    'passenger_id'       => $pId,
+                    'passenger_name'     => $pName,
+                    'booking_segment_id' => null,
+                    'ticket_number'      => $tNum,
+                    'status'             => 'ISSUED',
+                    'fare_amount'        => 2425.00,
+                    'currency'           => 'BDT',
+                    'coupons'            => [
+                        ['segment_order' => 1, 'status' => 'OPEN_FOR_USE'],
+                    ],
+                ];
+            }
+        }
+
         return new ProviderTicketDTO(
             providerCode: self::PROVIDER_CODE,
-            ticketNumber: '098-' . rand(1000000000, 9999999999),
-            passengerName: 'DEMO/PASSENGER',
-            status: 'ISSUED',
+            ticketNumber: $mainTicketNum,
+            passengerName: $passengers[0]['name'] ?? 'DEMO/PASSENGER',
+            status: $overallStatus,
             issuedAt: now()->toIso8601String(),
             coupons: [
                 ['segment_order' => 1, 'status' => 'OPEN_FOR_USE'],
             ],
             documentType: 'ELECTRONIC_TICKET',
-            disclaimer: 'Sandbox ticket – not valid for live passenger boarding'
+            disclaimer: 'Sandbox ticket – not valid for live passenger boarding',
+            tickets: $tickets
         );
     }
 

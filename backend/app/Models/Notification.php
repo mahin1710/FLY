@@ -21,12 +21,15 @@ class Notification extends Model
         'title',
         'body',
         'status',
+        'retry_count',
         'sent_at',
         'failure_reason',
+        'metadata',
     ];
 
     protected $casts = [
-        'sent_at' => 'datetime',
+        'sent_at'  => 'datetime',
+        'metadata' => 'array',
     ];
 
     protected static function booted(): void

@@ -350,44 +350,12 @@ class BookingOrchestrator
         $step = $this->createWorkflowStep($booking, 'ticket_issuance', $correlationId);
 
         try {
-            $ticketResult = $this->provider->issueTicket($booking->provider_booking_ref ?? $booking->reference, [
+            $ticketingService = app(\App\Services\Ticketing\TicketingService::class);
+            $result = $ticketingService->issueTickets($booking, [
                 'cardholder_name' => $input['payment']['cardholder_name'] ?? 'PASSENGER',
             ]);
 
-            if ($ticketResult->status === 'ISSUED' && !empty($ticketResult->ticketNumber)) {
-                // Verified ticket issuance from supplier
-                Ticket::create([
-                    'ulid'          => (string) Str::ulid(),
-                    'booking_id'    => $booking->id,
-                    'passenger_id'  => $booking->passengers->first()?->id ?? 1,
-                    'ticket_number' => $ticketResult->ticketNumber,
-                    'ticket_status' => 'issued',
-                    'fare_amount'   => (float) $booking->total_amount,
-                    'currency'      => $booking->currency,
-                    'issued_at'     => now(),
-                ]);
-
-                $this->stateMachine->transitionTicketStatus($booking, 'ticketed', [
-                    'ticket_number'              => $ticketResult->ticketNumber,
-                    'verified_supplier_issuance' => true,
-                ]);
-
-                $this->markStepCompleted($step, ['ticket_number' => $ticketResult->ticketNumber]);
-            } else {
-                // Amadeus Self-Service or consolidator manual queue: TICKETING_PENDING
-                $booking->ticketing_deadline_at = now()->addHours(24);
-                $booking->save();
-
-                $this->operationsQueue->routeToManualReview($booking, 'NEAR_DEADLINE_TICKETING', [
-                    'reason'                => 'Order confirmed on GDS. E-ticket requires consolidator/operations fulfillment.',
-                    'ticketing_deadline_at' => $booking->ticketing_deadline_at->toIso8601String(),
-                ]);
-
-                $this->markStepCompleted($step, [
-                    'status' => 'TICKETING_PENDING',
-                    'notice' => 'Assigned to operations queue for consolidator issuance.',
-                ]);
-            }
+            $this->markStepCompleted($step, $result);
         } catch (Throwable $e) {
             $this->markStepNeedsReview($step, 'TICKETING_SUPPLIER_EXCEPTION', $e->getMessage());
             $this->operationsQueue->routeToManualReview($booking, 'SUPPLIER_TICKETING_EXCEPTION', [

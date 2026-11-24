@@ -8,6 +8,7 @@ use App\Http\Requests\V1\CreateBookingDraftRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\Booking;
 use App\Services\BookingDraftService;
+use App\Services\Documents\DocumentService;
 use App\Services\Orchestration\BookingOrchestrator;
 use App\Services\Orchestration\PriceChangedException;
 use App\Services\PassengerService;
@@ -210,5 +211,87 @@ class BookingController extends Controller
                 'ORCHESTRATION_ERROR'
             );
         }
+    }
+
+    /**
+     * Retrieve passenger e-tickets for a verified booking.
+     */
+    public function getTickets(
+        string $ulid,
+        Request $request,
+        DocumentService $documentService
+    ): JsonResponse {
+        $booking = Booking::with(['tickets.passenger', 'tickets.bookingSegment', 'passengers'])
+            ->where('ulid', $ulid)
+            ->first();
+
+        if (!$booking) {
+            return ApiResponse::error("Booking not found for ULID {$ulid}", 404, null, [], 'NOT_FOUND');
+        }
+
+        // Ownership or signed check: if user is logged in, verify user_id
+        if ($booking->user_id && $request->user() && $booking->user_id !== $request->user()->id && !$request->user()->hasRole('admin', 'super_admin')) {
+            return ApiResponse::error('Unauthorized access to booking tickets', 403, null, [], 'FORBIDDEN');
+        }
+
+        $ticketsData = $booking->tickets->map(function ($ticket) {
+            return [
+                'ulid'                 => $ticket->ulid,
+                'passenger_id'         => $ticket->passenger_id,
+                'passenger_name'       => $ticket->passenger ? "{$ticket->passenger->title} {$ticket->passenger->first_name} {$ticket->passenger->last_name}" : null,
+                'booking_segment_id'   => $ticket->booking_segment_id,
+                'ticket_number'        => $ticket->ticket_number,
+                'masked_ticket_number' => $ticket->masked_ticket_number,
+                'pnr_reference'        => $ticket->pnr_reference,
+                'ticket_status'        => $ticket->ticket_status,
+                'fare_amount'          => (float) $ticket->fare_amount,
+                'currency'             => $ticket->currency,
+                'issued_at'            => $ticket->issued_at?->toIso8601String(),
+            ];
+        });
+
+        $downloadUrl = $documentService->getSecureDownloadUrl($booking);
+
+        return ApiResponse::success([
+            'booking_ulid' => $booking->ulid,
+            'reference'    => $booking->reference,
+            'pnr'          => $booking->provider_booking_reference ?: 'MCK778',
+            'ticket_status'=> $booking->ticket_status,
+            'tickets'      => $ticketsData,
+            'download_url' => $downloadUrl,
+        ], 'Booking tickets retrieved successfully', 200);
+    }
+
+    /**
+     * Download or stream customer itinerary & receipt PDF.
+     * Accessible via short-lived signed URL or authenticated user session.
+     */
+    public function downloadDocument(
+        string $ulid,
+        Request $request,
+        DocumentService $documentService
+    ): \Symfony\Component\HttpFoundation\Response {
+        // Enforce signature check if unsigned
+        if (!$request->hasValidSignature()) {
+            $user = $request->user();
+            $booking = Booking::where('ulid', $ulid)->first();
+            if (!$booking) {
+                return ApiResponse::error('Booking not found', 404, null, [], 'NOT_FOUND');
+            }
+            if (!$user || ($booking->user_id && $booking->user_id !== $user->id && !$user->hasRole('admin', 'super_admin'))) {
+                return ApiResponse::error('Invalid or expired document download authorization signature.', 403, null, [], 'FORBIDDEN');
+            }
+        } else {
+            $booking = Booking::where('ulid', $ulid)->firstOrFail();
+        }
+
+        $pdfContent = $documentService->getDocumentContent($booking);
+        $filename = "FLY-Itinerary-{$booking->reference}.pdf";
+
+        return response($pdfContent, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$filename}\"",
+            'Cache-Control'       => 'private, no-cache, no-store, must-revalidate',
+        ]);
     }
 }

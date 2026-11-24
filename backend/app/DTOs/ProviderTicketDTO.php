@@ -8,11 +8,12 @@ class ProviderTicketDTO
         public readonly string $providerCode,
         public readonly ?string $ticketNumber, // e.g. 13-digit standard e-ticket number like 098-1234567890
         public readonly string $passengerName,
-        public readonly string $status, // 'ISSUED', 'VOIDED', 'REFUNDED', 'TICKETING_PENDING'
+        public readonly string $status, // 'ISSUED', 'VOIDED', 'REFUNDED', 'TICKETING_PENDING', 'PARTIAL'
         public readonly ?string $issuedAt,
         public readonly array $coupons = [],
         public readonly ?string $documentType = 'ELECTRONIC_TICKET',
-        public readonly ?string $disclaimer = 'Sandbox ticket – not valid for live passenger boarding'
+        public readonly ?string $disclaimer = 'Sandbox ticket – not valid for live passenger boarding',
+        public readonly array $tickets = [] // Array of individual passenger/segment tickets
     ) {}
 
     public function toArray(): array
@@ -26,6 +27,7 @@ class ProviderTicketDTO
             'coupons'       => $this->coupons,
             'document_type' => $this->documentType,
             'disclaimer'    => $this->disclaimer,
+            'tickets'       => $this->tickets,
         ];
     }
 }
