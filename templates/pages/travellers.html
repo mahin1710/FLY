@@ -31,9 +31,11 @@
   ) }}
 
   <!-- Route Security Notice & International Badge -->
-  <div id="routeTypeNotice" class="card glassmorphism" style="padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 4px solid var(--accent-primary);">
+  <div id="routeTypeNotice" class="card" style="padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 4px solid var(--accent-primary);">
     <div style="display: flex; align-items: center; gap: 12px;">
-      <span id="routeIcon" style="font-size: 1.4rem;">✈️</span>
+      <span id="routeIcon" style="display: flex; align-items: center; color: var(--accent-primary);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+      </span>
       <div>
         <strong id="routeHeadline" style="font-size: 0.92rem; color: var(--text-main);">Domestic Travel Route (Bangladesh)</strong>
         <div id="routeSubtitle" style="font-size: 0.8rem; color: var(--text-secondary);">
@@ -51,7 +53,7 @@
         <div id="passengersFormList"></div>
 
         <!-- Contact Information Card -->
-        <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+        <div class="card" style="padding: 24px; margin-bottom: 24px;">
           <div style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 18px;">
             <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 2px;">Primary Booking Contact</h3>
             <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
@@ -73,11 +75,11 @@
                 Mobile Number <span class="required-star">*</span>
               </label>
               <div style="display: flex; gap: 8px;">
-                <select id="contact_countryCode" name="contact_countryCode" class="form-field-select" style="max-width: 100px;">
-                  <option value="+880" selected>🇧🇩 +880</option>
-                  <option value="+1">🇺🇸 +1</option>
-                  <option value="+44">🇬🇧 +44</option>
-                  <option value="+971">🇦🇪 +971</option>
+                <select id="contact_countryCode" name="contact_countryCode" class="form-field-select" style="max-width: 110px;">
+                  <option value="+880" selected>+880 (BD)</option>
+                  <option value="+1">+1 (US)</option>
+                  <option value="+44">+44 (UK)</option>
+                  <option value="+971">+971 (AE)</option>
                 </select>
                 <input type="tel" id="contact_phone" name="contact_phone" class="form-field-input" placeholder="1700000000" required value="1700000000" style="flex: 1;">
               </div>
@@ -87,8 +89,11 @@
         </div>
 
         <!-- Privacy & Storage Assurance Banner -->
-        <div class="alert alert-info" style="margin-bottom: 24px; padding: 14px 18px; border-radius: var(--radius-md); font-size: 0.82rem; background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.2); color: var(--text-secondary);">
-          🔒 <strong>Privacy Assurance:</strong> Passenger details are held strictly in tab-scoped browser memory for this session and are never persisted in unencrypted local storage.
+        <div class="alert alert-info" style="margin-bottom: 24px; padding: 14px 18px; border-radius: var(--radius-md); font-size: 0.82rem; background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.2); color: var(--text-secondary); display: flex; align-items: center; gap: 10px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--accent-primary);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <div>
+            <strong>Privacy Assurance:</strong> Passenger details are held strictly in tab-scoped browser memory for this session and are never persisted in unencrypted local storage.
+          </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
@@ -106,9 +111,9 @@
 
     <!-- Right: Sticky Summary Sidebar -->
     <aside class="details-side-col">
-      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+      <div class="card" style="padding: 24px; position: sticky; top: 90px;">
         <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Booking Summary</h4>
-        <div id="sideRouteSummary" style="font-weight: 600; margin-bottom: 4px;">Dhaka (DAC) ➔ Cox's Bazar (CXB)</div>
+        <div id="sideRouteSummary" style="font-weight: 600; margin-bottom: 4px;">Dhaka (DAC) → Cox's Bazar (CXB)</div>
         <div id="sideFlightDetails" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Flight BG-433 &bull; Non-Stop</div>
 
         <div class="fare-breakdown-table" style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
@@ -192,7 +197,7 @@
       const dest = offer.getDestination();
       const sideRoute = document.getElementById('sideRouteSummary');
       const sideFlight = document.getElementById('sideFlightDetails');
-      if (sideRoute) sideRoute.textContent = `${orig.city} (${orig.code}) ➔ ${dest.city} (${dest.code})`;
+      if (sideRoute) sideRoute.textContent = `${orig.city} (${orig.code}) → ${dest.city} (${dest.code})`;
       if (sideFlight) {
         const seg = offer.segments[0];
         sideFlight.textContent = `${seg.carrierName} ${seg.flightNumber} &bull; ${offer.getStopsCount() === 0 ? 'Non-Stop' : 'Connecting'}`;
@@ -242,14 +247,16 @@
         : (isChild ? `Child Passenger ${idx + 1}` : `Infant Passenger ${idx + 1} (On Lap)`);
 
       const card = document.createElement('div');
-      card.className = 'card glassmorphism passenger-entry-card';
+      card.className = 'card passenger-entry-card';
       card.style.cssText = 'padding: 24px; margin-bottom: 24px;';
       card.dataset.paxId = pax.id;
 
       card.innerHTML = `
         <div class="passenger-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 18px;">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.25rem;">${isAdult ? '👤' : (isChild ? '🧒' : '👶')}</span>
+            <span style="display: flex; align-items: center; color: var(--accent-primary);">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
             <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">${paxTitle}</h3>
           </div>
           <span class="dest-badge">${ageBadge}</span>

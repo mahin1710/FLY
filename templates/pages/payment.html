@@ -31,7 +31,9 @@
 
   <!-- Explicit Demo Mode Financial Disclaimer -->
   <div class="alert alert-warning" style="margin-bottom: 24px; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(234, 88, 12, 0.08); border: 2px solid #ea580c; display: flex; align-items: flex-start; gap: 14px;">
-    <span style="font-size: 1.8rem;" aria-hidden="true">🛡️</span>
+    <span style="display: flex; align-items: center; color: #ea580c; flex-shrink: 0; margin-top: 2px;" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </span>
     <div>
       <strong style="font-size: 1rem; color: #9a3412;">DEMO MODE &bull; NO REAL FINANCIAL TRANSACTIONS ARE PROCESSED</strong>
       <p style="font-size: 0.85rem; color: var(--text-main); margin: 6px 0 0 0; line-height: 1.45;">
@@ -42,9 +44,11 @@
   </div>
 
   <!-- Reservation Timer Badge -->
-  <div class="card glassmorphism" style="padding: 18px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-left: 4px solid var(--accent-primary);">
+  <div class="card" style="padding: 18px 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-left: 4px solid var(--accent-primary);">
     <div style="display: flex; align-items: center; gap: 12px;">
-      <span style="font-size: 2rem;">⏱️</span>
+      <span style="display: flex; align-items: center; color: var(--accent-primary); flex-shrink: 0;">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </span>
       <div>
         <div style="font-weight: 700; font-size: 1rem;">Atomic Seat Reservation Hold Active</div>
         <div style="font-size: 0.82rem; color: var(--text-secondary);">Your seat is exclusively reserved for you during checkout</div>
@@ -56,14 +60,16 @@
     </div>
   </div>
 
-  <form id="paymentForm" class="card glassmorphism" style="padding: 28px; margin-bottom: 24px;">
+  <form id="paymentForm" class="card" style="padding: 28px; margin-bottom: 24px;">
     <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Select Payment Method</h3>
     
     <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
       <!-- Option 1: Simulated Instant Verify -->
       <label class="benefit-card payment-method-card" style="display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; border: 2px solid var(--accent-primary); border-radius: var(--radius-md);">
-        <input type="radio" name="paymentGateway" value="instant" checked style="width: 18px; height: 18px;">
-        <span style="font-size: 1.6rem;">⚡</span>
+        <input type="radio" name="paymentGateway" value="instant" checked style="width: 18px; height: 18px; flex-shrink: 0;">
+        <span style="display: flex; align-items: center; color: var(--accent-primary); flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </span>
         <div style="flex: 1;">
           <div style="font-weight: 700; font-size: 0.95rem;">Instant Verification (Demo Sandbox Fast-Path)</div>
           <div style="font-size: 0.82rem; color: var(--text-secondary);">Simulates instant CAAB banking clearance and transitions to confirmed state</div>
@@ -73,8 +79,10 @@
 
       <!-- Option 2: bKash Mobile Wallet Simulator -->
       <label class="benefit-card payment-method-card" style="display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; border: 2px solid var(--border-subtle); border-radius: var(--radius-md);">
-        <input type="radio" name="paymentGateway" value="bkash" style="width: 18px; height: 18px;">
-        <span style="font-size: 1.6rem;">📱</span>
+        <input type="radio" name="paymentGateway" value="bkash" style="width: 18px; height: 18px; flex-shrink: 0;">
+        <span style="display: flex; align-items: center; color: var(--accent-primary); flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </span>
         <div style="flex: 1;">
           <div style="font-weight: 700; font-size: 0.95rem;">bKash Mobile Banking (Sandbox Simulator)</div>
           <div style="font-size: 0.82rem; color: var(--text-secondary);">Test mobile wallet checkout flow using simulated OTP prompt</div>
@@ -84,8 +92,10 @@
 
       <!-- Option 3: Simulated Card Gateway -->
       <label class="benefit-card payment-method-card" style="display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; border: 2px solid var(--border-subtle); border-radius: var(--radius-md);">
-        <input type="radio" name="paymentGateway" value="card" style="width: 18px; height: 18px;">
-        <span style="font-size: 1.6rem;">💳</span>
+        <input type="radio" name="paymentGateway" value="card" style="width: 18px; height: 18px; flex-shrink: 0;">
+        <span style="display: flex; align-items: center; color: var(--accent-primary); flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </span>
         <div style="flex: 1;">
           <div style="font-weight: 700; font-size: 0.95rem;">Credit &bull; Debit Card (Simulated 3D-Secure 2.0)</div>
           <div style="font-size: 0.82rem; color: var(--text-secondary);">Visa, Mastercard, Amex test runner (No real card data accepted)</div>
@@ -97,7 +107,7 @@
     <!-- Simulated Card Fields Container (Visible only when Card is selected) -->
     <div id="simulatedCardContainer" style="display: none; background: rgba(15, 23, 42, 0.02); padding: 18px; border-radius: var(--radius-md); border: 1px dashed var(--border-subtle); margin-bottom: 24px;">
       <div style="font-size: 0.82rem; color: var(--accent-primary); font-weight: 600; margin-bottom: 12px;">
-        🧪 Test Card Pre-filled (Demo numbers only — do not input real cards):
+        Test Card Pre-filled (Demo numbers only — do not input real cards):
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
         <div class="form-field-group">

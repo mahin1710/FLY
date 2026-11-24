@@ -165,6 +165,8 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -179,6 +181,23 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  width: 100%;
+}
+
+/* Universal Media & Image Containment */
+img, svg, video, canvas, audio, iframe, embed, object {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+svg {
+  vertical-align: middle;
+}
+
+/* Universal Text Containment Rules */
+p, h1, h2, h3, h4, h5, h6, span, label, td, th {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -199,11 +218,13 @@ button {
   border: none;
   background: none;
   outline: none;
+  box-sizing: border-box;
 }
 
 input, select, textarea {
   font-family: inherit;
   font-size: 0.95rem;
+  box-sizing: border-box;
 }
 
 .container {
@@ -211,6 +232,33 @@ input, select, textarea {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .container {
+    padding: 0 12px;
+  }
+}
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+/* Circular & Rounded Controls Shape Integrity */
+.btn-circle, .btn-swap, .btn-swap-sm, .airline-logo-box, .track-dot, .user-avatar, .btn-favorite-card, .status-icon-box {
+  aspect-ratio: 1;
+  flex-shrink: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -921,24 +969,28 @@ input, select, textarea {
 
 .search-widget-form {
   display: grid;
-  grid-template-columns: 1.25fr auto 1.25fr 1fr 1.35fr auto;
+  grid-template-columns: minmax(180px, 1.25fr) auto minmax(180px, 1.25fr) minmax(140px, 1fr) minmax(180px, 1.35fr) auto;
   gap: 12px;
   align-items: flex-end;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .search-widget-form.is-roundtrip {
-  grid-template-columns: 1.15fr auto 1.15fr 0.95fr 0.95fr 1.25fr auto;
+  grid-template-columns: minmax(160px, 1.15fr) auto minmax(160px, 1.15fr) minmax(130px, 0.95fr) minmax(130px, 0.95fr) minmax(180px, 1.25fr) auto;
 }
 
 .form-group-airport {
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .form-group-field {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .input-label {
@@ -4865,16 +4917,22 @@ input, select, textarea {
 /* --------------------------------------------------------------------------
    RESPONSIVE QUERIES
    -------------------------------------------------------------------------- */
-@media (max-width: 1280px) {
+@media (max-width: 1200px) and (min-width: 769px) {
   .search-widget-form, .search-widget-form.is-roundtrip {
-    grid-template-columns: 1fr auto 1fr 1fr;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
   }
+  #originGroup { grid-column: 1; }
+  #btnSwapHome { grid-column: 2; align-self: flex-end; margin-bottom: 2px; }
+  #destGroup { grid-column: 3; }
+  #departureDateField { grid-column: 1; }
+  #returnDateField { grid-column: 3; }
+  .passenger-class-picker-group { grid-column: 1 / span 2; }
+  .form-group-submit { grid-column: 3; }
+  .form-group-submit .btn-primary-search { width: 100%; }
 }
 
 @media (max-width: 1024px) {
-  .search-widget-form, .search-widget-form.is-roundtrip {
-    grid-template-columns: 1fr 1fr;
-  }
   .destinations-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -4956,15 +5014,42 @@ input, select, textarea {
     padding: 18px 16px;
   }
   .search-widget-form, .search-widget-form.is-roundtrip {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
-  .btn-swap {
+  #originGroup {
+    grid-column: 1 / -1;
+  }
+  #btnSwapHome {
+    grid-column: 1 / -1;
+    justify-self: center;
     align-self: center;
-    margin: 2px auto;
+    margin: -4px auto;
+    z-index: 2;
+  }
+  #destGroup {
+    grid-column: 1 / -1;
+  }
+  #departureDateField {
+    grid-column: 1;
+  }
+  #returnDateField {
+    grid-column: 2;
+  }
+  .search-widget-form:not(.is-roundtrip) #departureDateField {
+    grid-column: 1 / -1;
+  }
+  .passenger-class-picker-group {
+    grid-column: 1 / -1;
+  }
+  .form-group-submit {
+    grid-column: 1 / -1;
   }
   .btn-primary-search {
     width: 100%;
+    height: 50px;
+    font-size: 1rem;
   }
   .destinations-grid {
     grid-template-columns: 1fr;
@@ -7961,6 +8046,283 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius-pill);
 }
 
+/* Flight Results Controller & Offer Card Components */
+.flight-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+}
+
+.flight-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+.flight-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.airline-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.airline-logo-box {
+  width: 44px;
+  height: 44px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.airline-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.flight-metadata-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.flight-badges-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dest-fare-pill.is-refundable {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.dest-fare-pill.is-nonref {
+  background: var(--bg-surface-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.dest-badge.is-direct {
+  background: rgba(2, 132, 199, 0.1);
+  color: var(--accent-primary);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+.dest-badge.is-connecting {
+  background: rgba(217, 119, 6, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+/* Flight Card Body: 3-column Layout (Departure - Track/Duration - Arrival) */
+.flight-card-body {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.flight-time-point.dep-point {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  min-width: 0;
+}
+
+.flight-time-point.arr-point {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  min-width: 0;
+}
+
+.point-time {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+  font-family: var(--font-heading);
+}
+
+.point-city {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 4px;
+}
+
+.point-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.point-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.flight-duration-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 140px;
+  max-width: 220px;
+  width: 100%;
+}
+
+.duration-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.flight-track-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 6px 0;
+  position: relative;
+}
+
+.track-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border-medium);
+}
+
+.track-dot {
+  width: 8px;
+  height: 8px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.track-dot.stop-dot {
+  background: #eab308;
+}
+
+.stops-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Flight Card Footer: Amenities & Pricing */
+.flight-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.footer-amenities-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.baggage-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.price-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.price-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.price-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.price-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  font-family: var(--font-heading);
+  line-height: 1.1;
+}
+
+[data-theme="dark"] .price-val {
+  color: var(--accent-gold);
+}
+
+.btn-select-offer {
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 /* ==========================================================================
    RESPONSIVE BREAKPOINTS (1024px, 768px, 480px, 390px)
    ========================================================================== */
@@ -8014,11 +8376,54 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .stepper-label {
     display: none;
   }
+  .stepper-item.is-active .stepper-label {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 6px;
+    white-space: nowrap;
+    color: var(--accent-primary);
+  }
   .stepper-bubble-wrapper {
     padding: 0;
   }
   .stepper-connector {
     margin: 0 6px;
+  }
+  .flight-card {
+    padding: 16px;
+    gap: 14px;
+  }
+  .flight-card-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .flight-time-point.arr-point {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .flight-duration-col {
+    align-items: flex-start;
+    text-align: left;
+    max-width: 100%;
+    margin: 4px 0;
+  }
+  .flight-track-line {
+    max-width: 100%;
+  }
+  .flight-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .price-cta-group {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+  .price-box {
+    align-items: flex-start;
+    text-align: left;
   }
 }
 
@@ -8027,12 +8432,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-size: 1.65rem;
   }
   .flight-time-point .point-time {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
   }
   .flight-card-body {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   .flight-duration-col {
     width: 100%;

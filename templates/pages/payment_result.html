@@ -24,7 +24,9 @@
 
   <!-- Crucial Security Notice: Return URL is UX Only -->
   <div class="alert alert-info" style="margin-bottom: 24px; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.08); border: 2px solid #3b82f6; display: flex; align-items: flex-start; gap: 14px;">
-    <span style="font-size: 1.8rem;" aria-hidden="true">🔒</span>
+    <span style="display: flex; align-items: center; color: #1e40af; flex-shrink: 0; margin-top: 2px;" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </span>
     <div>
       <strong style="font-size: 0.98rem; color: #1e40af; display: block; margin-bottom: 4px;">
         SECURITY PROTOCOL: RETURN URL IS UX ONLY &bull; SERVER-SIDE IPN VERIFIED
@@ -37,8 +39,12 @@
 
   {% if result_status in ['success', 'captured'] %}
   <!-- Success / Captured Outcome -->
-  <div class="card glassmorphism" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #10b981;">
-    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">✅</div>
+  <div class="card" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #10b981;">
+    <div style="display: flex; justify-content: center; margin-bottom: 16px;" aria-hidden="true">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; color: #047857;">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+    </div>
     <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 12px; background: rgba(16, 185, 129, 0.15); color: #047857; font-weight: 700;">
       SERVER-VERIFIED &bull; CAPTURED
     </div>
@@ -80,7 +86,7 @@
     <!-- Security & Isolation Guarantees -->
     <div style="background: rgba(15, 23, 42, 0.02); border-radius: var(--radius-md); padding: 16px 20px; max-width: 720px; margin: 0 auto 28px auto; text-align: left; border-left: 3px solid #10b981;">
       <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 4px;">
-        <span>🛡️</span> Zero Raw Card Storage Guarantee
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Zero Raw Card Storage Guarantee
       </div>
       <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.45;">
         All cardholder data was processed exclusively inside the PCI-DSS Level 1 compliant hosted checkout environment. FLY never receives, handles, or stores your primary account number (PAN) or CVV code.
@@ -100,8 +106,12 @@
 
   {% elif result_status in ['cancelled', 'cancel'] %}
   <!-- Cancelled Outcome -->
-  <div class="card glassmorphism" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #f59e0b;">
-    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">⚠️</div>
+  <div class="card" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #f59e0b;">
+    <div style="display: flex; justify-content: center; margin-bottom: 16px;" aria-hidden="true">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; color: #b45309;">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+    </div>
     <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 12px; background: rgba(245, 158, 11, 0.15); color: #b45309; font-weight: 700;">
       PAYMENT CANCELLED BY USER
     </div>
@@ -124,8 +134,12 @@
 
   {% else %}
   <!-- Failed Outcome -->
-  <div class="card glassmorphism" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #ef4444;">
-    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">❌</div>
+  <div class="card" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #ef4444;">
+    <div style="display: flex; justify-content: center; margin-bottom: 16px;" aria-hidden="true">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(239, 68, 68, 0.12); display: flex; align-items: center; justify-content: center; color: #b91c1c;">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+    </div>
     <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 12px; background: rgba(239, 68, 68, 0.15); color: #b91c1c; font-weight: 700;">
       TRANSACTION DECLINED OR FAILED
     </div>

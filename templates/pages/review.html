@@ -33,7 +33,9 @@
   <!-- Price Change Revalidation Alert Banner (Shown if fare changes or simulated) -->
   <div id="priceChangeAlert" class="alert alert-warning" style="display: none; margin-bottom: 24px; padding: 20px 24px; border-radius: var(--radius-md); background: rgba(234, 88, 12, 0.09); border: 2px solid #ea580c;">
     <div style="display: flex; align-items: flex-start; gap: 14px;">
-      <span style="font-size: 2rem;">⚠️</span>
+      <span style="display: flex; align-items: center; color: #ea580c; flex-shrink: 0; margin-top: 2px;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
       <div style="flex: 1;">
         <h4 style="font-size: 1.1rem; font-weight: 800; color: #9a3412; margin: 0 0 6px 0;">
           Fare Revalidation Notice: Airline Price Updated
@@ -47,7 +49,7 @@
             <span style="font-size: 0.75rem; color: var(--text-muted); display: block; text-transform: uppercase;">Previous Fare</span>
             <span id="priceOldAmount" style="font-size: 1.1rem; text-decoration: line-through; color: var(--text-muted); font-weight: 600;">৳4,500</span>
           </div>
-          <div style="font-size: 1.2rem; color: #ea580c;">➔</div>
+          <div style="font-size: 1.2rem; color: #ea580c;">→</div>
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted); display: block; text-transform: uppercase;">Updated Total</span>
             <strong id="priceNewAmount" style="font-size: 1.3rem; color: #9a3412; font-family: var(--font-heading);">৳4,800</strong>
@@ -68,10 +70,12 @@
   <div class="flight-details-layout">
     <div class="details-main-col">
       <!-- 1. Flight Itinerary Section -->
-      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 20px;">
+      <div class="card" style="padding: 24px; margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">🛫</span>
+            <span style="display: flex; align-items: center; color: var(--accent-primary);">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+            </span>
             <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Flight Itinerary</h3>
           </div>
           <span id="reviewRouteBadge" class="dest-badge">Outbound &bull; Confirmed</span>
@@ -83,18 +87,20 @@
 
         <!-- Selected Extras summary strip -->
         <div id="reviewExtrasStrip" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border-subtle); display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-secondary); flex-wrap: wrap;">
-          <span>💺 Seat: <strong id="stripSeat">12A (Window)</strong></span>
-          <span>🧳 Baggage: <strong id="stripBaggage">20 kg Included</strong></span>
-          <span>🍱 Catering: <strong id="stripMeal">Standard Refreshment</strong></span>
-          <span>🛡️ Insurance: <strong id="stripInsurance">Active</strong></span>
+          <span>Seat: <strong id="stripSeat">12A (Window)</strong></span>
+          <span>Baggage: <strong id="stripBaggage">20 kg Included</strong></span>
+          <span>Catering: <strong id="stripMeal">Standard Refreshment</strong></span>
+          <span>Insurance: <strong id="stripInsurance">Active</strong></span>
         </div>
       </div>
 
       <!-- 2. Passenger Details Section -->
-      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 20px;">
+      <div class="card" style="padding: 24px; margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">👥</span>
+            <span style="display: flex; align-items: center; color: var(--accent-primary);">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
             <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Verified Passengers</h3>
           </div>
           <span id="reviewPaxCountBadge" class="dest-badge">1 Traveller</span>
@@ -118,16 +124,16 @@
       </div>
 
       <!-- 3. Terms & Fare Rules Agreement Checkbox -->
-      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+      <div class="card" style="padding: 24px; margin-bottom: 24px;">
         <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 10px;">Mandatory Booking Acknowledgments</h4>
         <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.88rem; color: var(--text-main); margin-bottom: 10px;">
-          <input type="checkbox" id="chkTermsAgreement" checked style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer;">
+          <input type="checkbox" id="chkTermsAgreement" checked style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer; flex-shrink: 0;">
           <span>
             I confirm that passenger names match official government documentation exactly and acknowledge that name corrections are not permitted after ticket issuance.
           </span>
         </label>
         <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.88rem; color: var(--text-main);">
-          <input type="checkbox" id="chkPoliciesAgreement" checked style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer;">
+          <input type="checkbox" id="chkPoliciesAgreement" checked style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer; flex-shrink: 0;">
           <span>
             I agree to the airline fare rules, baggage policies, hazardous goods safety protocols, and FLY Terms of Service.
           </span>
@@ -135,10 +141,11 @@
       </div>
 
       <!-- QA Simulation Controls (For testing price change revalidation) -->
-      <div class="card glassmorphism" style="padding: 16px 20px; margin-bottom: 24px; background: rgba(2, 132, 199, 0.04); border: 1px dashed var(--accent-primary);">
+      <div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: rgba(2, 132, 199, 0.04); border: 1px dashed var(--accent-primary);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div style="font-size: 0.82rem; color: var(--text-secondary);">
-            🧪 <strong>QA Test Control:</strong> Simulate real-time airline fare fluctuation before payment
+          <div style="font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-primary);"><path d="M10 2v7.31L4.62 18.2A2 2 0 0 0 6.32 21h11.36a2 2 0 0 0 1.7-2.8L14 9.31V2"/></svg>
+            <span><strong>QA Test Control:</strong> Simulate real-time airline fare fluctuation before payment</span>
           </div>
           <div style="display: flex; gap: 8px;">
             <button type="button" id="btnSimulatePriceIncrease" class="btn-secondary btn-sm" style="font-size: 0.8rem; padding: 6px 12px;">
@@ -165,7 +172,7 @@
 
     <!-- Right: Sticky Itemized Fare Breakdown -->
     <aside class="details-side-col">
-      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+      <div class="card" style="padding: 24px; position: sticky; top: 90px;">
         <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Itemized Fare Breakdown</h4>
 
         <div class="fare-breakdown-table" style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
@@ -204,7 +211,7 @@
         </div>
 
         <div id="priceAcceptanceHint" class="alert alert-warning" style="display: none; margin-top: 14px; padding: 10px 14px; font-size: 0.78rem; border-radius: var(--radius-sm);">
-          ⚠️ You must accept the updated airline fare above before continuing to payment.
+          Please accept the updated airline fare above before continuing to payment.
         </div>
 
         <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 12px; line-height: 1.4;">
@@ -245,7 +252,7 @@
         const isCodeshare = seg.hasDifferentOperatingCarrier();
         const codeshareNotice = isCodeshare ? `
           <div style="font-size: 0.8rem; color: var(--accent-primary); margin-bottom: 8px;">
-            ℹ️ Marketed by <strong>${seg.marketingCarrier.name}</strong> &bull; Operated by <strong>${seg.operatingCarrier.name}</strong>
+            Marketed by <strong>${seg.marketingCarrier.name}</strong> &bull; Operated by <strong>${seg.operatingCarrier.name}</strong>
           </div>
         ` : '';
 

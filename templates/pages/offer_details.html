@@ -25,25 +25,27 @@
   {{ ph.render_page_heading(
     title='Flight Offer Review',
     subtitle='Complete multi-segment itinerary, operating carrier notice, fare conditions, and baggage allocation',
-    eyebrow='OFFER ' ~ offer_id ~ ' &bull; DEMO DATA &bull; NOT BOOKABLE',
-    badge='15-Min Guaranteed Hold'
+    eyebrow='Offer ' ~ offer_id ~ ' &bull; Fare lock active',
+    badge='15-Minute Guaranteed Hold'
   ) }}
 
   <!-- Offer Expiry Countdown Banner -->
-  <div id="offerExpiryBanner" class="offer-expiry-banner glassmorphism" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 16px 24px; border-left: 4px solid var(--accent-primary);">
+  <div id="offerExpiryBanner" class="offer-expiry-banner" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 16px 24px; border-left: 4px solid var(--accent-primary); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
     <div style="display: flex; align-items: center; gap: 14px;">
-      <span style="font-size: 1.8rem;" aria-hidden="true">⏱️</span>
+      <span style="display: inline-flex; align-items: center; color: var(--accent-primary);" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </span>
       <div>
         <div style="font-weight: 700; font-size: 0.95rem;">Fare &amp; Seat Availability Lock</div>
         <div id="expiryStatusText" style="font-size: 0.82rem; color: var(--text-secondary);">
-          This fare quote is temporarily guaranteed by the airline ticketing engine.
+          This fare quote is temporarily held for your reservation.
         </div>
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px;">
       <div style="text-align: right;">
         <span id="offerCountdownTimer" style="font-size: 1.5rem; font-weight: 800; font-family: var(--font-mono); color: var(--accent-primary);">19:59</span>
-        <span style="display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">TIME REMAINING</span>
+        <span style="display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">Time Remaining</span>
       </div>
     </div>
   </div>
@@ -52,9 +54,9 @@
   <div id="offerExpiredAlert" class="alert alert-warning" style="display: none; margin-bottom: 24px; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(234, 88, 12, 0.1); border: 1px solid rgba(234, 88, 12, 0.3);">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
       <div>
-        <strong style="font-size: 1rem; color: var(--text-main);">⚠️ This Offer Has Expired</strong>
+        <strong style="font-size: 1rem; color: var(--text-main);">This offer has expired</strong>
         <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
-          The 20-minute airline fare lock window for this itinerary has lapsed. Seat classes and fare buckets may have updated.
+          The fare lock window for this itinerary has lapsed. Fares and seats have updated.
         </p>
       </div>
       <a href="/flights/search" class="btn-primary btn-sm">Refresh Search Results</a>
@@ -65,7 +67,7 @@
     <!-- Left: Flight Details Column -->
     <div class="details-main-col">
       <!-- Container for dynamic segments rendered via JS -->
-      <div id="segmentsTimelineContainer" class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+      <div id="segmentsTimelineContainer" class="card" style="padding: 24px; margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px; margin-bottom: 20px;">
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2px;">Itinerary &amp; Flight Segments</h3>
@@ -78,7 +80,9 @@
         <div id="segmentListWrapper">
           <div class="segment-block" style="margin-bottom: 20px;">
             <div class="airline-brand-group" style="margin-bottom: 14px;">
-              <div class="airline-logo-box" id="segmentCarrierLogo">✈️</div>
+              <div class="airline-logo-box" id="segmentCarrierLogo">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+              </div>
               <div>
                 <h4 id="segmentCarrierName" style="font-size: 1.1rem; font-weight: 700; margin-bottom: 2px;">Biman Bangladesh Airlines</h4>
                 <div style="font-size: 0.82rem; color: var(--text-secondary);">
@@ -89,7 +93,7 @@
 
             <!-- Operating Carrier Notice (if code-share / operated by different carrier) -->
             <div id="operatingCarrierNotice" class="operating-carrier-box" style="display: none; background: rgba(2, 132, 199, 0.08); padding: 8px 14px; border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--accent-primary); margin-bottom: 14px;">
-              ℹ️ Marketed by <strong id="mktCarrierName">Emirates</strong> &bull; Operated by <strong id="opCarrierName">flydubai</strong>
+              Marketed by <strong id="mktCarrierName">Emirates</strong> &bull; Operated by <strong id="opCarrierName">flydubai</strong>
             </div>
 
             <!-- Departure & Arrival Points -->
@@ -119,9 +123,10 @@
       </div>
 
       <!-- Baggage by Passenger & Segment Table -->
-      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
-        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-          <span>🧳</span> Baggage Allowance by Passenger &amp; Journey
+      <div class="card" style="padding: 24px; margin-bottom: 24px;">
+        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span>Baggage Allowance by Passenger &amp; Journey</span>
         </h4>
         <div class="table-responsive" style="overflow-x: auto;">
           <table class="baggage-breakdown-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
@@ -158,9 +163,10 @@
       </div>
 
       <!-- Fare Rules & Policies -->
-      <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
-        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-          <span>📋</span> Fare Rules, Cancellation &amp; Change Policies
+      <div class="card" style="padding: 24px; margin-bottom: 24px;">
+        <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Fare Rules, Cancellation &amp; Change Policies</span>
         </h4>
         <div id="fareFamilyHeader" style="margin-bottom: 14px; display: flex; align-items: center; gap: 10px;">
           <span style="font-size: 0.9rem; color: var(--text-muted);">Fare Family:</span>
@@ -193,7 +199,7 @@
 
     <!-- Right: Sticky Fare Summary Column -->
     <aside class="details-side-col">
-      <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
+      <div class="card" style="padding: 24px; position: sticky; top: 90px;">
         <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Price Breakdown</h3>
         
         <div class="fare-breakdown-table">
@@ -211,7 +217,7 @@
           </div>
           <div class="fare-row">
             <span>Advance Seat Hold</span>
-            <span class="fare-val free">INCLUDED</span>
+            <span class="fare-val free">Included</span>
           </div>
           <div class="fare-row total">
             <span>Total Payable</span>
