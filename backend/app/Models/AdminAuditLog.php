@@ -19,6 +19,7 @@ class AdminAuditLog extends Model
         'action',
         'target_type',
         'target_id',
+        'reason',
         'ip_address',
         'user_agent',
         'before_state',

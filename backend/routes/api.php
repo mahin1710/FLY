@@ -92,11 +92,61 @@ Route::prefix('v1')->group(function () {
         // 7. ADMINISTRATIVE RESTRICTED ENDPOINTS
         // ---------------------------------------------------------
         Route::prefix('admin')
-            ->middleware('role:admin,super_admin')
+            ->middleware('role:admin,super_admin,operations_admin,ticketing_agent,finance_admin,support_agent,pricing_manager,content_manager')
             ->group(function () {
-                Route::get('/overview', [AdminController::class, 'overview'])->name('v1.admin.overview');
-                Route::get('/users', [AdminController::class, 'users'])->name('v1.admin.users');
+                // Legacy compatibility
+                Route::get('/overview', [AdminController::class, 'dashboard'])->name('v1.admin.overview');
                 Route::post('/payments/{ulid}/refund', [PaymentController::class, 'refund'])->name('v1.admin.payments.refund');
+
+                // 1. Dashboard
+                Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('v1.admin.dashboard');
+
+                // 2. Bookings
+                Route::get('/bookings', [AdminController::class, 'bookings'])->name('v1.admin.bookings');
+                Route::get('/bookings/{ulid}', [AdminController::class, 'bookingDetail'])->name('v1.admin.bookings.detail');
+
+                // 3. Ticketing Queue
+                Route::get('/ticketing-queue', [AdminController::class, 'ticketingQueue'])->name('v1.admin.ticketing_queue');
+                Route::post('/ticketing/{ulid}/reconcile', [AdminController::class, 'reconcileTicket'])->name('v1.admin.ticketing.reconcile');
+                Route::post('/ticketing/{ulid}/escalate', [AdminController::class, 'escalateTicket'])->name('v1.admin.ticketing.escalate');
+                Route::post('/ticketing/{ulid}/force-ticket', [AdminController::class, 'forceTicketAttempt'])->name('v1.admin.ticketing.force_ticket');
+
+                // 4. Payments
+                Route::get('/payments', [AdminController::class, 'payments'])->name('v1.admin.payments');
+                Route::post('/payments/{id}/reconcile', [AdminController::class, 'reconcilePayment'])->name('v1.admin.payments.reconcile');
+
+                // 5. Servicing & Refunds
+                Route::get('/servicing', [AdminController::class, 'servicing'])->name('v1.admin.servicing');
+                Route::post('/servicing/{id}/disburse-refund', [AdminController::class, 'disburseRefund'])->name('v1.admin.servicing.disburse_refund');
+
+                // 6. Customers
+                Route::get('/customers', [AdminController::class, 'customers'])->name('v1.admin.customers');
+                Route::get('/customers/{id}', [AdminController::class, 'customerDetail'])->name('v1.admin.customers.detail');
+
+                // 7. Provider Settings
+                Route::get('/providers', [AdminController::class, 'providers'])->name('v1.admin.providers');
+                Route::post('/providers/{code}/toggle-mode', [AdminController::class, 'toggleProviderMode'])->name('v1.admin.providers.toggle_mode');
+
+                // 8. Pricing & Markups
+                Route::get('/pricing-rules', [AdminController::class, 'pricingRules'])->name('v1.admin.pricing_rules');
+                Route::post('/pricing-rules', [AdminController::class, 'createPricingRule'])->name('v1.admin.pricing_rules.create');
+
+                // 9. Content Management
+                Route::get('/content', [AdminController::class, 'contentBanners'])->name('v1.admin.content');
+                Route::post('/content', [AdminController::class, 'createContentBanner'])->name('v1.admin.content.create');
+
+                // 10. Users & Roles
+                Route::get('/users', [AdminController::class, 'users'])->name('v1.admin.users');
+                Route::post('/users/{id}/revoke-sessions', [AdminController::class, 'revokeSessions'])->name('v1.admin.users.revoke_sessions');
+                Route::get('/audit-logs', [AdminController::class, 'auditLogs'])->name('v1.admin.audit_logs');
+
+                // 11. Reports & Exports
+                Route::get('/reports', [AdminController::class, 'reports'])->name('v1.admin.reports');
+                Route::get('/reports/export', [AdminController::class, 'exportReports'])->name('v1.admin.reports.export');
+
+                // 12. Dual Approvals
+                Route::get('/dual-approvals', [AdminController::class, 'dualApprovals'])->name('v1.admin.dual_approvals');
+                Route::post('/dual-approvals/{id}/decide', [AdminController::class, 'decideDualApproval'])->name('v1.admin.dual_approvals.decide');
             });
     });
 });

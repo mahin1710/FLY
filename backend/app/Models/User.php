@@ -25,6 +25,8 @@ class User extends Authenticatable
         'role',
         'status',
         'phone',
+        'is_mfa_enabled',
+        'last_active_at',
     ];
 
     /**
@@ -46,7 +48,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'last_active_at'    => 'datetime',
+            'is_mfa_enabled'    => 'boolean',
+            'password'          => 'hashed',
         ];
     }
 
@@ -71,12 +75,51 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['admin', 'super_admin'], true);
+        return in_array($this->role, [
+            'admin',
+            'super_admin',
+            'operations_admin',
+            'ticketing_agent',
+            'finance_admin',
+            'support_agent',
+            'pricing_manager',
+            'content_manager',
+        ], true);
     }
 
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
+    }
+
+    public function isOperationsAdmin(): bool
+    {
+        return in_array($this->role, ['operations_admin', 'super_admin', 'admin'], true);
+    }
+
+    public function isTicketingAgent(): bool
+    {
+        return in_array($this->role, ['ticketing_agent', 'operations_admin', 'super_admin', 'admin'], true);
+    }
+
+    public function isFinanceAdmin(): bool
+    {
+        return in_array($this->role, ['finance_admin', 'super_admin'], true);
+    }
+
+    public function isSupportAgent(): bool
+    {
+        return in_array($this->role, ['support_agent', 'operations_admin', 'super_admin', 'admin'], true);
+    }
+
+    public function isPricingManager(): bool
+    {
+        return in_array($this->role, ['pricing_manager', 'super_admin'], true);
+    }
+
+    public function isContentManager(): bool
+    {
+        return in_array($this->role, ['content_manager', 'super_admin'], true);
     }
 
     public function isCustomer(): bool

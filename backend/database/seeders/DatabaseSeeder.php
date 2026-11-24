@@ -49,6 +49,36 @@ class DatabaseSeeder extends Seeder
             'description'  => 'Full platform authority, system settings, and audit oversight.',
         ]);
 
+        $roleOpsAdmin = Role::firstOrCreate(['name' => 'operations_admin'], [
+            'display_name' => 'Operations Administrator',
+            'description'  => 'Operational management, bookings oversight, provider health, and escalation handling.',
+        ]);
+
+        $roleTicketing = Role::firstOrCreate(['name' => 'ticketing_agent'], [
+            'display_name' => 'Ticketing Agent',
+            'description'  => 'Dedicated ticketing queue operations, provider sync, and manual queue routing.',
+        ]);
+
+        $roleFinance = Role::firstOrCreate(['name' => 'finance_admin'], [
+            'display_name' => 'Finance Administrator',
+            'description'  => 'Payment gateways, ledger reconciliation, refund disbursement, and financial reports.',
+        ]);
+
+        $roleSupport = Role::firstOrCreate(['name' => 'support_agent'], [
+            'display_name' => 'Customer Support Agent',
+            'description'  => 'Customer servicing requests, ticket lookups, and passenger assistance with masked privacy.',
+        ]);
+
+        $rolePricing = Role::firstOrCreate(['name' => 'pricing_manager'], [
+            'display_name' => 'Pricing Manager',
+            'description'  => 'Flight markup rules, service fees, effective dates, and tariff governance.',
+        ]);
+
+        $roleContent = Role::firstOrCreate(['name' => 'content_manager'], [
+            'display_name' => 'Content Manager',
+            'description'  => 'Destination highlights, promotional offers, and homepage banner schedules.',
+        ]);
+
         $permViewBookings = Permission::firstOrCreate(['name' => 'view_bookings'], [
             'display_name' => 'View Bookings',
             'category'     => 'reservations',
@@ -64,8 +94,23 @@ class DatabaseSeeder extends Seeder
             'category'     => 'finance',
         ]);
 
+        $permManagePricing = Permission::firstOrCreate(['name' => 'manage_pricing'], [
+            'display_name' => 'Manage Pricing',
+            'category'     => 'commercial',
+        ]);
+
+        $permExportReports = Permission::firstOrCreate(['name' => 'export_reports'], [
+            'display_name' => 'Export Reports',
+            'category'     => 'reporting',
+        ]);
+
         $roleAdmin->permissions()->syncWithoutDetaching([$permViewBookings->id, $permManageFlights->id]);
-        $roleSuperAdmin->permissions()->syncWithoutDetaching([$permViewBookings->id, $permManageFlights->id, $permProcessRefunds->id]);
+        $roleSuperAdmin->permissions()->syncWithoutDetaching([$permViewBookings->id, $permManageFlights->id, $permProcessRefunds->id, $permManagePricing->id, $permExportReports->id]);
+        $roleOpsAdmin->permissions()->syncWithoutDetaching([$permViewBookings->id, $permManageFlights->id]);
+        $roleTicketing->permissions()->syncWithoutDetaching([$permViewBookings->id]);
+        $roleFinance->permissions()->syncWithoutDetaching([$permViewBookings->id, $permProcessRefunds->id, $permExportReports->id]);
+        $roleSupport->permissions()->syncWithoutDetaching([$permViewBookings->id]);
+        $rolePricing->permissions()->syncWithoutDetaching([$permManagePricing->id]);
 
         // ---------------------------------------------------------
         // 2. SYNTHETIC USERS
@@ -94,8 +139,65 @@ class DatabaseSeeder extends Seeder
             'role'     => 'super_admin',
             'status'   => 'active',
             'phone'    => '+8801900000000',
+            'is_mfa_enabled' => true,
         ]);
         $superAdmin->roles()->syncWithoutDetaching([$roleSuperAdmin->id]);
+
+        $opsAdmin = User::firstOrCreate(['email' => 'ops@flyaviation.com'], [
+            'name'     => 'Tariq Operations',
+            'password' => Hash::make('OpsAdmin123!'),
+            'role'     => 'operations_admin',
+            'status'   => 'active',
+            'phone'    => '+8801911111111',
+            'is_mfa_enabled' => true,
+        ]);
+        $opsAdmin->roles()->syncWithoutDetaching([$roleOpsAdmin->id]);
+
+        $ticketAgent = User::firstOrCreate(['email' => 'ticketing@flyaviation.com'], [
+            'name'     => 'Nazia Ticketing',
+            'password' => Hash::make('TicketAgent123!'),
+            'role'     => 'ticketing_agent',
+            'status'   => 'active',
+            'phone'    => '+8801922222222',
+        ]);
+        $ticketAgent->roles()->syncWithoutDetaching([$roleTicketing->id]);
+
+        $financeAdmin = User::firstOrCreate(['email' => 'finance@flyaviation.com'], [
+            'name'     => 'Kamal Finance',
+            'password' => Hash::make('FinanceAdmin123!'),
+            'role'     => 'finance_admin',
+            'status'   => 'active',
+            'phone'    => '+8801933333333',
+            'is_mfa_enabled' => true,
+        ]);
+        $financeAdmin->roles()->syncWithoutDetaching([$roleFinance->id]);
+
+        $supportAgent = User::firstOrCreate(['email' => 'support@flyaviation.com'], [
+            'name'     => 'Farhana Support',
+            'password' => Hash::make('SupportAgent123!'),
+            'role'     => 'support_agent',
+            'status'   => 'active',
+            'phone'    => '+8801944444444',
+        ]);
+        $supportAgent->roles()->syncWithoutDetaching([$roleSupport->id]);
+
+        $pricingMgr = User::firstOrCreate(['email' => 'pricing@flyaviation.com'], [
+            'name'     => 'Reza Pricing',
+            'password' => Hash::make('PricingMgr123!'),
+            'role'     => 'pricing_manager',
+            'status'   => 'active',
+            'phone'    => '+8801955555555',
+        ]);
+        $pricingMgr->roles()->syncWithoutDetaching([$rolePricing->id]);
+
+        $contentMgr = User::firstOrCreate(['email' => 'content@flyaviation.com'], [
+            'name'     => 'Shirin Content',
+            'password' => Hash::make('ContentMgr123!'),
+            'role'     => 'content_manager',
+            'status'   => 'active',
+            'phone'    => '+8801966666666',
+        ]);
+        $contentMgr->roles()->syncWithoutDetaching([$roleContent->id]);
 
         // ---------------------------------------------------------
         // 3. AIRPORTS (BANGLADESH & REGIONAL GATEWAYS)
@@ -245,172 +347,175 @@ class DatabaseSeeder extends Seeder
         // ---------------------------------------------------------
         // 6. SYNTHETIC BOOKING & SEGMENTS (DAC -> CXB)
         // ---------------------------------------------------------
-        $booking = Booking::create([
-            'ulid'                      => (string) Str::ulid(),
-            'reference'                 => 'FLY-2026-DEMO01',
-            'user_id'                   => $customer->id,
-            'booking_price_snapshot_id' => $priceSnapshot->id,
-            'booking_status'            => 'confirmed',
-            'payment_status'            => 'captured',
-            'ticket_status'             => 'ticketed',
-            'servicing_status'          => 'none',
-            'hold_expires_at'           => now()->addMinutes(15),
-            'currency'                  => 'BDT',
-            'total_amount'              => 4950.00,
-            'contact_email'             => 'passenger@example.com',
-            'contact_phone'             => '1700000000',
-            'contact_country_code'      => '+880',
-            'airline_pnr'               => 'BG7788',
-            'provider_booking_ref'      => 'PROV-DEMO-REQ-7788',
-            'remarks'                   => 'Synthetic demo booking verification',
-        ]);
+        $booking = Booking::where('reference', 'FLY-2026-DEMO01')->first();
+        if (!$booking) {
+            $booking = Booking::create([
+                'ulid'                      => (string) Str::ulid(),
+                'reference'                 => 'FLY-2026-DEMO01',
+                'user_id'                   => $customer->id,
+                'booking_price_snapshot_id' => $priceSnapshot->id,
+                'booking_status'            => 'confirmed',
+                'payment_status'            => 'captured',
+                'ticket_status'             => 'ticketed',
+                'servicing_status'          => 'none',
+                'hold_expires_at'           => now()->addMinutes(15),
+                'currency'                  => 'BDT',
+                'total_amount'              => 4950.00,
+                'contact_email'             => 'passenger@example.com',
+                'contact_phone'             => '1700000000',
+                'contact_country_code'      => '+880',
+                'airline_pnr'               => 'BG7788',
+                'provider_booking_ref'      => 'PROV-DEMO-REQ-7788',
+                'remarks'                   => 'Synthetic demo booking verification',
+            ]);
 
-        $segment = BookingSegment::create([
-            'ulid'                   => (string) Str::ulid(),
-            'booking_id'             => $booking->id,
-            'segment_order'          => 1,
-            'marketing_airline_id'   => $biman->id,
-            'operating_airline_id'   => $biman->id,
-            'flight_number'          => 'BG-433',
-            'aircraft_type'          => 'Boeing 737-800',
-            'origin_airport_id'      => $dac->id,
-            'destination_airport_id' => $cxb->id,
-            'departure_time_utc'     => now()->addDays(3)->setTime(4, 30), // 10:30 AM local (+6)
-            'departure_local_time'   => now()->addDays(3)->format('Y-m-d') . ' 10:30:00',
-            'departure_timezone'     => 'Asia/Dhaka',
-            'arrival_time_utc'       => now()->addDays(3)->setTime(5, 25), // 11:25 AM local
-            'arrival_local_time'     => now()->addDays(3)->format('Y-m-d') . ' 11:25:00',
-            'arrival_timezone'       => 'Asia/Dhaka',
-            'departure_terminal'     => 'Terminal 1',
-            'arrival_terminal'       => 'Main Terminal',
-            'duration_minutes'       => 55,
-            'layover_minutes'        => 0,
-            'cabin_class'            => 'Economy',
-            'booking_class'          => 'Y',
-            'status'                 => 'confirmed',
-        ]);
+            $segment = BookingSegment::create([
+                'ulid'                   => (string) Str::ulid(),
+                'booking_id'             => $booking->id,
+                'segment_order'          => 1,
+                'marketing_airline_id'   => $biman->id,
+                'operating_airline_id'   => $biman->id,
+                'flight_number'          => 'BG-433',
+                'aircraft_type'          => 'Boeing 737-800',
+                'origin_airport_id'      => $dac->id,
+                'destination_airport_id' => $cxb->id,
+                'departure_time_utc'     => now()->addDays(3)->setTime(4, 30), // 10:30 AM local (+6)
+                'departure_local_time'   => now()->addDays(3)->format('Y-m-d') . ' 10:30:00',
+                'departure_timezone'     => 'Asia/Dhaka',
+                'arrival_time_utc'       => now()->addDays(3)->setTime(5, 25), // 11:25 AM local
+                'arrival_local_time'     => now()->addDays(3)->format('Y-m-d') . ' 11:25:00',
+                'arrival_timezone'       => 'Asia/Dhaka',
+                'departure_terminal'     => 'Terminal 1',
+                'arrival_terminal'       => 'Main Terminal',
+                'duration_minutes'       => 55,
+                'layover_minutes'        => 0,
+                'cabin_class'            => 'Economy',
+                'booking_class'          => 'Y',
+                'status'                 => 'confirmed',
+            ]);
 
-        // ---------------------------------------------------------
-        // 7. PASSENGERS & ENCRYPTED TRAVEL DOCUMENTS
-        // ---------------------------------------------------------
-        $passenger = Passenger::create([
-            'ulid'                => (string) Str::ulid(),
-            'booking_id'          => $booking->id,
-            'type'                => 'adult',
-            'title'               => 'MR',
-            'first_name'          => 'Mahin',
-            'last_name'           => 'Rahman',
-            'date_of_birth'       => '1998-05-15',
-            'gender'              => 'MALE',
-            'nationality'         => 'BD',
-            'wheelchair_required' => false,
-        ]);
+            // ---------------------------------------------------------
+            // 7. PASSENGERS & ENCRYPTED TRAVEL DOCUMENTS
+            // ---------------------------------------------------------
+            $passenger = Passenger::create([
+                'ulid'                => (string) Str::ulid(),
+                'booking_id'          => $booking->id,
+                'type'                => 'adult',
+                'title'               => 'MR',
+                'first_name'          => 'Mahin',
+                'last_name'           => 'Rahman',
+                'date_of_birth'       => '1998-05-15',
+                'gender'              => 'MALE',
+                'nationality'         => 'BD',
+                'wheelchair_required' => false,
+            ]);
 
-        PassengerDocument::create([
-            'ulid'                   => (string) Str::ulid(),
-            'passenger_id'           => $passenger->id,
-            'document_type'          => 'passport',
-            'document_number'        => 'A09876543', // Encrypted at rest via Eloquent encrypted cast
-            'document_number_masked' => 'A098****',
-            'issuing_country'        => 'BD',
-            'expiry_date'            => '2030-05-15',
-            'date_of_birth'          => '1998-05-15',
-        ]);
+            PassengerDocument::create([
+                'ulid'                   => (string) Str::ulid(),
+                'passenger_id'           => $passenger->id,
+                'document_type'          => 'passport',
+                'document_number'        => 'A09876543', // Encrypted at rest via Eloquent encrypted cast
+                'document_number_masked' => 'A098****',
+                'issuing_country'        => 'BD',
+                'expiry_date'            => '2030-05-15',
+                'date_of_birth'          => '1998-05-15',
+            ]);
 
-        // ---------------------------------------------------------
-        // 8. TICKETS & ANCILLARY ITEMS
-        // ---------------------------------------------------------
-        Ticket::create([
-            'ulid'                    => (string) Str::ulid(),
-            'booking_id'              => $booking->id,
-            'passenger_id'            => $passenger->id,
-            'ticket_number'           => '098-2490182741', // 13-digit IATA format
-            'pnr_reference'           => 'BG7788',
-            'ticket_status'           => 'issued',
-            'issuing_carrier_id'      => $biman->id,
-            'currency'                => 'BDT',
-            'fare_amount'             => 4500.00,
-            'issued_at'               => now(),
-            'validating_airline_code' => 'BG',
-            'digital_coupon_data'     => ['status' => 'OPEN_FOR_USE', 'seat' => '12A'],
-        ]);
+            // ---------------------------------------------------------
+            // 8. TICKETS & ANCILLARY ITEMS
+            // ---------------------------------------------------------
+            Ticket::create([
+                'ulid'                    => (string) Str::ulid(),
+                'booking_id'              => $booking->id,
+                'passenger_id'            => $passenger->id,
+                'ticket_number'           => '098-2490182741', // 13-digit IATA format
+                'pnr_reference'           => 'BG7788',
+                'ticket_status'           => 'issued',
+                'issuing_carrier_id'      => $biman->id,
+                'currency'                => 'BDT',
+                'fare_amount'             => 4500.00,
+                'issued_at'               => now(),
+                'validating_airline_code' => 'BG',
+                'digital_coupon_data'     => ['status' => 'OPEN_FOR_USE', 'seat' => '12A'],
+            ]);
 
-        AncillaryItem::create([
-            'ulid'               => (string) Str::ulid(),
-            'booking_id'         => $booking->id,
-            'passenger_id'       => $passenger->id,
-            'booking_segment_id' => $segment->id,
-            'type'               => 'seat',
-            'item_code'          => 'SEAT-12A',
-            'name'               => 'Seat 12A (Window)',
-            'currency'           => 'BDT',
-            'unit_price'         => 0.00,
-            'quantity'           => 1,
-            'total_price'        => 0.00,
-            'status'             => 'confirmed',
-            'details'            => ['row' => 12, 'column' => 'A', 'preference' => 'window'],
-        ]);
+            AncillaryItem::create([
+                'ulid'               => (string) Str::ulid(),
+                'booking_id'         => $booking->id,
+                'passenger_id'       => $passenger->id,
+                'booking_segment_id' => $segment->id,
+                'type'               => 'seat',
+                'item_code'          => 'SEAT-12A',
+                'name'               => 'Seat 12A (Window)',
+                'currency'           => 'BDT',
+                'unit_price'         => 0.00,
+                'quantity'           => 1,
+                'total_price'        => 0.00,
+                'status'             => 'confirmed',
+                'details'            => ['row' => 12, 'column' => 'A', 'preference' => 'window'],
+            ]);
 
-        AncillaryItem::create([
-            'ulid'               => (string) Str::ulid(),
-            'booking_id'         => $booking->id,
-            'passenger_id'       => $passenger->id,
-            'booking_segment_id' => $segment->id,
-            'type'               => 'insurance',
-            'item_code'          => 'INS-STD',
-            'name'               => 'Travel Protection Insurance',
-            'currency'           => 'BDT',
-            'unit_price'         => 450.00,
-            'quantity'           => 1,
-            'total_price'        => 450.00,
-            'status'             => 'confirmed',
-            'details'            => ['coverage' => 'Baggage, Medical, Delay > 2h'],
-        ]);
+            AncillaryItem::create([
+                'ulid'               => (string) Str::ulid(),
+                'booking_id'         => $booking->id,
+                'passenger_id'       => $passenger->id,
+                'booking_segment_id' => $segment->id,
+                'type'               => 'insurance',
+                'item_code'          => 'INS-STD',
+                'name'               => 'Travel Protection Insurance',
+                'currency'           => 'BDT',
+                'unit_price'         => 450.00,
+                'quantity'           => 1,
+                'total_price'        => 450.00,
+                'status'             => 'confirmed',
+                'details'            => ['coverage' => 'Baggage, Medical, Delay > 2h'],
+            ]);
 
-        // ---------------------------------------------------------
-        // 9. FINANCIAL LEDGER, PAYMENT & EVENTS
-        // ---------------------------------------------------------
-        $payment = Payment::create([
-            'ulid'                     => (string) Str::ulid(),
-            'booking_id'               => $booking->id,
-            'user_id'                  => $customer->id,
-            'payment_method'           => 'card',
-            'gateway_provider'         => 'simulated',
-            'gateway_transaction_id'   => 'TXN-SIM-' . strtoupper(Str::random(10)),
-            'currency'                 => 'BDT',
-            'amount'                   => 4950.00,
-            'status'                   => 'captured',
-            'card_last_four'           => '4111',
-            'card_brand'               => 'Visa',
-            'idempotency_key'          => (string) Str::uuid(),
-            'gateway_response_payload' => ['auth_code' => 'AUTH123', 'simulated' => true],
-            'authorized_at'            => now()->subMinute(),
-            'captured_at'              => now(),
-        ]);
+            // ---------------------------------------------------------
+            // 9. FINANCIAL LEDGER, PAYMENT & EVENTS
+            // ---------------------------------------------------------
+            $payment = Payment::create([
+                'ulid'                     => (string) Str::ulid(),
+                'booking_id'               => $booking->id,
+                'user_id'                  => $customer->id,
+                'payment_method'           => 'card',
+                'gateway_provider'         => 'simulated',
+                'gateway_transaction_id'   => 'TXN-SIM-' . strtoupper(Str::random(10)),
+                'currency'                 => 'BDT',
+                'amount'                   => 4950.00,
+                'status'                   => 'captured',
+                'card_last_four'           => '4111',
+                'card_brand'               => 'Visa',
+                'idempotency_key'          => (string) Str::uuid(),
+                'gateway_response_payload' => ['auth_code' => 'AUTH123', 'simulated' => true],
+                'authorized_at'            => now()->subMinute(),
+                'captured_at'              => now(),
+            ]);
 
-        PaymentEvent::create([
-            'payment_id'  => $payment->id,
-            'event_type'  => 'funds_captured',
-            'status_from' => 'authorized',
-            'status_to'   => 'captured',
-            'payload'     => ['amount' => 4950.00, 'currency' => 'BDT'],
-            'recorded_at' => now(),
-            'created_at'  => now(),
-        ]);
+            PaymentEvent::create([
+                'payment_id'  => $payment->id,
+                'event_type'  => 'funds_captured',
+                'status_from' => 'authorized',
+                'status_to'   => 'captured',
+                'payload'     => ['amount' => 4950.00, 'currency' => 'BDT'],
+                'recorded_at' => now(),
+                'created_at'  => now(),
+            ]);
 
-        FinancialLedgerEntry::create([
-            'ulid'          => (string) Str::ulid(),
-            'booking_id'    => $booking->id,
-            'payment_id'    => $payment->id,
-            'entry_type'    => 'customer_charge',
-            'debit_amount'  => 4950.00,
-            'credit_amount' => 0.00,
-            'currency'      => 'BDT',
-            'description'   => "Customer charge for booking {$booking->reference}",
-            'account_code'  => '1100-RECEIVABLES',
-            'recorded_at'   => now(),
-            'created_at'    => now(),
-        ]);
+            FinancialLedgerEntry::create([
+                'ulid'          => (string) Str::ulid(),
+                'booking_id'    => $booking->id,
+                'payment_id'    => $payment->id,
+                'entry_type'    => 'customer_charge',
+                'debit_amount'  => 4950.00,
+                'credit_amount' => 0.00,
+                'currency'      => 'BDT',
+                'description'   => "Customer charge for booking {$booking->reference}",
+                'account_code'  => '1100-RECEIVABLES',
+                'recorded_at'   => now(),
+                'created_at'    => now(),
+            ]);
+        }
 
         // ---------------------------------------------------------
         // 10. PROMOTIONS
@@ -429,6 +534,43 @@ class DatabaseSeeder extends Seeder
             'starts_at'      => now()->subDays(5),
             'expires_at'     => now()->addMonths(3),
             'is_active'      => true,
+        ]);
+
+        // ---------------------------------------------------------
+        // 11. PRICING & MARKUP RULES
+        // ---------------------------------------------------------
+        \App\Models\PricingRule::firstOrCreate(['name' => 'Standard Domestic Markup'], [
+            'ulid'               => (string) Str::ulid(),
+            'route_type'         => 'domestic',
+            'airline_code'       => null,
+            'markup_type'        => 'fixed_amount',
+            'markup_value'       => 200.00,
+            'service_fee'        => 50.00,
+            'currency'           => 'BDT',
+            'starts_at'          => now()->subDays(10),
+            'expires_at'         => now()->addYear(),
+            'is_active'          => true,
+            'status'             => 'active',
+            'created_by_user_id' => $pricingMgr->id,
+            'approved_by_user_id'=> $superAdmin->id,
+        ]);
+
+        // ---------------------------------------------------------
+        // 12. CONTENT BANNERS & DESTINATIONS (NO INVENTED FARE)
+        // ---------------------------------------------------------
+        \App\Models\ContentBanner::firstOrCreate(['title' => "Explore Cox's Bazar"], [
+            'ulid'             => (string) Str::ulid(),
+            'subtitle'         => 'World longest natural sea beach with daily nonstop flights',
+            'destination_code' => 'CXB',
+            'banner_type'      => 'destination',
+            'image_url'        => '/static/images/destinations/cxb.jpg',
+            'action_url'       => '/flights/search?origin=DAC&destination=CXB',
+            'indicative_price' => 3800.00, // Dynamic starting price guide only
+            'currency'         => 'BDT',
+            'starts_at'        => now()->subDays(3),
+            'expires_at'       => now()->addMonths(6),
+            'is_active'        => true,
+            'created_by_user_id'=> $contentMgr->id,
         ]);
     }
 }
