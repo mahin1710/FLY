@@ -188,8 +188,11 @@ async function runTests() {
 
     // Directly set expires_at in DB to past to simulate timeout
     const path = require('node:path');
+    const fs = require('fs');
     const { DatabaseSync } = require('node:sqlite');
-    const dbPath = path.join(__dirname, 'Skynet-master', 'Skynet-master', 'web', 'database.db');
+    const canonicalDb = path.join(__dirname, 'database', 'flight_booking.db');
+    const fallbackDb = path.join(__dirname, 'Skynet-master', 'Skynet-master', 'web', 'database.db');
+    const dbPath = fs.existsSync(canonicalDb) ? canonicalDb : fallbackDb;
     const db = new DatabaseSync(dbPath);
     
     const pastTime = new Date(Date.now() - 60000).toISOString();
@@ -219,9 +222,13 @@ async function runTests() {
     // 10. FRONTEND RESPONSIVE CODE INTEGRITY CHECKS
     // -------------------------------------------------------------
     console.log('\n>>> 10. Checking Frontend CSS & JS Responsive Layout Integrity...');
-    const fs = require('fs');
-    const cssContent = fs.readFileSync(path.join(__dirname, 'Skynet-master', 'Skynet-master', 'web', 'public', 'css', 'style.css'), 'utf8');
-    const jsContent = fs.readFileSync(path.join(__dirname, 'Skynet-master', 'Skynet-master', 'web', 'public', 'js', 'app.js'), 'utf8');
+    const canonicalCss = path.join(__dirname, 'static', 'css', 'style.css');
+    const fallbackCss = path.join(__dirname, 'Skynet-master', 'Skynet-master', 'web', 'public', 'css', 'style.css');
+    const cssContent = fs.readFileSync(fs.existsSync(canonicalCss) ? canonicalCss : fallbackCss, 'utf8');
+
+    const canonicalJs = path.join(__dirname, 'static', 'js', 'app.js');
+    const fallbackJs = path.join(__dirname, 'Skynet-master', 'Skynet-master', 'web', 'public', 'js', 'app.js');
+    const jsContent = fs.readFileSync(fs.existsSync(canonicalJs) ? canonicalJs : fallbackJs, 'utf8');
 
     assert(cssContent.includes('.booking-card-footer'), 'style.css contains .booking-card-footer responsive styling');
     assert(cssContent.includes('@media (max-width: 480px)'), 'style.css contains 480px mobile breakpoint');

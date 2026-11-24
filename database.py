@@ -18,7 +18,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 POSSIBLE_DB_PATHS = [
     os.path.join(BASE_DIR, 'database', 'flight_booking.db'),
     os.path.join(BASE_DIR, 'database.db'),
-    os.path.join(BASE_DIR, 'Skynet-master', 'Skynet-master', 'web', 'database.db'),
 ]
 
 def get_db_path():

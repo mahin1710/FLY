@@ -1,129 +1,80 @@
-# FLY — Flight Booking & Reservation System (Bangladesh Edition)
+# FLY — Modern Flight Booking & Reservation Platform
 
 [![Brand](https://img.shields.io/badge/Brand-FLY-blue.svg)]()
 [![Author](https://img.shields.io/badge/Author-mahin1710-blue.svg)](https://github.com/mahin1710)
-[![Node.js](https://img.shields.io/badge/Node.js-v20%2B-green.svg)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1.3-green.svg)](https://palletsprojects.com/p/flask/)
+[![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)](https://laravel.com/)
 [![Database](https://img.shields.io/badge/SQLite-WAL--Mode-yellow.svg)](https://sqlite.org/)
-[![Security](https://img.shields.io/badge/Privacy-Strict%20Customer%20Isolation-brightgreen.svg)]()
-[![Status](https://img.shields.io/badge/Status-Active%20%26%20Conflict--Free-brightgreen.svg)]()
+[![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-164%20Passing-brightgreen.svg)]()
 
-> **Official Brand:** **FLY**  
-> **Project Author & Maintainer:** **mahin1710**
+> **Official Brand:** **FLY** (`FLY Aviation & Travel`)  
+> **Maintainer & Author:** **mahin1710**  
+> **Repository:** [https://github.com/mahin1710/FLY.git](https://github.com/mahin1710/FLY.git)
 
 ---
 
 ## ✈️ Overview
 
-**FLY** is an international-grade flight booking platform built with modern architecture, strict customer-to-customer data privacy, airline-isolated RBAC, and a conflict-free temporary seat reservation engine.
+**FLY** is a professional, human-friendly flight booking platform built with modern responsive architecture, strict customer-to-customer data privacy, route-aware passenger document validation, and an atomic 15-minute conflict-free seat reservation engine.
 
-### 🛡️ Customer Privacy & Data Security
-- **Strict Customer Isolation**: Every passenger account is strictly isolated. One passenger can NEVER view, access, modify, cancel, or download another passenger's bookings, boarding passes, or profile.
-- **Backend-Enforced Authorization**: All booking, ticket, profile, favorites, and card endpoints validate the authenticated session ID. Frontend tampering of account IDs in URLs or request payloads is strictly rejected with `HTTP 403 Forbidden` or `HTTP 401 Unauthorized`.
-- **Payment Privacy**: Raw card numbers and CVVs are never exposed; cards are displayed securely with masked digits (`•••• •••• •••• 1234`).
-- **Tenant Isolation**: Biman Bangladesh Airlines (`BG`) administrators can only manage Biman flights and ticket inventory; US-Bangla Airlines (`BS`) administrators can only manage US-Bangla flights and inventory. Passengers are strictly prevented from accessing any administration APIs.
-
-### ⏱️ Conflict-Free Seat Engine (15-Minute Payment Window)
-- **Multi-Seat Atomic Selection**: Reserve multiple seats in a single atomic transaction. Either all seats are locked or none are reserved.
-- **15-Minute Hold Countdown**: Real-time server-synchronized countdown timer with automatic seat release upon timeout.
-- **SQLite WAL Concurrency**: High-concurrency serialized transactions eliminate race conditions and double-bookings.
+### Key Features
+- **Modern Flight Search:** Autocomplete across 5,928 airports, One-Way, Round-Trip, and Multi-City support, travel date bounds, dynamic airline filters, and interactive BDT price slider.
+- **Atomic 15-Minute Seat Hold:** Concurrency-safe seat reservation engine preventing double-bookings; real-time server-synchronized countdown timer with automatic seat release upon timeout.
+- **Route-Aware Travel Document Validation:** Enforces CAAB & IATA guidelines (NID/Birth Certificate/Passport for domestic Bangladesh routes; valid Passport with $\ge$ 6 months validity for international routes).
+- **Interactive Seat Map & Ancillaries:** Visual aircraft cabin layout with First Class, Business Class, and Economy sections, inflight meal choices, extra baggage, and travel insurance.
+- **Transparent Fare Breakdown:** Server-calculated itemized airfare, 15% VAT, airport embarkation fees, fuel surcharges, and baggage fees with zero hidden markups.
+- **Hosted Payment Checkout (Sandbox):** Fast-Path Instant Verification, bKash Mobile Wallet Simulator, and 3D-Secure 2.0 Card Simulator with zero raw card data storage.
+- **Protected Operations Console (Admin):** 12-module operational dashboard with 7 least-privilege RBAC profiles, KPI metrics, ticketing queues, payment reconciliation, and audit logs.
 
 ---
 
-## 👥 Seeded Live Demo Accounts
+## 🚀 Quick Start (Local Setup)
 
-| Role | Username | Password | Display Name / Organization | Permissions |
-|---|---|---|---|---|
-| **Passenger** | `Mahin0` | `Mahin0` | `MMH_Mahin` (Dhaka, BD) | Search flights, multi-seat reservation, personal booking history, private boarding pass |
-| **Airline Admin** | `Admin_Biman` | `Admin_Biman` | Biman Bangladesh Airlines | Fleet management, BG flights, ticket sales & revenue analytics |
-| **Airline Admin** | `Admin_USB` | `Admin_USB` | US-Bangla Airlines | Fleet management, BS flights, ticket sales & revenue analytics |
-| **Passenger** | `Mahin1` | `Mahin1` | Chittagong Traveler | Search flights, book tickets, private boarding pass access |
-
----
-
-## 🚀 Quick Start
-
-### 1. 1-Click Launch
-Double-click `start.bat` in the project root.
+### 1. 1-Click Launch (Windows)
+Double-click `start.bat` in the project root. The application will start immediately on `http://localhost:5000`.
 
 ### 2. Manual Terminal Launch
 ```bash
-# From project root
-npm start
-```
-Or directly:
-```bash
-cd Skynet-master/Skynet-master/web
-node server.js
-```
+# 1. Install Python dependencies
+pip install -r requirements.txt
 
-Then visit:
-- **Web App:** [http://localhost:5000](http://localhost:5000)
-- **Dedicated Login:** [http://localhost:5000/login](http://localhost:5000/login)
+# 2. Start Python Flask server
+python app.py
+```
+Open your browser and navigate to: **`http://localhost:5000`**
 
 ---
 
-## 🛠️ Laravel REST API Backend (`/backend`)
+## 🧪 Running Automated Test Suites
 
-The backend REST API foundation is built with modern, modular **Laravel 13** and **PHP 8.3** featuring:
-- **API Versioning:** Strict `/api/v1` route prefixing.
-- **Consistent Response Envelope:** Standardized `success`, `message`, `data`, `errors`, and `meta` (correlation tracking).
-- **Request Correlation IDs:** `X-Correlation-ID` header injection across every request and response.
-- **Stateless Token Authentication:** Powered by **Laravel Sanctum** personal access tokens with scoped abilities (`customer:access`, `admin:access`).
-- **Role-Based Authorization:** Backend authorization policies (`AdminPolicy`) and middleware (`role:admin,super_admin`).
-- **Defense-in-Depth Security:** Strict CORS, rate limiting (10 attempts/min on auth), and HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`).
-- **Database & Cache Readiness:** Configured for **PostgreSQL** and **Redis** (cache, session, and async queues) with an embedded SQLite driver for zero-dependency local testing.
-- **Diagnostic Health Check:** `GET /api/v1/health` probes app runtime, database connectivity, cache write/read, and queue driver without leaking internal secrets.
-- **OpenAPI 3.1 Documentation:** Interactive schema specification available at `GET /api/v1/docs`.
-
-### Exact Technology & Package Versions
-- **PHP:** `8.3.36` (cli)
-- **Laravel Framework:** `13.43.0`
-- **Laravel Sanctum:** `4.5.0`
-- **PHPUnit:** `12.5.45`
-
-### Backend Local Setup & Commands
-
+### 1. UI Accessibility & Responsive Viewport Test Suite:
 ```bash
-# 1. Navigate to the backend directory
+node tests/ui_accessibility_and_responsive.test.js
+```
+*Result:* 9 / 9 Passed (WCAG 2.1 AA compliant, 390px to 1440px viewports verified).
+
+### 2. Backend Enterprise Test Suite (Laravel Engine):
+```bash
 cd backend
-
-# 2. Install PHP Composer dependencies (if not already installed)
-composer install
-
-# 3. Environment configuration
-# Copy template and generate application encryption key
-cp .env.example .env
-php artisan key:generate
-
-# 4. Run database migrations (creates users, personal_access_tokens, cache, jobs tables)
-php artisan migrate
-
-# 5. Run automated test suite (19 tests, 137 assertions)
 php artisan test
-# Or with detailed test names:
-php artisan test --testdox
-
-# 6. Start the local Laravel API server
-php artisan serve --port=8000
 ```
-
-### Core API Endpoints Reference
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/health` | Public | Subsystem diagnostics (app, database, cache, queue) |
-| `GET` | `/api/v1/docs` | Public | OpenAPI 3.1 specification schema |
-| `POST` | `/api/v1/auth/register` | Public (Rate Limited) | Customer registration & Sanctum token issue |
-| `POST` | `/api/v1/auth/login` | Public (Rate Limited) | Customer / Admin authentication |
-| `GET` | `/api/v1/auth/me` | Bearer Token | Authenticated user profile and token abilities |
-| `POST` | `/api/v1/auth/logout` | Bearer Token | Revokes current Sanctum access token |
-| `GET` | `/api/v1/admin/overview` | Admin Token (`role:admin`) | System operational statistics & metrics |
-| `GET` | `/api/v1/admin/users` | Admin Token (`role:admin`) | Paginated user directory |
+*Result:* 164 / 164 Passed (979 assertions, 0 failures).
 
 ---
 
-## 👨‍💻 Author & Credits
+## 📚 Master Documentation Index
 
-- **Author:** `mahin1710`
-- **Official Brand:** FLY Aviation & Travel
-- **License:** ISC
+Complete project specifications are located in [`documentation/`](documentation/):
+
+- [`documentation/PROJECT_AUDIT.md`](documentation/PROJECT_AUDIT.md) — Comprehensive technical and architectural audit.
+- [`documentation/FEATURE_INVENTORY.md`](documentation/FEATURE_INVENTORY.md) — Complete 87-point interactive feature and control inventory.
+- [`documentation/FILE_INVENTORY.md`](documentation/FILE_INVENTORY.md) — Full file manifest and dependency analysis.
+- [`documentation/FILE_STRUCTURE.md`](documentation/FILE_STRUCTURE.md) — Annotated project directory tree.
+- [`documentation/CODEBASE_CLEANUP_REPORT.md`](documentation/CODEBASE_CLEANUP_REPORT.md) — Safe renaming and codebase cleanup audit report.
+- [`documentation/ENVIRONMENT_SETUP.md`](documentation/ENVIRONMENT_SETUP.md) — Detailed environment setup guide.
+- [`documentation/DEVELOPMENT_GUIDE.md`](documentation/DEVELOPMENT_GUIDE.md) — Coding standards, guidelines, and test instructions.
+- [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) — System architecture overview.
+- [`documentation/BASELINE_TEST_REPORT.md`](documentation/BASELINE_TEST_REPORT.md) — Full baseline test execution results.
+- [`documentation/IMPLEMENTATION_PLAN.md`](documentation/IMPLEMENTATION_PLAN.md) — Phased production engineering roadmap.
