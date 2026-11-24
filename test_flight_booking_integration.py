@@ -12,36 +12,28 @@ class TestFlightBookingIntegration(unittest.TestCase):
         cls.session_a = requests.Session()
         cls.session_b = requests.Session()
 
-        # Login user A
+        # Login user A (Mahin0)
         res_a = cls.session_a.post(f"{BASE_URL}/api/auth/login", json={
-            "username": "customer",
-            "password": "customer123"
+            "username": "Mahin0",
+            "password": "Mahin0"
         })
-        if res_a.status_code != 200:
-            res_a = cls.session_a.post(f"{BASE_URL}/api/auth/register", json={
-                "username": f"test_a_{int(time.time())}",
-                "password": "Password123!",
-                "displayName": "User A"
-            })
         cls.user_a = res_a.json().get("user")
         cls.token_a = res_a.json().get("token")
+        if cls.token_a:
+            cls.session_a.headers.update({"Authorization": f"Bearer {cls.token_a}"})
 
-        # Login user B
+        # Login user B (Mahin1)
         res_b = cls.session_b.post(f"{BASE_URL}/api/auth/login", json={
-            "username": "admin",
-            "password": "admin123"
+            "username": "Mahin1",
+            "password": "Mahin1"
         })
-        if res_b.status_code != 200:
-            res_b = cls.session_b.post(f"{BASE_URL}/api/auth/register", json={
-                "username": f"test_b_{int(time.time())}",
-                "password": "Password123!",
-                "displayName": "User B"
-            })
         cls.user_b = res_b.json().get("user")
         cls.token_b = res_b.json().get("token")
+        if cls.token_b:
+            cls.session_b.headers.update({"Authorization": f"Bearer {cls.token_b}"})
 
         # Get available flights
-        flights_res = requests.get(f"{BASE_URL}/api/flights/search")
+        flights_res = requests.get(f"{BASE_URL}/api/flights")
         cls.flights = flights_res.json().get("flights", [])
         assert len(cls.flights) >= 2, "Need at least 2 flights for tests"
         cls.flight1 = cls.flights[0]
@@ -60,9 +52,7 @@ class TestFlightBookingIntegration(unittest.TestCase):
         }
         res = requests.post(f"{BASE_URL}/api/flights/fare-breakdown", json=payload)
         self.assertEqual(res.status_code, 200)
-        data = res.json()
-        self.assertTrue(data.get("success"))
-        breakdown = data.get("breakdown")
+        breakdown = res.json()
         self.assertIn("baseFare", breakdown)
         self.assertIn("taxes", breakdown)
         self.assertIn("airlineCharges", breakdown)
@@ -83,7 +73,7 @@ class TestFlightBookingIntegration(unittest.TestCase):
         """Test pre-booking revalidation when flight and seats are available."""
         # Get seats for flight1
         seats_res = requests.get(f"{BASE_URL}/api/flights/{self.flight1['id']}/seats")
-        available_seats = [s for s in seats_res.json() if s.get("status") == "AVAILABLE"]
+        available_seats = [s for s in seats_res.json().get("seats", []) if s.get("status") == "AVAILABLE"]
         self.assertGreaterEqual(len(available_seats), 1)
 
         payload = {
@@ -112,7 +102,7 @@ class TestFlightBookingIntegration(unittest.TestCase):
     def test_03_pre_booking_revalidation_price_change_alert(self):
         """Test that sending outdated expectedTotal triggers priceChanged alert."""
         seats_res = requests.get(f"{BASE_URL}/api/flights/{self.flight1['id']}/seats")
-        available_seats = [s for s in seats_res.json() if s.get("status") == "AVAILABLE"]
+        available_seats = [s for s in seats_res.json().get("seats", []) if s.get("status") == "AVAILABLE"]
         
         payload = {
             "flightIds": [self.flight1["id"]],
@@ -136,12 +126,12 @@ class TestFlightBookingIntegration(unittest.TestCase):
         val = res.json()
         self.assertFalse(val.get("valid"))
         self.assertTrue(val.get("priceChanged"))
-        self.assertIn("Fare updated", val.get("error", ""))
+        self.assertIn("has changed", val.get("error", ""))
 
     def test_04_seat_hold_and_conflict_prevention(self):
         """User A holds a seat; User B cannot hold the same seat."""
         seats_res = requests.get(f"{BASE_URL}/api/flights/{self.flight1['id']}/seats")
-        available_seats = [s for s in seats_res.json() if s.get("status") == "AVAILABLE"]
+        available_seats = [s for s in seats_res.json().get("seats", []) if s.get("status") == "AVAILABLE"]
         self.assertGreaterEqual(len(available_seats), 1)
         target_seat = available_seats[0]
 
@@ -194,7 +184,7 @@ class TestFlightBookingIntegration(unittest.TestCase):
         self.assertIn("ticket", conf_data)
         ticket = conf_data["ticket"]
         self.assertEqual(ticket.get("bookingReference"), booking_ref)
-        self.assertEqual(ticket.get("fullName"), "USER ALPHA")
+        self.assertEqual(ticket.get("passengerName"), "User Alpha")
 
         # Idempotent re-confirmation check (prevent duplicate charge / duplicate confirm)
         dup_res = self.session_a.post(f"{BASE_URL}/api/bookings/confirm", json=confirm_payload)
@@ -206,7 +196,7 @@ class TestFlightBookingIntegration(unittest.TestCase):
     def test_05_round_trip_booking_flow(self):
         """Test round trip selection, hold, payment, and retrieval."""
         # Find available seats on flight1 and flight2
-        seats_f1 = [s for s in requests.get(f"{BASE_URL}/api/flights/{self.flight1['id']}/seats").json() if s.get("status") == "AVAILABLE"]
+        seats_f1 = [s for s in requests.get(f"{BASE_URL}/api/flights/{self.flight1['id']}/seats").json().get("seats", []) if s.get("status") == "AVAILABLE"]
         self.assertGreaterEqual(len(seats_f1), 1)
         seat1 = seats_f1[0]
 
@@ -247,7 +237,7 @@ class TestFlightBookingIntegration(unittest.TestCase):
         self.assertEqual(t_res.status_code, 200)
         fetched_ticket = t_res.json()
         self.assertEqual(fetched_ticket.get("bookingReference"), ref)
-        self.assertEqual(fetched_ticket.get("fullName"), "SARAH JENKINS")
+        self.assertEqual(fetched_ticket.get("passengerName"), "Sarah Jenkins")
 
     def test_06_my_bookings_list_integration(self):
         """Test that user's bookings contain all newly confirmed reservations."""

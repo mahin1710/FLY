@@ -418,7 +418,9 @@ def calculate_fare_breakdown(flight_ids: list, cabin_class: str = 'Economy', adu
         'airlineCharges': total_airline_charges,
         'serviceCharges': total_service_charge,
         'discounts': total_discount,
+        'discount': total_discount,
         'luggageFee': total_luggage_fee,
+        'luggageCharges': total_luggage_fee,
         'totalPayable': total_payable,
         'flights': flights_info
     }
@@ -708,7 +710,7 @@ def get_ticket_data(booking_ref: str):
             p_data = json.loads(b['passenger_data'])
             if isinstance(p_data, list):
                 for p in p_data:
-                    pname = f"{p.get('title', '')} {p.get('firstName', '')} {p.get('lastName', '')}".strip()
+                    pname = p.get('fullName') or f"{p.get('title', '')} {p.get('firstName', '')} {p.get('lastName', '')}".strip()
                     if pname:
                         passenger_names.append(pname)
         except Exception:
@@ -747,5 +749,6 @@ def get_ticket_data(booking_ref: str):
         'paymentRef': b['payment_ref'],
         'status': b['status'],
         'gate': f"G{b['flightId'] % 12 + 1}",
-        'terminal': f"T{b['flightId'] % 3 + 1}"
+        'terminal': f"T{b['flightId'] % 3 + 1}",
+        'returnFlightId': b['return_flight_id'] if 'return_flight_id' in b.keys() else None
     }

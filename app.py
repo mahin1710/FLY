@@ -784,12 +784,13 @@ def api_validate_booking():
     # 1. Validate passenger information
     if passengers and isinstance(passengers, list):
         for idx, p in enumerate(passengers):
+            full_name = (p.get('fullName') or '').strip()
             first_name = (p.get('firstName') or '').strip()
             last_name = (p.get('lastName') or '').strip()
-            if not first_name or not last_name:
+            if not full_name and not (first_name and last_name):
                 return jsonify({
                     'valid': False,
-                    'error': f'Passenger {idx + 1}: First Name and Last Name are required.',
+                    'error': f'Passenger {idx + 1}: Name is required.',
                     'code': 'INVALID_PASSENGER_DATA'
                 }), 400
 
