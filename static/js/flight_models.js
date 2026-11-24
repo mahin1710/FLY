@@ -265,8 +265,33 @@
         ? data.priceBreakdown
         : new PriceBreakdown(data.priceBreakdown || {});
 
-      this.expiresAt = data.expiresAt || null;
+      this.expiresAt = data.expiresAt || new Date(Date.now() + 20 * 60 * 1000).toISOString();
       this.isExpired = Boolean(data.isExpired);
+
+      this.supportedExtras = Object.assign({
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
+      }, data.supportedExtras || {});
+
+      this.fareRules = Array.isArray(data.fareRules) ? data.fareRules : [
+        { category: 'Cancellation', rule: this.fareConditions.refundPolicyText, fee: this.fareConditions.cancellationFee },
+        { category: 'Date Change', rule: this.fareConditions.changeable ? `Permitted with airline fee (${formatMoney(this.fareConditions.changeFee, this.priceBreakdown.currency)})` : 'Non-changeable', fee: this.fareConditions.changeFee },
+        { category: 'No Show', rule: 'Ticket forfeited in case of passenger no-show at gate', fee: this.priceBreakdown.totalAmount }
+      ];
+
+      this.baggageByPassenger = data.baggageByPassenger || {
+        adult: { checked: `${this.baggage.checkedWeightKg} kg`, cabin: `${this.baggage.cabinWeightKg} kg` },
+        child: { checked: `${this.baggage.checkedWeightKg} kg`, cabin: `${this.baggage.cabinWeightKg} kg` },
+        infant: { checked: '10 kg checked', cabin: '1 collapsible stroller' }
+      };
+    }
+
+    isInternationalRoute() {
+      const orig = this.getOrigin().code;
+      const dest = this.getDestination().code;
+      const bdAirports = ['DAC', 'CXB', 'CGP', 'ZYL', 'JSR', 'BZL', 'SPD', 'RJH'];
+      return !(bdAirports.includes(orig) && bdAirports.includes(dest));
     }
 
     isDirect() {

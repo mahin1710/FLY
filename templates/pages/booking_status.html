@@ -4,8 +4,8 @@
 {% import "components/stepper.html" as st %}
 {% import "components/demo_notice.html" as dn %}
 
-{% block title %}Booking Confirmation — {{ reference }} — FLY{% endblock %}
-{% block meta_description %}Your flight booking is confirmed. View your digital boarding pass and reservation details.{% endblock %}
+{% block title %}Booking Status — {{ reference }} — FLY{% endblock %}
+{% block meta_description %}View your booking status, provider reservation lifecycle, and digital boarding pass view.{% endblock %}
 
 {% block breadcrumbs %}
 {{ bc.render_breadcrumb([
@@ -16,95 +16,356 @@
 
 {% block content %}
 <div class="page-container container" style="max-width: 920px;">
-  <!-- Stepper: Step 6: Confirmation Complete (All 6 steps complete!) -->
+  <!-- Stepper: Step 6: Confirmation Complete (All 6 steps complete) -->
   {{ st.render_booking_stepper(current_step='confirmation', completed_steps=['search', 'flight', 'travellers', 'review', 'payment', 'confirmation']) }}
 
-  {{ dn.render_demo_notice('Airline PNR Generation & E-Ticket Issuance') }}
+  {{ dn.render_demo_notice('Simulated Provider Booking State Machine (GDS/NDC Handshake Boundary)') }}
 
-  <div class="card glassmorphism" style="text-align: center; padding: 36px 24px; margin-bottom: 24px;">
-    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">🎉</div>
-    <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 8px;">TICKET ISSUED &bull; CONFIRMED</div>
-    <h1 style="font-family: var(--font-heading); font-size: 2.2rem; margin-bottom: 8px;">Your Booking is Confirmed!</h1>
-    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 16px auto; font-size: 0.95rem;">
-      Thank you for booking with FLY. Your electronic ticket has been issued and stored in your reservation history.
-    </p>
-    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--bg-surface-elevated); padding: 8px 18px; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle);">
-      <span style="font-size: 0.85rem; color: var(--text-muted);">Booking Reference:</span>
-      <strong style="font-family: var(--font-mono); font-size: 1.1rem; color: var(--accent-primary);">{{ reference }}</strong>
-    </div>
-  </div>
-
-  <!-- Digital Boarding Pass Ticket Component -->
-  <div class="boarding-pass-card glassmorphism" style="margin-bottom: 24px;">
-    <div class="ticket-main-section">
-      <div class="ticket-header-strip">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span>✈️</span>
-          <strong>Biman Bangladesh Airlines &bull; Flight BG-433</strong>
-        </div>
-        <span class="ticket-class-badge">Economy Class</span>
+  <!-- Interactive State Simulation Bar (For QA, Reviewers, and Provider Lifecycle Inspection) -->
+  <div class="card glassmorphism" style="padding: 14px 20px; margin-bottom: 24px; background: rgba(15, 23, 42, 0.03); border: 1px dashed var(--accent-primary);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">🧪 Lifecycle State Simulator:</span>
+        <span style="font-size: 0.78rem; color: var(--text-secondary); margin-left: 6px;">Test all provider states</span>
       </div>
-
-      <div class="ticket-flight-data">
-        <div>
-          <div class="ticket-city-code">DAC</div>
-          <div class="ticket-city-name">Dhaka</div>
-          <div class="ticket-time-bold">10:30 AM</div>
-        </div>
-        <div class="ticket-arrow-col">
-          <span>55m Non-Stop</span>
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </div>
-        <div>
-          <div class="ticket-city-code">CXB</div>
-          <div class="ticket-city-name">Cox's Bazar</div>
-          <div class="ticket-time-bold">11:25 AM</div>
-        </div>
-      </div>
-
-      <div class="ticket-meta-grid">
-        <div>
-          <span class="ticket-meta-label">PASSENGER</span>
-          <span class="ticket-meta-val">Mahin Rahman</span>
-        </div>
-        <div>
-          <span class="ticket-meta-label">SEAT</span>
-          <span class="ticket-meta-val">12A (Window)</span>
-        </div>
-        <div>
-          <span class="ticket-meta-label">BOARDING TIME</span>
-          <span class="ticket-meta-val">10:00 AM</span>
-        </div>
-        <div>
-          <span class="ticket-meta-label">GATE</span>
-          <span class="ticket-meta-val">Gate 4</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="ticket-stub">
-      <div class="stub-header">BOARDING PASS</div>
-      <div class="stub-pax-name">Mahin Rahman</div>
-      <div class="stub-route">DAC ➔ CXB</div>
-      <div class="stub-seat-number">12A</div>
-      <div class="stub-barcode-container">
-        <div class="simulated-barcode"></div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="stateSimulatorButtons">
+        <button type="button" class="btn-secondary btn-sm state-btn active" data-state="confirmed">Confirmed (Demo)</button>
+        <button type="button" class="btn-secondary btn-sm state-btn" data-state="payment_pending">Payment Pending</button>
+        <button type="button" class="btn-secondary btn-sm state-btn" data-state="ticket_pending">Ticket Pending</button>
+        <button type="button" class="btn-secondary btn-sm state-btn" data-state="expired">Expired Offer</button>
+        <button type="button" class="btn-secondary btn-sm state-btn" data-state="provider_unavailable">Provider Unavailable (504)</button>
+        <button type="button" class="btn-secondary btn-sm state-btn" data-state="failed">Booking Failed</button>
       </div>
     </div>
   </div>
 
-  <!-- Action Bar -->
-  <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 40px;">
-    <button type="button" class="btn-primary" onclick="window.print()">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
-      <span>Print Boarding Pass</span>
-    </button>
-    <a href="/my-bookings" class="btn-secondary">
-      View in My Bookings
-    </a>
-    <a href="/" class="btn-secondary-outline">
-      Book Another Journey
-    </a>
+  <!-- ========================================================= -->
+  <!-- STATE 1: CONFIRMED (DEMO COMPLETE)                        -->
+  <!-- ========================================================= -->
+  <div id="stateView_confirmed" class="status-state-panel" role="status">
+    <div class="card glassmorphism" style="text-align: center; padding: 36px 24px; margin-bottom: 24px;">
+      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">🎉</div>
+      <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 10px; background: rgba(16, 185, 129, 0.15); color: var(--accent-teal);">
+        DEMO RESERVATION SIMULATED
+      </div>
+      <h1 style="font-family: var(--font-heading); font-size: 2.1rem; margin-bottom: 8px;">
+        Demo Checkout Complete!
+      </h1>
+      <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 18px auto; font-size: 0.92rem; line-height: 1.5;">
+        Your reservation request was successfully captured in our local workflow engine.
+        Live airline ticketing and GDS/NDC PNR assignment will be activated upon backend provider connection.
+      </p>
+
+      <!-- Reference & PNR / E-Ticket Integrity Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; max-width: 760px; margin: 0 auto; text-align: left;">
+        <div style="background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.72rem; color: var(--text-muted); display: block; text-transform: uppercase;">Internal Demo Reference</span>
+          <strong id="displayReference" style="font-family: var(--font-mono); font-size: 1.05rem; color: var(--accent-primary);">{{ reference }}</strong>
+          <span style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Simulated Request ID</span>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.72rem; color: var(--text-muted); display: block; text-transform: uppercase;">Airline PNR</span>
+          <strong id="displayAirlinePnr" style="font-family: var(--font-mono); font-size: 0.92rem; color: #ea580c;">&lt;Pending Provider Connection&gt;</strong>
+          <span style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Live 6-char PNR issued on GDS link</span>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <span style="font-size: 0.72rem; color: var(--text-muted); display: block; text-transform: uppercase;">Electronic Ticket Number</span>
+          <strong id="displayETicket" style="font-family: var(--font-mono); font-size: 0.92rem; color: #ea580c;">&lt;Not Issued - Integration Required&gt;</strong>
+          <span style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">13-digit IATA e-ticket on ticketing API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Digital Boarding Pass Ticket Component -->
+    <div class="boarding-pass-card glassmorphism" style="margin-bottom: 24px;">
+      <div class="ticket-main-section">
+        <div class="ticket-header-strip">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="ticketCarrierIcon">✈️</span>
+            <strong id="ticketCarrierName">Biman Bangladesh Airlines &bull; Flight BG-433</strong>
+          </div>
+          <span id="ticketCabinClassBadge" class="ticket-class-badge">Economy Class</span>
+        </div>
+
+        <div class="ticket-flight-data">
+          <div>
+            <div class="ticket-city-code" id="ticketDepCode">DAC</div>
+            <div class="ticket-city-name" id="ticketDepCity">Dhaka</div>
+            <div class="ticket-time-bold" id="ticketDepTime">10:30 AM</div>
+          </div>
+          <div class="ticket-arrow-col">
+            <span id="ticketDurationText">55m Non-Stop</span>
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </div>
+          <div>
+            <div class="ticket-city-code" id="ticketArrCode">CXB</div>
+            <div class="ticket-city-name" id="ticketArrCity">Cox's Bazar</div>
+            <div class="ticket-time-bold" id="ticketArrTime">11:25 AM</div>
+          </div>
+        </div>
+
+        <div class="ticket-meta-grid">
+          <div>
+            <span class="ticket-meta-label">PRIMARY TRAVELLER</span>
+            <span class="ticket-meta-val" id="ticketPaxName">Mahin Rahman</span>
+          </div>
+          <div>
+            <span class="ticket-meta-label">SEAT ASSIGNMENT</span>
+            <span class="ticket-meta-val" id="ticketSeat">12A (Window)</span>
+          </div>
+          <div>
+            <span class="ticket-meta-label">BOARDING TIME</span>
+            <span class="ticket-meta-val" id="ticketBoardingTime">10:00 AM</span>
+          </div>
+          <div>
+            <span class="ticket-meta-label">SECURITY GATE</span>
+            <span class="ticket-meta-val">Gate 4</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ticket-stub">
+        <div class="stub-header">BOARDING PASS</div>
+        <div class="stub-pax-name" id="stubPaxName">Mahin Rahman</div>
+        <div class="stub-route" id="stubRoute">DAC ➔ CXB</div>
+        <div class="stub-seat-number" id="stubSeat">12A</div>
+        <div class="stub-barcode-container">
+          <div class="simulated-barcode"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 30px;">
+      <button type="button" class="btn-primary" onclick="window.print()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+        <span>Print Boarding Pass</span>
+      </button>
+      <a href="/my-bookings" class="btn-secondary">View My Bookings</a>
+      <a href="/" class="btn-secondary">Book Another Flight</a>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- STATE 2: PAYMENT PENDING                                  -->
+  <!-- ========================================================= -->
+  <div id="stateView_payment_pending" class="status-state-panel" style="display: none;" role="status">
+    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
+      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">⏳</div>
+      <span class="dest-badge" style="background: rgba(234, 88, 12, 0.15); color: #ea580c; margin-bottom: 12px; display: inline-block;">
+        PAYMENT SETTLEMENT PENDING
+      </span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px;">Awaiting Payment Confirmation</h2>
+      <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
+        Your transaction is currently being processed by the banking network or mobile payment clearinghouse. Please do not close or refresh this browser window.
+      </p>
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: rgba(2, 132, 199, 0.08); padding: 10px 20px; border-radius: var(--radius-pill);">
+        <span class="spinner" style="width: 16px; height: 16px; border: 2px solid var(--accent-primary); border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></span>
+        <span style="font-size: 0.88rem; color: var(--accent-primary); font-weight: 600;">Reconciling gateway webhook callback...</span>
+      </div>
+      <div style="margin-top: 24px;">
+        <a href="/booking/payment" class="btn-secondary btn-sm">Return to Payment</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- STATE 3: TICKET PENDING                                   -->
+  <!-- ========================================================= -->
+  <div id="stateView_ticket_pending" class="status-state-panel" style="display: none;" role="status">
+    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
+      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">🔄</div>
+      <span class="dest-badge" style="background: rgba(2, 132, 199, 0.15); color: var(--accent-primary); margin-bottom: 12px; display: inline-block;">
+        PAYMENT CAPTURED &bull; AWAITING TICKET ISSUANCE
+      </span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px;">Issuing Official Airline E-Ticket</h2>
+      <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
+        Your payment was authorized successfully. The airline ticketing engine is finalizing seat assignment and generating your 13-digit IATA e-ticket document.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 14px;">
+        <button type="button" class="btn-primary btn-sm" onclick="location.reload()">Check Ticket Status</button>
+        <a href="/support" class="btn-secondary btn-sm">Contact Support</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- STATE 4: EXPIRED OFFER                                    -->
+  <!-- ========================================================= -->
+  <div id="stateView_expired" class="status-state-panel" style="display: none;" role="status">
+    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
+      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">⌛</div>
+      <span class="dest-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-bottom: 12px; display: inline-block;">
+        OFFER HOLD WINDOW EXPIRED
+      </span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px;">Reservation Session Expired</h2>
+      <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
+        The 15-minute guaranteed seat hold expired before checkout could be finalized. Fares and seat availability have been returned to public inventory.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 14px;">
+        <a href="/flights/search" class="btn-primary">Search Fresh Flights</a>
+        <a href="/" class="btn-secondary">Return to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- STATE 5: PROVIDER UNAVAILABLE (503/504)                   -->
+  <!-- ========================================================= -->
+  <div id="stateView_provider_unavailable" class="status-state-panel" style="display: none;" role="status">
+    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px; border: 2px solid #ef4444;">
+      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">📡</div>
+      <span class="dest-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-bottom: 12px; display: inline-block;">
+        PROVIDER SERVICE UNAVAILABLE (HTTP 504 GATEWAY TIMEOUT)
+      </span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px; color: #b91c1c;">Airline Reservation System Timeout</h2>
+      <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 16px auto; font-size: 0.92rem; line-height: 1.5;">
+        The external airline GDS/NDC inventory interface failed to respond within the expected threshold. No payment has been captured from your account.
+      </p>
+      <div style="background: rgba(239, 68, 68, 0.05); padding: 12px 18px; border-radius: var(--radius-sm); max-width: 460px; margin: 0 auto 20px auto; font-family: var(--font-mono); font-size: 0.8rem; color: #b91c1c;">
+        ERR_PROVIDER_GATEWAY_TIMEOUT (504): Downstream GDS connection timeout on PNR create.
+      </div>
+      <div style="display: flex; justify-content: center; gap: 14px;">
+        <a href="/booking/payment" class="btn-primary">Retry Transaction</a>
+        <a href="/support" class="btn-secondary">Report Provider Issue</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- STATE 6: BOOKING FAILED                                   -->
+  <!-- ========================================================= -->
+  <div id="stateView_failed" class="status-state-panel" style="display: none;" role="status">
+    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px; border: 2px solid #ef4444;">
+      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">❌</div>
+      <span class="dest-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-bottom: 12px; display: inline-block;">
+        TRANSACTION FAILED
+      </span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px; color: #b91c1c;">Booking Could Not Be Completed</h2>
+      <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
+        The selected seat or fare class was simultaneously taken by another traveler before booking finalization. If your card was debited, an automatic reversal has been triggered.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 14px;">
+        <a href="/flights/search" class="btn-primary">Find Alternative Flights</a>
+        <a href="/" class="btn-secondary">Return to Home</a>
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/flight_models.js"></script>
+<script src="/js/flight_fixtures.js"></script>
+<script src="/js/checkout_store.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const store = window.CheckoutStore ? window.CheckoutStore.instance : null;
+    const offer = store ? store.getOffer() : null;
+    const travellers = store ? store.getTravellers() : [];
+    const extras = store ? store.getExtras() : {};
+
+    // Check URL state param: e.g. ?state=ticket_pending
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialParamState = urlParams.get('state');
+
+    // Populate Boarding Pass details if available
+    if (offer) {
+      const seg = offer.segments[0];
+      const orig = seg.origin;
+      const dest = seg.destination;
+
+      const carrierNameEl = document.getElementById('ticketCarrierName');
+      const carrierIconEl = document.getElementById('ticketCarrierIcon');
+      const depCodeEl = document.getElementById('ticketDepCode');
+      const depCityEl = document.getElementById('ticketDepCity');
+      const depTimeEl = document.getElementById('ticketDepTime');
+      const arrCodeEl = document.getElementById('ticketArrCode');
+      const arrCityEl = document.getElementById('ticketArrCity');
+      const arrTimeEl = document.getElementById('ticketArrTime');
+      const durationEl = document.getElementById('ticketDurationText');
+      const cabinEl = document.getElementById('ticketCabinClassBadge');
+
+      if (carrierNameEl) carrierNameEl.textContent = `${seg.carrierName} • Flight ${seg.flightNumber}`;
+      if (carrierIconEl) carrierIconEl.textContent = seg.carrierLogo || '✈️';
+      if (depCodeEl) depCodeEl.textContent = orig.code;
+      if (depCityEl) depCityEl.textContent = orig.city;
+      if (depTimeEl) depTimeEl.textContent = seg.getFormattedDepartureTime();
+      if (arrCodeEl) arrCodeEl.textContent = dest.code;
+      if (arrCityEl) arrCityEl.textContent = dest.city;
+      if (arrTimeEl) arrTimeEl.textContent = seg.getFormattedArrivalTime();
+      if (durationEl) durationEl.textContent = `${seg.getFormattedDuration()} ${offer.isDirect() ? 'Non-Stop' : 'Connecting'}`;
+      if (cabinEl) cabinEl.textContent = `${seg.cabinClass} Class`;
+
+      // Stub
+      const stubRoute = document.getElementById('stubRoute');
+      if (stubRoute) stubRoute.textContent = `${orig.code} ➔ ${dest.code}`;
+    }
+
+    // Populate Passenger Name & Seat
+    if (travellers && travellers.length > 0) {
+      const p1 = travellers[0];
+      const fullName = `${p1.title || ''} ${p1.firstName || 'Mahin'} ${p1.lastName || 'Rahman'}`.trim();
+      const paxEl = document.getElementById('ticketPaxName');
+      const stubPax = document.getElementById('stubPaxName');
+      if (paxEl) paxEl.textContent = fullName;
+      if (stubPax) stubPax.textContent = fullName;
+    }
+
+    if (extras) {
+      const seatVal = extras.selectedSeat ? `${extras.selectedSeat}` : '12A (Window)';
+      const seatEl = document.getElementById('ticketSeat');
+      const stubSeat = document.getElementById('stubSeat');
+      if (seatEl) seatEl.textContent = seatVal;
+      if (stubSeat) stubSeat.textContent = seatVal;
+    }
+
+    // State Switcher Function
+    function switchState(stateName) {
+      // Hide all states
+      document.querySelectorAll('.status-state-panel').forEach(p => p.style.display = 'none');
+      // Show selected state
+      const target = document.getElementById(`stateView_${stateName}`);
+      if (target) {
+        target.style.display = 'block';
+      }
+
+      // Update active button
+      document.querySelectorAll('.state-btn').forEach(btn => {
+        if (btn.dataset.state === stateName) {
+          btn.classList.add('active');
+          btn.style.background = 'var(--accent-primary)';
+          btn.style.color = '#fff';
+        } else {
+          btn.classList.remove('active');
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      });
+    }
+
+    // Attach click events to simulation buttons
+    document.querySelectorAll('.state-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetState = btn.dataset.state;
+        switchState(targetState);
+      });
+    });
+
+    // If query param specifies a state, activate it; otherwise default to confirmed
+    if (initialParamState && document.getElementById(`stateView_${initialParamState}`)) {
+      switchState(initialParamState);
+    } else {
+      switchState('confirmed');
+    }
+  });
+</script>
+<style>
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
 {% endblock %}

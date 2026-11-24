@@ -5,7 +5,7 @@
 {% import "components/demo_notice.html" as dn %}
 
 {% block title %}Flight Extras & Ancillaries — FLY{% endblock %}
-{% block meta_description %}Customize your flight with baggage upgrades, meal choices, and preferred seat options.{% endblock %}
+{% block meta_description %}Customize your journey with seat selection, baggage allowance upgrades, and gourmet meal preferences.{% endblock %}
 
 {% block breadcrumbs %}
 {{ bc.render_breadcrumb([
@@ -21,68 +21,65 @@
   <!-- Stepper: Step 3: Travellers Active (Steps 1 & 2 complete) -->
   {{ st.render_booking_stepper(current_step='travellers', completed_steps=['search', 'flight']) }}
 
-  {{ dn.render_demo_notice('Airline Ancillaries & Inflight Service Selection') }}
+  {{ dn.render_demo_notice('Airline Ancillary Inventory & Fare Rules Verification') }}
 
   {{ ph.render_page_heading(
     title='Optional Extras & Services',
-    subtitle='Enhance your flight with additional baggage allowance, gourmet meals, and travel insurance',
-    eyebrow='ANCILLARY SELECTION',
-    badge='Optional Upgrades'
+    subtitle='Select seat assignments, prepaid baggage upgrades, and catering options supported by your carrier',
+    eyebrow='ANCILLARY REVALIDATION &bull; PROVIDER CAPABILITY FILTER',
+    badge='Dynamic Carrier Compatibility'
   ) }}
 
   <div class="flight-details-layout">
     <div class="details-main-col">
-      <form action="/booking/review" method="GET" class="card glassmorphism" style="padding: 28px;">
-        <!-- Option 1: Extra Baggage -->
-        <div class="benefit-card" style="margin-bottom: 18px; padding: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
-            <div>
-              <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">🧳 Additional Check-in Baggage</div>
-              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">20 kg is already included with your ticket. Need more luggage capacity?</p>
-            </div>
-            <span class="dest-fare-pill">+৳1,200 / 10kg</span>
-          </div>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
-            <input type="checkbox" name="extraBaggage" value="10kg">
-            <span>Add +10 kg Prepaid Baggage (+৳1,200)</span>
-          </label>
+      <form id="extrasForm">
+        <!-- 1. SEAT SELECTION SECTION -->
+        <div id="seatOptionContainer" class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+          <!-- Dynamically populated: either active interactive seat selector or unsupported warning -->
         </div>
 
-        <!-- Option 2: Meal Preference -->
-        <div class="benefit-card" style="margin-bottom: 18px; padding: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
-            <div>
-              <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">🍱 Inflight Gourmet Meal Selection</div>
-              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">Standard snack box is complimentary. Upgrade to a hot meal platter.</p>
-            </div>
-            <span class="dest-fare-pill">+৳650</span>
-          </div>
-          <select name="mealOption" class="form-field-select" style="max-width: 320px;">
-            <option value="standard">Standard Complimentary Snack Platter (Included)</option>
-            <option value="hot_biryani">Hyderabadi Chicken Biryani Platter (+৳650)</option>
-            <option value="vegetarian">Special Vegetarian Gourmet Box (+৳650)</option>
-            <option value="fruit">Seasonal Fresh Fruit Platter (+৳450)</option>
-          </select>
+        <!-- 2. EXTRA BAGGAGE SECTION -->
+        <div id="baggageOptionContainer" class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+          <!-- Dynamically populated: either active upgrade choices or unsupported warning -->
         </div>
 
-        <!-- Option 3: Travel Protection Insurance -->
-        <div class="benefit-card" style="margin-bottom: 24px; padding: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
-            <div>
-              <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">🛡️ Comprehensive Travel Protection</div>
-              <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 8px;">Covers baggage loss, flight delays (>2h), and emergency medical assistance.</p>
-            </div>
-            <span class="dest-fare-pill">+৳450</span>
-          </div>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
-            <input type="checkbox" name="insurance" value="standard" checked>
-            <span>Add Comprehensive Travel Insurance Protection (+৳450)</span>
-          </label>
+        <!-- 3. INFLIGHT MEAL SECTION -->
+        <div id="mealOptionContainer" class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+          <!-- Dynamically populated: either gourmet menu or unsupported warning -->
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
-          <a href="/booking/travellers" class="btn-secondary">Back to Travellers</a>
-          <button type="submit" class="btn-primary">
+        <!-- 4. TRAVEL PROTECTION INSURANCE SECTION -->
+        <div class="card glassmorphism" style="padding: 24px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">🛡️</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Comprehensive Flight Protection Insurance</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                Underwritten by Shadhin General Insurance. Protects against trip cancellation, baggage delay (>6h: ৳5,000), flight delay (>2h: ৳3,000), and emergency medical assistance.
+              </p>
+            </div>
+            <span class="dest-fare-pill">+৳450 / pax</span>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 14px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.92rem; font-weight: 600; color: var(--text-main);">
+              <input type="checkbox" id="chkInsurance" name="chkInsurance" checked style="width: 18px; height: 18px; cursor: pointer;">
+              <span>Add Comprehensive Travel Insurance Protection (+৳450)</span>
+            </label>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">
+            Policy terms apply. 100% refund of insurance fee if flight is cancelled by airline prior to departure.
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+          <a href="/booking/travellers" class="btn-secondary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <span>Back to Travellers</span>
+          </a>
+          <button type="submit" id="btnContinueReview" class="btn-primary">
             <span>Continue to Booking Review</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </button>
@@ -90,29 +87,393 @@
       </form>
     </div>
 
-    <!-- Right: Summary Sidebar -->
+    <!-- Right: Sticky Fare Breakdown Summary -->
     <aside class="details-side-col">
       <div class="card glassmorphism" style="padding: 24px; position: sticky; top: 90px;">
-        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Booking Summary</h4>
-        <div style="font-weight: 600; margin-bottom: 4px;">Dhaka (DAC) ➔ Cox's Bazar (CXB)</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Primary: Mahin Rahman</div>
-        
+        <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;">Fare &amp; Extras Summary</h4>
+        <div id="sideExtrasRoute" style="font-weight: 600; margin-bottom: 4px;">Dhaka (DAC) ➔ Cox's Bazar (CXB)</div>
+        <div id="sideExtrasFlight" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">Flight BG-433 &bull; Non-Stop</div>
+
         <div class="fare-breakdown-table" style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
           <div class="fare-row">
-            <span>Flight Fare</span>
-            <span class="fare-val">৳4,500</span>
+            <span>Base Airfare</span>
+            <span class="fare-val" id="sideExtrasBase">৳3,600</span>
           </div>
           <div class="fare-row">
+            <span>Taxes &amp; Fees</span>
+            <span class="fare-val" id="sideExtrasTaxes">৳900</span>
+          </div>
+          <div class="fare-row" id="rowSideSeat" style="display: none;">
+            <span>Preferred Seat</span>
+            <span class="fare-val" id="sideExtrasSeat">৳0</span>
+          </div>
+          <div class="fare-row" id="rowSideBaggage" style="display: none;">
+            <span>Prepaid Baggage</span>
+            <span class="fare-val" id="sideExtrasBaggage">৳0</span>
+          </div>
+          <div class="fare-row" id="rowSideMeal" style="display: none;">
+            <span>Gourmet Catering</span>
+            <span class="fare-val" id="sideExtrasMeal">৳0</span>
+          </div>
+          <div class="fare-row" id="rowSideInsurance">
             <span>Travel Insurance</span>
-            <span class="fare-val">৳450</span>
+            <span class="fare-val" id="sideExtrasInsurance">৳450</span>
           </div>
           <div class="fare-row total">
-            <span>Estimated Total</span>
-            <span class="fare-val">৳4,950</span>
+            <span>Total Payable</span>
+            <span class="fare-val" id="sideExtrasGrandTotal">৳4,950</span>
           </div>
+        </div>
+
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 12px; line-height: 1.4;">
+          Step 3 of 6 &bull; Real-time pricing reflects only provider-supported ancillary services.
         </div>
       </div>
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/flight_models.js"></script>
+<script src="/js/flight_fixtures.js"></script>
+<script src="/js/checkout_store.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const store = window.CheckoutStore ? window.CheckoutStore.instance : null;
+    if (!store) return;
+
+    const offer = store.getOffer();
+    const currentExtras = store.getExtras();
+
+    // Check provider capability flags
+    const supported = (offer && offer.supportedExtras) ? offer.supportedExtras : {
+      seatSelection: true,
+      extraBaggage: true,
+      mealSelection: true
+    };
+
+    // Update Route Summary in sidebar
+    if (offer) {
+      const orig = offer.getOrigin();
+      const dest = offer.getDestination();
+      const sideRoute = document.getElementById('sideExtrasRoute');
+      const sideFlight = document.getElementById('sideExtrasFlight');
+      if (sideRoute) sideRoute.textContent = `${orig.city} (${orig.code}) ➔ ${dest.city} (${dest.code})`;
+      if (sideFlight) {
+        const seg = offer.segments[0];
+        sideFlight.textContent = `${seg.carrierName} ${seg.flightNumber} &bull; ${seg.cabinClass}`;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 1. RENDER SEAT CONTAINER (SUPPORTED vs UNAVAILABLE)
+    // -------------------------------------------------------------
+    const seatContainer = document.getElementById('seatOptionContainer');
+    if (seatContainer) {
+      if (supported.seatSelection) {
+        seatContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">💺</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Seat Selection &amp; Advance Allocation</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                Select your preferred window, aisle, or extra legroom seat now to guarantee seating together.
+              </p>
+            </div>
+            <span class="dest-badge">Supported</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <label class="benefit-card seat-choice-card" style="padding: 14px; cursor: pointer; border: 2px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio" name="seatRadio" value="12A" ${currentExtras.selectedSeat === '12A' || !currentExtras.selectedSeat ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.92rem;">Seat 12A (Window)</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary);">Row 12 &bull; Standard Wing View</div>
+                </div>
+              </div>
+              <span class="dest-fare-pill" style="margin-top: 8px; display: inline-block;">Included Free</span>
+            </label>
+
+            <label class="benefit-card seat-choice-card" style="padding: 14px; cursor: pointer; border: 2px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio" name="seatRadio" value="12B" ${currentExtras.selectedSeat === '12B' ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.92rem;">Seat 12B (Aisle)</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary);">Row 12 &bull; Easy Cabin Access</div>
+                </div>
+              </div>
+              <span class="dest-fare-pill" style="margin-top: 8px; display: inline-block;">Included Free</span>
+            </label>
+
+            <label class="benefit-card seat-choice-card" style="padding: 14px; cursor: pointer; border: 2px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio" name="seatRadio" value="1A" ${currentExtras.selectedSeat === '1A' ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.92rem;">Seat 1A (Extra Legroom)</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary);">Row 1 &bull; Front Row Bulkhead</div>
+                </div>
+              </div>
+              <span class="dest-fare-pill" style="margin-top: 8px; display: inline-block; background: rgba(2, 132, 199, 0.15); color: var(--accent-primary);">+৳800 Upgrade</span>
+            </label>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">
+            Seat selections are locked instantly for 15 minutes during this checkout flow.
+          </div>
+        `;
+      } else {
+        // Explicitly UNSUPPORTED by carrier
+        seatContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">💺</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--text-muted);">Advance Seat Selection: Not Offered by Carrier</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                Advance seat selection is not supported by this airline or booking class. Standard seats will be allocated automatically free of charge at airport gate check-in.
+              </p>
+            </div>
+            <span class="dest-badge" style="background: rgba(148, 163, 184, 0.2); color: var(--text-muted);">Not Available</span>
+          </div>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 2. RENDER BAGGAGE CONTAINER (SUPPORTED vs UNAVAILABLE)
+    // -------------------------------------------------------------
+    const baggageContainer = document.getElementById('baggageOptionContainer');
+    if (baggageContainer) {
+      if (supported.extraBaggage) {
+        baggageContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">🧳</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Prepaid Excess Baggage Allowance</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                Standard ticket already includes ${offer ? offer.baggage.checkedWeightKg : 20} kg checked luggage. Save up to 40% vs airport counter rates by pre-booking extra capacity.
+              </p>
+            </div>
+            <span class="dest-badge">Prepaid Discount</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+            <label class="benefit-card" style="padding: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio" name="baggageRadio" value="none" ${!currentExtras.extraBaggage ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 600; font-size: 0.9rem;">No Extra Baggage</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary);">Standard allowance is sufficient</div>
+                </div>
+              </div>
+              <span class="dest-fare-pill">৳0</span>
+            </label>
+
+            <label class="benefit-card" style="padding: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio" name="baggageRadio" value="10kg" ${currentExtras.extraBaggage === '10kg' ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 600; font-size: 0.9rem;">+10 kg Extra Checked Baggage</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary);">Prepaid luggage allowance upgrade</div>
+                </div>
+              </div>
+              <span class="dest-fare-pill">+৳1,200</span>
+            </label>
+
+            <label class="benefit-card" style="padding: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="radio" name="baggageRadio" value="20kg" ${currentExtras.extraBaggage === '20kg' ? 'checked' : ''}>
+                <div>
+                  <div style="font-weight: 600; font-size: 0.9rem;">+20 kg Extra Checked Baggage</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary);">Maximum allowance upgrade per passenger</div>
+                </div>
+              </div>
+              <span class="dest-fare-pill">+৳2,200</span>
+            </label>
+          </div>
+        `;
+      } else {
+        // Explicitly UNSUPPORTED by carrier
+        baggageContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">🧳</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--text-muted);">Prepaid Baggage Upgrade: Not Offered on this Fare</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                The selected fare class (Cabin-Only Light Fare) does not permit advance excess baggage purchases. Any additional baggage must be settled directly at the airport check-in counter at standard airport tariffs.
+              </p>
+            </div>
+            <span class="dest-badge" style="background: rgba(148, 163, 184, 0.2); color: var(--text-muted);">Hand Baggage Only</span>
+          </div>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. RENDER MEAL CONTAINER (SUPPORTED vs UNAVAILABLE)
+    // -------------------------------------------------------------
+    const mealContainer = document.getElementById('mealOptionContainer');
+    if (mealContainer) {
+      if (supported.mealSelection) {
+        mealContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">🍱</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">Inflight Gourmet Meal Selection</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                Complimentary snack box and beverage is included. You may upgrade to a hot culinary chef platter.
+              </p>
+            </div>
+            <span class="dest-badge">Catering Active</span>
+          </div>
+
+          <div class="form-field-group" style="max-width: 480px; margin-bottom: 12px;">
+            <label for="selectMeal" class="form-field-label">Select Meal Platter</label>
+            <select id="selectMeal" name="selectMeal" class="form-field-select">
+              <option value="standard" ${currentExtras.mealOption === 'standard' ? 'selected' : ''}>Standard Complimentary Snack &amp; Beverage (Included)</option>
+              <option value="hot_biryani" ${currentExtras.mealOption === 'hot_biryani' ? 'selected' : ''}>Dhaka Kacchi Biryani &amp; Dessert Box (+৳650)</option>
+              <option value="vegetarian" ${currentExtras.mealOption === 'vegetarian' ? 'selected' : ''}>Special Vegetarian Gourmet Thali (+৳650)</option>
+              <option value="fruit" ${currentExtras.mealOption === 'fruit' ? 'selected' : ''}>Seasonal Fresh Fruit &amp; Nut Platter (+৳450)</option>
+            </select>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">
+            All inflight meals are 100% Halal certified and prepared under strict hygiene standards.
+          </div>
+        `;
+      } else {
+        // Explicitly UNSUPPORTED by carrier
+        mealContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">🍱</span>
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--text-muted);">Inflight Meal Upgrades: Not Offered on this Route</h3>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 6px 0 0 0;">
+                Pre-ordered hot meals are not offered on this regional turboprop / short flight. Standard complimentary beverage and light refreshment will be served in flight.
+              </p>
+            </div>
+            <span class="dest-badge" style="background: rgba(148, 163, 184, 0.2); color: var(--text-muted);">Snack Only</span>
+          </div>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // LIVE PRICING RECALCULATION & SIDEBAR SYNC
+    // -------------------------------------------------------------
+    function updateSidebarPrices() {
+      // Gather inputs
+      const seatRadio = document.querySelector('input[name="seatRadio"]:checked');
+      const baggageRadio = document.querySelector('input[name="baggageRadio"]:checked');
+      const mealSelect = document.getElementById('selectMeal');
+      const insuranceChk = document.getElementById('chkInsurance');
+
+      const selectedSeat = seatRadio ? seatRadio.value : null;
+      let seatFee = 0;
+      if (selectedSeat === '1A') seatFee = 800;
+
+      const extraBaggage = (baggageRadio && baggageRadio.value !== 'none') ? baggageRadio.value : null;
+      const mealOption = mealSelect ? mealSelect.value : 'standard';
+      const insurance = insuranceChk ? insuranceChk.checked : false;
+
+      // Update store
+      store.setExtras({
+        selectedSeat,
+        seatFee,
+        extraBaggage,
+        mealOption,
+        insurance
+      });
+
+      const breakdown = store.calculateBreakdown();
+      const money = window.CheckoutStore.formatMoney;
+
+      // Update elements
+      const baseEl = document.getElementById('sideExtrasBase');
+      const taxEl = document.getElementById('sideExtrasTaxes');
+      const seatEl = document.getElementById('sideExtrasSeat');
+      const rowSeat = document.getElementById('rowSideSeat');
+      const bagEl = document.getElementById('sideExtrasBaggage');
+      const rowBag = document.getElementById('rowSideBaggage');
+      const mealEl = document.getElementById('sideExtrasMeal');
+      const rowMeal = document.getElementById('rowSideMeal');
+      const insEl = document.getElementById('sideExtrasInsurance');
+      const rowIns = document.getElementById('rowSideInsurance');
+      const totalEl = document.getElementById('sideExtrasGrandTotal');
+
+      if (baseEl) baseEl.textContent = money(breakdown.totalBaseFare, breakdown.currency);
+      if (taxEl) taxEl.textContent = money(breakdown.totalTaxes, breakdown.currency);
+
+      if (rowSeat && seatEl) {
+        if (breakdown.seatFee > 0) {
+          rowSeat.style.display = 'flex';
+          seatEl.textContent = money(breakdown.seatFee, breakdown.currency);
+        } else {
+          rowSeat.style.display = 'none';
+        }
+      }
+
+      if (rowBag && bagEl) {
+        if (breakdown.baggageFee > 0) {
+          rowBag.style.display = 'flex';
+          bagEl.textContent = money(breakdown.baggageFee, breakdown.currency);
+        } else {
+          rowBag.style.display = 'none';
+        }
+      }
+
+      if (rowMeal && mealEl) {
+        if (breakdown.mealFee > 0) {
+          rowMeal.style.display = 'flex';
+          mealEl.textContent = money(breakdown.mealFee, breakdown.currency);
+        } else {
+          rowMeal.style.display = 'none';
+        }
+      }
+
+      if (rowIns && insEl) {
+        if (breakdown.insuranceFee > 0) {
+          rowIns.style.display = 'flex';
+          insEl.textContent = money(breakdown.insuranceFee, breakdown.currency);
+        } else {
+          rowIns.style.display = 'none';
+        }
+      }
+
+      if (totalEl) totalEl.textContent = money(breakdown.grandTotal, breakdown.currency);
+    }
+
+    // Attach listeners for live updates
+    document.querySelectorAll('input[name="seatRadio"]').forEach(r => r.addEventListener('change', updateSidebarPrices));
+    document.querySelectorAll('input[name="baggageRadio"]').forEach(r => r.addEventListener('change', updateSidebarPrices));
+    const mealSelect = document.getElementById('selectMeal');
+    if (mealSelect) mealSelect.addEventListener('change', updateSidebarPrices);
+    const insChk = document.getElementById('chkInsurance');
+    if (insChk) insChk.addEventListener('change', updateSidebarPrices);
+
+    // Initial calculation
+    updateSidebarPrices();
+
+    // Form submit
+    const extrasForm = document.getElementById('extrasForm');
+    if (extrasForm) {
+      extrasForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        updateSidebarPrices();
+        window.location.href = '/booking/review';
+      });
+    }
+  });
+</script>
 {% endblock %}

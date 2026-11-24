@@ -74,6 +74,11 @@
         checkedPieces: 1,
         checkedWeightKg: 20
       },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
+      },
       fareConditions: {
         refundable: true,
         refundableWithFee: false,
@@ -123,6 +128,11 @@
         cabinWeightKg: 7,
         checkedPieces: 1,
         checkedWeightKg: 20
+      },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
       },
       fareConditions: {
         refundable: false,
@@ -174,6 +184,11 @@
         checkedPieces: 1,
         checkedWeightKg: 20
       },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: false // Inflight meal selection not offered on regional ATR flight
+      },
       fareConditions: {
         refundable: false,
         refundableWithFee: true,
@@ -223,6 +238,11 @@
         cabinWeightKg: 7,
         checkedPieces: 0,
         checkedWeightKg: 0 // Cabin baggage only
+      },
+      supportedExtras: {
+        seatSelection: false, // Provider does not support advance seat reservation on light fare
+        extraBaggage: false,  // Hand luggage only fare - extra baggage upgrades not permitted
+        mealSelection: false // No meal service offered
       },
       fareConditions: {
         refundable: false,
@@ -292,6 +312,11 @@
         checkedPieces: 1,
         checkedWeightKg: 20
       },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
+      },
       fareConditions: {
         refundable: true,
         refundableWithFee: false,
@@ -341,6 +366,11 @@
         cabinWeightKg: 7,
         checkedPieces: 2,
         checkedWeightKg: 30
+      },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
       },
       fareConditions: {
         refundable: true,
@@ -392,6 +422,11 @@
         checkedPieces: 1,
         checkedWeightKg: 20
       },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
+      },
       fareConditions: {
         refundable: false,
         refundableWithFee: true,
@@ -442,6 +477,11 @@
         checkedPieces: 2,
         checkedWeightKg: 30
       },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
+      },
       fareConditions: {
         refundable: true,
         refundableWithFee: false,
@@ -487,6 +527,11 @@
         }
       ],
       baggage: { cabinPieces: 1, cabinWeightKg: 7, checkedPieces: 1, checkedWeightKg: 20 },
+      supportedExtras: {
+        seatSelection: true,
+        extraBaggage: true,
+        mealSelection: true
+      },
       fareConditions: { refundable: false, fareFamily: 'Expired Fare' },
       priceBreakdown: { currency: 'BDT', totalAmount: 3800 }
     }
