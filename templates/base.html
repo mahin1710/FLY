@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}FLY — Premium International Flight Booking{% endblock %}</title>
-  <meta name="description" content="{% block meta_description %}Experience seamless luxury flight booking, real-time interactive seat maps, airline fleet management, and instant digital boarding passes with FLY.{% endblock %}">
+  <title>{% block title %}FLY — Flights &amp; Travel Booking{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Search and book flights across Bangladesh and international routes with clear pricing and seat selection on FLY.{% endblock %}">
   <meta name="author" content="mahin1710">
   
   <link rel="icon" type="image/svg+xml" href="/images/fly_icon.svg">
@@ -60,8 +60,7 @@
       <div class="header-actions">
         <!-- Currency & Language Indicator -->
         <div class="header-locale-pill" title="Currency: BDT (৳) • Language: English">
-          <span class="locale-flag" aria-hidden="true">🇧🇩</span>
-          <span class="locale-text">BDT (৳) • EN</span>
+          <span class="locale-text">BDT (৳) · EN</span>
         </div>
 
         <!-- Dark/Light Theme Switcher -->
@@ -121,23 +120,23 @@
     <div class="mobile-nav-body">
       <div class="mobile-nav-list">
         <a href="/" class="mobile-nav-link {% if request.path == '/' %}active{% endif %}">
-          <span class="mobile-nav-icon">🏠</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           <span>Home</span>
         </a>
         <a href="/flights/search" class="mobile-nav-link {% if request.path.startswith('/flights') %}active{% endif %}">
-          <span class="mobile-nav-icon">✈️</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
           <span>Search Flights</span>
         </a>
         <a href="/manage-booking" class="mobile-nav-link {% if request.path == '/manage-booking' %}active{% endif %}">
-          <span class="mobile-nav-icon">📋</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Manage Booking</span>
         </a>
         <a href="/my-bookings" class="mobile-nav-link {% if request.path == '/my-bookings' %}active{% endif %}">
-          <span class="mobile-nav-icon">🎟️</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span>My Bookings</span>
         </a>
         <a href="/support" class="mobile-nav-link {% if request.path == '/support' %}active{% endif %}">
-          <span class="mobile-nav-icon">📞</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>Help &amp; Support</span>
         </a>
       </div>
@@ -150,10 +149,10 @@
 
       <div class="mobile-nav-meta">
         <div class="mobile-locale-indicator">
-          <span>🇧🇩 Currency: BDT (৳) &bull; Language: English</span>
+          <span>Currency: BDT (৳) &bull; Language: English</span>
         </div>
         <div class="mobile-compliance-indicator">
-          <span>🛡️ CAAB &amp; IATA Standard Compliant</span>
+          <span>CAAB &amp; IATA Standard Aligned</span>
         </div>
       </div>
     </div>
@@ -186,10 +185,10 @@
             </div>
           </a>
           <p class="footer-brand-desc">
-            International-standard flight booking platform delivering total fare transparency, atomic 15-minute seat guarantees, and strict customer privacy.
+            Direct and regional flight reservations across Bangladesh and South Asia with upfront pricing, confirmed seat holds, and customer privacy.
           </p>
           <div class="footer-compliance-tag">
-            <span>🛡️ CAAB &amp; IATA Standard Compliant Architecture</span>
+            <span>CAAB &amp; IATA Standard Aligned</span>
           </div>
         </div>
 

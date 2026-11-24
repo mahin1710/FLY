@@ -22,10 +22,10 @@
   {{ dn.render_demo_notice('Simulated Provider Booking State Machine (GDS/NDC Handshake Boundary)') }}
 
   <!-- Interactive State Simulation Bar (For QA, Reviewers, and Provider Lifecycle Inspection) -->
-  <div class="card glassmorphism" style="padding: 14px 20px; margin-bottom: 24px; background: rgba(15, 23, 42, 0.03); border: 1px dashed var(--accent-primary);">
+  <div class="card" style="padding: 14px 20px; margin-bottom: 24px; background: rgba(15, 23, 42, 0.03); border: 1px dashed var(--accent-primary);">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <div>
-        <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">🧪 Lifecycle State Simulator:</span>
+        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">Lifecycle Simulator:</span>
         <span style="font-size: 0.78rem; color: var(--text-secondary); margin-left: 6px;">Test all provider states</span>
       </div>
       <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="stateSimulatorButtons">
@@ -43,17 +43,19 @@
   <!-- STATE 1: CONFIRMED (DEMO COMPLETE)                        -->
   <!-- ========================================================= -->
   <div id="stateView_confirmed" class="status-state-panel" role="status">
-    <div class="card glassmorphism" style="text-align: center; padding: 36px 24px; margin-bottom: 24px;">
-      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">🎉</div>
+    <div class="card" style="text-align: center; padding: 36px 24px; margin-bottom: 24px;">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: var(--accent-teal); display: flex; align-items: center; justify-content: center;" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
       <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 10px; background: rgba(16, 185, 129, 0.15); color: var(--accent-teal);">
-        DEMO RESERVATION SIMULATED
+        Demo reservation simulated
       </div>
       <h1 style="font-family: var(--font-heading); font-size: 2.1rem; margin-bottom: 8px;">
-        Your Booking is Confirmed! (Demo Mode)
+        Your booking is confirmed (Demo mode)
       </h1>
       <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 18px auto; font-size: 0.92rem; line-height: 1.5;">
-        Your reservation request was successfully captured in our local workflow engine.
-        Live airline ticketing and GDS/NDC PNR assignment will be activated upon backend provider connection.
+        Your reservation request was captured in the local workflow engine.
+        Live airline ticketing and GDS/NDC PNR assignment will activate upon backend provider connection.
       </p>
 
       <!-- Reference & PNR / E-Ticket Integrity Grid -->
@@ -79,11 +81,13 @@
     </div>
 
     <!-- Digital Boarding Pass Ticket Component -->
-    <div class="boarding-pass-card glassmorphism" style="margin-bottom: 24px;">
+    <div class="boarding-pass-card" style="margin-bottom: 24px;">
       <div class="ticket-main-section">
         <div class="ticket-header-strip">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span id="ticketCarrierIcon">✈️</span>
+            <span id="ticketCarrierIcon">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+            </span>
             <strong id="ticketCarrierName">Biman Bangladesh Airlines &bull; Flight BG-433</strong>
           </div>
           <span id="ticketCabinClassBadge" class="ticket-class-badge">Economy Class</span>
@@ -175,10 +179,12 @@
   <!-- STATE 3: TICKET PENDING                                   -->
   <!-- ========================================================= -->
   <div id="stateView_ticket_pending" class="status-state-panel" style="display: none;" role="status">
-    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
-      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">🔄</div>
+    <div class="card" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(2, 132, 199, 0.12); color: var(--accent-primary); display: flex; align-items: center; justify-content: center;" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
       <span class="dest-badge" style="background: rgba(2, 132, 199, 0.15); color: var(--accent-primary); margin-bottom: 12px; display: inline-block;">
-        PAYMENT CAPTURED &bull; AWAITING TICKET ISSUANCE
+        Payment captured &bull; Awaiting ticket issuance
       </span>
       <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px;">Issuing Official Airline E-Ticket</h2>
       <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
@@ -195,10 +201,12 @@
   <!-- STATE 4: EXPIRED OFFER                                    -->
   <!-- ========================================================= -->
   <div id="stateView_expired" class="status-state-panel" style="display: none;" role="status">
-    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
-      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">⌛</div>
+    <div class="card" style="text-align: center; padding: 40px 24px; margin-bottom: 24px;">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center;" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
       <span class="dest-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-bottom: 12px; display: inline-block;">
-        OFFER HOLD WINDOW EXPIRED
+        Offer hold window expired
       </span>
       <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px;">Reservation Session Expired</h2>
       <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
@@ -215,12 +223,14 @@
   <!-- STATE 5: PROVIDER UNAVAILABLE (503/504)                   -->
   <!-- ========================================================= -->
   <div id="stateView_provider_unavailable" class="status-state-panel" style="display: none;" role="status">
-    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px; border: 2px solid #ef4444;">
-      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">📡</div>
+    <div class="card" style="text-align: center; padding: 40px 24px; margin-bottom: 24px; border: 1px solid var(--border-medium);">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center;" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
       <span class="dest-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-bottom: 12px; display: inline-block;">
-        PROVIDER SERVICE UNAVAILABLE (HTTP 504 GATEWAY TIMEOUT)
+        Provider timeout (504)
       </span>
-      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px; color: #b91c1c;">Airline Reservation System Timeout</h2>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px; color: var(--text-main);">Airline Reservation System Timeout</h2>
       <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 16px auto; font-size: 0.92rem; line-height: 1.5;">
         The external airline GDS/NDC inventory interface failed to respond within the expected threshold. No payment has been captured from your account.
       </p>
@@ -238,12 +248,14 @@
   <!-- STATE 6: BOOKING FAILED                                   -->
   <!-- ========================================================= -->
   <div id="stateView_failed" class="status-state-panel" style="display: none;" role="status">
-    <div class="card glassmorphism" style="text-align: center; padding: 40px 24px; margin-bottom: 24px; border: 2px solid #ef4444;">
-      <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">❌</div>
+    <div class="card" style="text-align: center; padding: 40px 24px; margin-bottom: 24px; border: 1px solid var(--border-medium);">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px auto; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center;" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
       <span class="dest-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; margin-bottom: 12px; display: inline-block;">
-        TRANSACTION FAILED
+        Transaction failed
       </span>
-      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px; color: #b91c1c;">Booking Could Not Be Completed</h2>
+      <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 8px; color: var(--text-main);">Booking Could Not Be Completed</h2>
       <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.92rem; line-height: 1.5;">
         The selected seat or fare class was simultaneously taken by another traveler before booking finalization. If your card was debited, an automatic reversal has been triggered.
       </p>

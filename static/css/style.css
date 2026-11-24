@@ -56,7 +56,7 @@
   --accent-gold-light: rgba(197, 164, 109, 0.12);
   --accent-gradient: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
   --accent-gold-gradient: linear-gradient(135deg, #C5A46D 0%, #D9C39A 100%);
-  --accent-glow: rgba(2, 132, 199, 0.2);
+  --accent-glow: transparent;
 
   --badge-bg: rgba(2, 132, 199, 0.08);
   --badge-text: #0284C7;
@@ -75,14 +75,14 @@
   --seat-taken: #0F172A;         /* Deep Midnight Navy */
   --seat-taken-border: #1E293B;
   --seat-selected: #0284C7;      /* Restrained Blue */
-  --seat-selected-glow: rgba(2, 132, 199, 0.4);
+  --seat-selected-glow: transparent;
   --seat-held: #D97706;          /* Amber */
   --seat-held-border: #B45309;
 
   --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
-  --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-gold: 0 4px 20px rgba(197, 164, 109, 0.25);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-gold: 0 1px 3px rgba(15, 23, 42, 0.08);
 
   --ticket-bg: #FFFFFF;
   --ticket-border: #E2E8F0;
@@ -120,7 +120,7 @@
   --accent-gold-light: rgba(197, 164, 109, 0.2);
   --accent-gradient: linear-gradient(135deg, #17283B 0%, #1D3147 100%);
   --accent-gold-gradient: linear-gradient(135deg, #C5A46D 0%, #D9C39A 100%);
-  --accent-glow: rgba(197, 164, 109, 0.3);
+  --accent-glow: transparent;
 
   --badge-bg: rgba(197, 164, 109, 0.15);
   --badge-text: #D9C39A;
@@ -139,14 +139,14 @@
   --seat-taken: #0B141F;
   --seat-taken-border: #142232;
   --seat-selected: #C5A46D;
-  --seat-selected-glow: rgba(197, 164, 109, 0.5);
+  --seat-selected-glow: transparent;
   --seat-held: #E09F3E;
   --seat-held-border: #C88424;
 
-  --shadow-sm: 0 2px 6px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
-  --shadow-gold: 0 4px 20px rgba(197, 164, 109, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 24px rgba(0,0,0,0.35);
+  --shadow-gold: 0 2px 8px rgba(0,0,0,0.25);
 
   --ticket-bg: #17283B;
   --ticket-border: rgba(255, 255, 255, 0.12);
@@ -214,21 +214,18 @@ input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   UTILITIES & GLASSMORPHISM
+   UTILITIES & SURFACE CARDS
    -------------------------------------------------------------------------- */
 .glassmorphism {
   background: var(--bg-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .gradient-text {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-main);
+  font-weight: 700;
 }
 
 .w-100 { width: 100%; }
@@ -241,11 +238,11 @@ input, select, textarea {
   gap: 8px;
   background: var(--accent-gold);
   color: #101D2C;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.92rem;
   padding: 10px 22px;
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 14px rgba(197, 164, 109, 0.35);
+  box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-gold);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -255,7 +252,7 @@ input, select, textarea {
   background: var(--accent-gold-hover);
   color: #101D2C;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(197, 164, 109, 0.45);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -372,8 +369,6 @@ input, select, textarea {
   top: 0;
   z-index: 1000;
   background: var(--bg-surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-subtle);
   transition: background-color var(--transition-normal);
 }
@@ -1739,12 +1734,10 @@ input, select, textarea {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: #0F172A;
   color: #FFFFFF;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -5136,23 +5129,12 @@ input, select, textarea {
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface);
   box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   position: relative;
   overflow: hidden;
 }
 
 .auth-page-card::before {
-  content: '';
-  position: absolute;
-  top: -120px;
-  right: -120px;
-  width: 260px;
-  height: 260px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .auth-page-header {
@@ -5166,13 +5148,12 @@ input, select, textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(197, 164, 109, 0.25) 0%, transparent 70%);
+  background: var(--bg-surface-hover);
   margin-bottom: 14px;
-  box-shadow: 0 0 25px rgba(197, 164, 109, 0.35);
-  border: 1px solid rgba(197, 164, 109, 0.3);
+  border: 1px solid var(--border-subtle);
 }
 
 .auth-page-logo-img {
@@ -5537,10 +5518,10 @@ input, select, textarea {
 
 .seat-btn.selected {
   background: #C5A46D !important;
-  border-color: #FFFFFF !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 0 14px rgba(197, 164, 109, 0.65) !important;
-  transform: scale(1.1) !important;
+  border-color: #101D2C !important;
+  color: #101D2C !important;
+  box-shadow: var(--shadow-sm) !important;
+  transform: scale(1.05) !important;
   z-index: 5;
 }
 
@@ -5563,7 +5544,6 @@ input, select, textarea {
 .legend-box.seat-selected {
   background: #C5A46D;
   border: 1px solid #C5A46D;
-  box-shadow: 0 0 8px rgba(197, 164, 109, 0.4);
 }
 
 /* 4-Step Booking Workflow Indicator */

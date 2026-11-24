@@ -9,18 +9,16 @@
   <!-- Hero Section with Calm Travel Visual Backdrop -->
   <div class="hero-section">
     <div class="hero-bg-visual"></div>
-    <div class="hero-bg-glow"></div>
     <div class="hero-content">
       <div class="hero-text-block">
         <div class="hero-badge">
-          <span class="badge-icon">✈</span>
-          <span>World-Class Aviation &bull; Direct &amp; Global Routes</span>
+          <span>Direct &amp; Connecting Routes</span>
         </div>
         <h1 class="hero-title">
-          Where will your journey take you?
+          Book domestic and regional flights
         </h1>
         <p class="hero-subtitle">
-          Book flights across Bangladesh and worldwide with upfront pricing, guaranteed 15-minute seat holds, and total clarity.
+          Direct routes across Bangladesh and South Asia with confirmed 15-minute seat holds and transparent fares.
         </p>
       </div>
 
@@ -30,7 +28,7 @@
           <button class="tab-btn active" id="tabRoundTrip" onclick="app.setTripType('roundtrip')" type="button">Round Trip</button>
           <button class="tab-btn" id="tabOneWay" onclick="app.setTripType('oneway')" type="button">One Way</button>
           <button class="tab-btn" id="tabMultiCity" onclick="app.setTripType('multicity')" type="button">Multi City</button>
-          <div class="tab-indicator-badge">⏱️ 15-Min Guaranteed Hold</div>
+          <div class="tab-indicator-badge">15-minute held fare</div>
         </div>
 
         <!-- Validation Alert Banner -->
@@ -40,10 +38,12 @@
         <div class="search-widget-form is-roundtrip" id="standardSearchForm">
           <!-- Origin Airport -->
           <div class="form-group-airport" id="originGroup">
-            <label for="homeOriginInput" class="input-label">FROM</label>
+            <label for="homeOriginInput" class="input-label">From</label>
             <div class="input-airport-wrapper">
-              <span class="airport-icon" aria-hidden="true">🛫</span>
-              <input type="text" id="homeOriginInput" class="airport-input" placeholder="Departure City or Airport..." autocomplete="off">
+              <span class="airport-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 19h19"/><path d="M5 13l4-8 3 1-2 7 5 1.5 2.5-3 1.5.5-1 4.5 4 1.5v1.5L5 13z"/></svg>
+              </span>
+              <input type="text" id="homeOriginInput" class="airport-input" placeholder="Departure city or airport..." autocomplete="off">
             </div>
             <div class="field-error-msg" id="originError" role="alert" aria-live="polite"></div>
             <div class="airport-dropdown-list" id="homeOriginDropdown" role="listbox"></div>
@@ -56,10 +56,12 @@
 
           <!-- Destination Airport -->
           <div class="form-group-airport" id="destGroup">
-            <label for="homeDestInput" class="input-label">TO</label>
+            <label for="homeDestInput" class="input-label">To</label>
             <div class="input-airport-wrapper">
-              <span class="airport-icon" aria-hidden="true">🛬</span>
-              <input type="text" id="homeDestInput" class="airport-input" placeholder="Destination City or Airport..." autocomplete="off">
+              <span class="airport-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 19h19"/><path d="m19 14.5-14 4.5-1.5-4.5 12.5-4v-2.5l2 1v5.5z"/></svg>
+              </span>
+              <input type="text" id="homeDestInput" class="airport-input" placeholder="Destination city or airport..." autocomplete="off">
             </div>
             <div class="field-error-msg" id="destError" role="alert" aria-live="polite"></div>
             <div class="airport-dropdown-list" id="homeDestDropdown" role="listbox"></div>
@@ -67,7 +69,7 @@
 
           <!-- Departure Date -->
           <div class="form-group-field" id="departureDateField">
-            <label for="homeDepDate" class="input-label">DEPARTURE</label>
+            <label for="homeDepDate" class="input-label">Departure</label>
             <div class="input-field-wrapper">
               <input type="date" id="homeDepDate" class="date-input" aria-label="Departure date">
             </div>
@@ -76,7 +78,7 @@
 
           <!-- Return Date (for Round Trip) -->
           <div class="form-group-field" id="returnDateField">
-            <label for="homeReturnDate" class="input-label">RETURN</label>
+            <label for="homeReturnDate" class="input-label">Return</label>
             <div class="input-field-wrapper">
               <input type="date" id="homeReturnDate" class="date-input" aria-label="Return date">
             </div>
@@ -85,9 +87,11 @@
 
           <!-- Travelers & Cabin Class (Interactive Popover) -->
           <div class="form-group-field passenger-class-picker-group">
-            <label class="input-label">TRAVELLERS &amp; CABIN</label>
+            <label class="input-label">Travelers &amp; cabin</label>
             <div class="passenger-picker-trigger" id="passengerClassTrigger" onclick="app.togglePassengerPopover(event)" role="button" aria-haspopup="dialog" aria-expanded="false" tabindex="0">
-              <span class="traveler-trigger-icon" aria-hidden="true">👥</span>
+              <span class="traveler-trigger-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
               <div class="traveler-trigger-info">
                 <span class="traveler-summary-text" id="travelerSummaryText">1 Traveler, Economy</span>
                 <span class="traveler-subtext" id="travelerSubtext">1 Adult &bull; Economy</span>
@@ -196,12 +200,12 @@
         <!-- Quick Route Tags Bar -->
         <div class="quick-tags-bar">
           <span class="quick-tag-label">Popular Routes:</span>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">🏖️ Dhaka ➔ Cox's Bazar</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Chittagong')">🚢 Dhaka ➔ Chittagong</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Sylhet')">🍵 Dhaka ➔ Sylhet</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Dubai')">🏙️ Dhaka ➔ Dubai</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Bangkok')">🏯 Dhaka ➔ Bangkok</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Singapore')">🦁 Dhaka ➔ Singapore</button>
+          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">Dhaka ➔ Cox's Bazar</button>
+          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Chittagong')">Dhaka ➔ Chittagong</button>
+          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Sylhet')">Dhaka ➔ Sylhet</button>
+          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Dubai')">Dhaka ➔ Dubai</button>
+          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Bangkok')">Dhaka ➔ Bangkok</button>
+          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Singapore')">Dhaka ➔ Singapore</button>
           <button type="button" class="quick-tag reset-tag" onclick="app.clearHomeSearch()">Clear All</button>
         </div>
       </div>
@@ -217,7 +221,7 @@
   <section class="container popular-destinations-section" id="popularDestinations" aria-label="Popular Flight Destinations">
     <div class="section-header">
       <div>
-        <div class="section-eyebrow">CURATED ROUTES</div>
+        <div class="section-eyebrow">Popular routes</div>
         <h2 class="section-title">Popular Destinations</h2>
         <p class="section-subtitle">Explore top domestic and regional destinations with transparent pricing</p>
       </div>
@@ -231,16 +235,16 @@
       <!-- Card 1: Cox's Bazar -->
       <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Cox\'s Bazar', 'CXB')" tabindex="0" role="button" aria-label="Book flight to Cox's Bazar">
         <div class="dest-card-media dest-cxb">
-          <span class="dest-badge">🏖️ Domestic Coastal</span>
+          <span class="dest-badge">Coastal Route</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
             <h3 class="dest-city">Cox's Bazar</h3>
             <span class="dest-code">CXB</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; World's Longest Natural Sea Beach</p>
+          <p class="dest-country">Bangladesh &bull; Natural Sea Beach</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">⏱️ 55m non-stop</span>
+            <span class="dest-flight-time">55m non-stop</span>
             <span class="dest-fare-pill">Example fare from ৳4,500</span>
           </div>
         </div>
@@ -249,16 +253,16 @@
       <!-- Card 2: Chittagong -->
       <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Chittagong', 'CGP')" tabindex="0" role="button" aria-label="Book flight to Chittagong">
         <div class="dest-card-media dest-cgp">
-          <span class="dest-badge">🚢 Port City</span>
+          <span class="dest-badge">Commercial Hub</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
             <h3 class="dest-city">Chittagong</h3>
             <span class="dest-code">CGP</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; Commercial Gateway &amp; Green Hills</p>
+          <p class="dest-country">Bangladesh &bull; Port City &amp; Business District</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">⏱️ 45m non-stop</span>
+            <span class="dest-flight-time">45m non-stop</span>
             <span class="dest-fare-pill">Example fare from ৳3,800</span>
           </div>
         </div>
@@ -267,16 +271,16 @@
       <!-- Card 3: Sylhet -->
       <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Sylhet', 'ZYL')" tabindex="0" role="button" aria-label="Book flight to Sylhet">
         <div class="dest-card-media dest-zyl">
-          <span class="dest-badge">🍵 Tea Capital</span>
+          <span class="dest-badge">Tea Highlands</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
             <h3 class="dest-city">Sylhet</h3>
             <span class="dest-code">ZYL</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; Lush Tea Gardens &amp; Clear Valleys</p>
+          <p class="dest-country">Bangladesh &bull; Surma Valley &amp; Tea Gardens</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">⏱️ 50m non-stop</span>
+            <span class="dest-flight-time">50m non-stop</span>
             <span class="dest-fare-pill">Example fare from ৳3,500</span>
           </div>
         </div>
@@ -285,16 +289,16 @@
       <!-- Card 4: Dubai -->
       <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Dubai', 'DXB')" tabindex="0" role="button" aria-label="Book flight to Dubai">
         <div class="dest-card-media dest-dxb">
-          <span class="dest-badge">🏙️ Middle East</span>
+          <span class="dest-badge">Middle East</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
             <h3 class="dest-city">Dubai</h3>
             <span class="dest-code">DXB</span>
           </div>
-          <p class="dest-country">UAE &bull; Modern Skyline &amp; World Transit</p>
+          <p class="dest-country">UAE &bull; Direct International Transit</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">⏱️ 4h 45m non-stop</span>
+            <span class="dest-flight-time">4h 45m non-stop</span>
             <span class="dest-fare-pill">Example fare from ৳38,500</span>
           </div>
         </div>
@@ -303,16 +307,16 @@
       <!-- Card 5: Bangkok -->
       <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Bangkok', 'BKK')" tabindex="0" role="button" aria-label="Book flight to Bangkok">
         <div class="dest-card-media dest-bkk">
-          <span class="dest-badge">🏯 Southeast Asia</span>
+          <span class="dest-badge">Southeast Asia</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
             <h3 class="dest-city">Bangkok</h3>
             <span class="dest-code">BKK</span>
           </div>
-          <p class="dest-country">Thailand &bull; Cultural Heritage &amp; Tourism</p>
+          <p class="dest-country">Thailand &bull; Regional Connectivity</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">⏱️ 2h 30m non-stop</span>
+            <span class="dest-flight-time">2h 30m non-stop</span>
             <span class="dest-fare-pill">Example fare from ৳28,000</span>
           </div>
         </div>
@@ -321,16 +325,16 @@
       <!-- Card 6: Singapore -->
       <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Singapore', 'SIN')" tabindex="0" role="button" aria-label="Book flight to Singapore">
         <div class="dest-card-media dest-sin">
-          <span class="dest-badge">🦁 Global Hub</span>
+          <span class="dest-badge">Regional Transit</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
             <h3 class="dest-city">Singapore</h3>
             <span class="dest-code">SIN</span>
           </div>
-          <p class="dest-country">Singapore &bull; Garden City &amp; Premier Transit</p>
+          <p class="dest-country">Singapore &bull; Premier International Hub</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">⏱️ 4h 00m non-stop</span>
+            <span class="dest-flight-time">4h 00m non-stop</span>
             <span class="dest-fare-pill">Example fare from ৳34,000</span>
           </div>
         </div>
@@ -343,9 +347,9 @@
   <!-- ======================================================== -->
   <section class="container why-book-section" id="whyBookWithUs" aria-label="Why Travelers Choose FLY">
     <div class="section-header text-center">
-      <div class="section-eyebrow">RELIABILITY &amp; INTEGRITY</div>
+      <div class="section-eyebrow">Reliability &amp; standards</div>
       <h2 class="section-title">Why Travelers Choose FLY</h2>
-      <p class="section-subtitle">Engineered from the ground up for transparent aviation ticketing and peace of mind</p>
+      <p class="section-subtitle">Aviation ticketing built for transparent fares and guaranteed seat reservations</p>
     </div>
 
     <div class="benefits-grid">
@@ -354,31 +358,31 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="benefit-svg" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
         </div>
         <h3 class="benefit-title">Transparent Fare Breakdown</h3>
-        <p class="benefit-desc">Base fare, 15% VAT, airport embarkation fees, and airline surcharges are fully itemized upfront. Zero surprise booking fees at checkout.</p>
+        <p class="benefit-desc">Base fare, taxes, and airport surcharges are itemized upfront. No unexpected checkout additions.</p>
       </div>
 
       <div class="benefit-card">
         <div class="benefit-icon-wrapper">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="benefit-svg" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
-        <h3 class="benefit-title">Guaranteed 15-Minute Seat Hold</h3>
-        <p class="benefit-desc">Select your exact window or aisle seats on the interactive cabin map. Our atomic lock reserves them exclusively for 15 minutes while you enter traveler details.</p>
+        <h3 class="benefit-title">15-Minute Seat Hold</h3>
+        <p class="benefit-desc">Select seats on the interactive cabin map. Seats are held exclusively while entering passenger information.</p>
       </div>
 
       <div class="benefit-card">
         <div class="benefit-icon-wrapper">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="benefit-svg" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
-        <h3 class="benefit-title">Strict Customer Privacy</h3>
-        <p class="benefit-desc">Your personal travel records, passport credentials, and booking histories are strictly isolated with server-side authorization enforcement.</p>
+        <h3 class="benefit-title">Customer Privacy</h3>
+        <p class="benefit-desc">Passenger travel credentials and itineraries are protected with server-level access authorization.</p>
       </div>
 
       <div class="benefit-card">
         <div class="benefit-icon-wrapper">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="benefit-svg" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </div>
-        <h3 class="benefit-title">24/7 Dedicated Support</h3>
-        <p class="benefit-desc">Our travel assistance desk operates around the clock to support with flight questions, date changes, and self-service booking management.</p>
+        <h3 class="benefit-title">Dedicated Support</h3>
+        <p class="benefit-desc">Travel assistance desk available to assist with itinerary adjustments, baggage questions, and servicing.</p>
       </div>
     </div>
   </section>
@@ -389,20 +393,24 @@
   <section class="container help-support-strip-section" id="helpSupportStrip" aria-label="Customer Travel Assistance">
     <div class="help-support-card">
       <div class="help-text-col">
-        <span class="help-badge">24/7 PASSENGER SUPPORT</span>
+        <span class="help-badge">Passenger Support</span>
         <h3 class="help-title">Need assistance with your booking?</h3>
-        <p class="help-desc">Our dedicated travel desk is available around the clock to assist with schedule adjustments, baggage policies, or reservation inquiries.</p>
+        <p class="help-desc">Our travel desk is available to assist with schedule adjustments, baggage policies, or reservation inquiries.</p>
       </div>
       <div class="help-actions-col">
         <a href="tel:+8809610000359" class="help-contact-item">
-          <span class="help-icon" aria-hidden="true">📞</span>
+          <span class="help-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
           <div>
             <span class="help-label">Helpline (Toll-Free)</span>
             <span class="help-value">+880 9610-000FLY</span>
           </div>
         </a>
         <a href="mailto:support@fly-booking.com" class="help-contact-item">
-          <span class="help-icon" aria-hidden="true">✉️</span>
+          <span class="help-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </span>
           <div>
             <span class="help-label">Email Support</span>
             <span class="help-value">support@fly-booking.com</span>

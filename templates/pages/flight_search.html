@@ -22,9 +22,11 @@
 
   <!-- Prominent Demo Data Disclaimer Banner -->
   <aside class="demo-integration-notice" role="note" aria-label="Demo environment notice">
-    <div class="demo-notice-icon" aria-hidden="true">⚡</div>
+    <div class="demo-notice-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
     <div class="demo-notice-content">
-      <strong class="demo-notice-tag">DEMO DATA &bull; NOT BOOKABLE</strong>
+      <strong class="demo-notice-tag">Simulated Flight Inventory</strong>
       <p class="demo-notice-text">
         Sample flight offers and schedules displayed below are <strong>typed demo fixtures only</strong>. This is a UI/integration boundary stage and does not represent live airline inventory or confirmed reservations. No live payment will be processed.
       </p>
@@ -35,24 +37,24 @@
   {{ ph.render_page_heading(
     title='Available Flight Offers',
     subtitle='Explore verified schedule fixtures, transparent fare families, and baggage allowances',
-    eyebrow='DEMO DATA &bull; NOT BOOKABLE',
+    eyebrow='Simulated schedule',
     badge='Simulated Inventory'
   ) }}
 
   <!-- Top Search Summary Bar (with Route, Dates, Cabin & Edit Search Action) -->
-  <div class="results-summary-card glassmorphism" id="searchSummaryCard" role="region" aria-label="Search parameters summary">
+  <div class="results-summary-card" id="searchSummaryCard" role="region" aria-label="Search parameters summary">
     <div class="summary-left-col">
       <div class="summary-route-header">
         <span class="summary-route-city" id="summaryRouteFrom">Dhaka (DAC)</span>
         <span class="summary-plane-icon" aria-hidden="true">➔</span>
         <span class="summary-route-city" id="summaryRouteTo">Cox's Bazar (CXB)</span>
-        <span class="demo-tag-pill">⚠️ Demo data – not bookable</span>
+        <span class="demo-tag-pill">Simulated schedule</span>
       </div>
       <div class="summary-pills-row">
-        <span class="summary-pill" id="summaryTripTypePill">✈️ Round Trip</span>
-        <span class="summary-pill" id="summaryDepPill">📅 Departure: Flexible</span>
-        <span class="summary-pill" id="summaryPaxPill">👥 1 Traveler (1A)</span>
-        <span class="summary-pill" id="summaryCabinPill">💺 Economy</span>
+        <span class="summary-pill" id="summaryTripTypePill">Round Trip</span>
+        <span class="summary-pill" id="summaryDepPill">Departure: Flexible</span>
+        <span class="summary-pill" id="summaryPaxPill">1 Traveler (1A)</span>
+        <span class="summary-pill" id="summaryCabinPill">Economy</span>
       </div>
     </div>
     <div class="summary-actions-col">
@@ -66,10 +68,12 @@
   <!-- Search Results Two-Column Layout -->
   <div class="search-results-layout">
     <!-- Left Sidebar: Filters Panel -->
-    <aside class="filters-sidebar glassmorphism" id="filtersSidebar" role="search" aria-label="Flight filters">
+    <aside class="filters-sidebar" id="filtersSidebar" role="search" aria-label="Flight filters">
       <div class="filters-sidebar-header">
         <div class="filters-title-group">
-          <span class="filters-icon" aria-hidden="true">⚙️</span>
+          <span class="filters-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+          </span>
           <h3 class="filters-heading">Filter Flights</h3>
         </div>
         <button type="button" class="btn-text-link" id="btnResetFilters" title="Reset all filters to default">Reset All</button>
@@ -116,17 +120,14 @@
         <div class="time-slots-grid">
           <button type="button" class="time-slot-btn dep-time-slot-btn active" data-slot="all">Anytime</button>
           <button type="button" class="time-slot-btn dep-time-slot-btn" data-slot="morning">
-            <span class="slot-icon">🌅</span>
             <span class="slot-label">Morning</span>
             <span class="slot-hours">00:00 - 12:00</span>
           </button>
           <button type="button" class="time-slot-btn dep-time-slot-btn" data-slot="afternoon">
-            <span class="slot-icon">☀️</span>
             <span class="slot-label">Afternoon</span>
             <span class="slot-hours">12:00 - 18:00</span>
           </button>
           <button type="button" class="time-slot-btn dep-time-slot-btn" data-slot="evening">
-            <span class="slot-icon">🌙</span>
             <span class="slot-label">Evening</span>
             <span class="slot-hours">18:00 - 24:00</span>
           </button>
@@ -139,15 +140,12 @@
         <div class="time-slots-grid">
           <button type="button" class="time-slot-btn arr-time-slot-btn active" data-slot="all">Anytime</button>
           <button type="button" class="time-slot-btn arr-time-slot-btn" data-slot="morning">
-            <span class="slot-icon">🌅</span>
             <span class="slot-label">Morning</span>
           </button>
           <button type="button" class="time-slot-btn arr-time-slot-btn" data-slot="afternoon">
-            <span class="slot-icon">☀️</span>
             <span class="slot-label">Afternoon</span>
           </button>
           <button type="button" class="time-slot-btn arr-time-slot-btn" data-slot="evening">
-            <span class="slot-icon">🌙</span>
             <span class="slot-label">Evening</span>
           </button>
         </div>
@@ -200,7 +198,7 @@
       </div>
 
       <!-- Sort & Results Header Bar -->
-      <div class="results-sort-bar glassmorphism" role="toolbar" aria-label="Sort flight results">
+      <div class="results-sort-bar" role="toolbar" aria-label="Sort flight results">
         <div class="sort-options-group">
           <span class="sort-label">Sort by:</span>
           <div class="sort-tabs-container">
