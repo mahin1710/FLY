@@ -294,6 +294,7 @@ def api_demo_users():
 # -------------------------------------------------------------
 # AIRPORTS & FLIGHTS APIS
 # -------------------------------------------------------------
+@app.route('/api/airports', methods=['GET'])
 @app.route('/api/airports/all', methods=['GET'])
 def api_airports_all():
     conn = database.get_db()

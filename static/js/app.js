@@ -1167,9 +1167,18 @@ const app = {
     const tabOneWay = document.getElementById('tabOneWay');
     const tabRoundTrip = document.getElementById('tabRoundTrip');
     const tabMultiCity = document.getElementById('tabMultiCity');
-    if (tabOneWay) tabOneWay.classList.toggle('active', type === 'oneway');
-    if (tabRoundTrip) tabRoundTrip.classList.toggle('active', type === 'roundtrip');
-    if (tabMultiCity) tabMultiCity.classList.toggle('active', type === 'multicity');
+    if (tabOneWay) {
+      tabOneWay.classList.toggle('active', type === 'oneway');
+      tabOneWay.setAttribute('aria-checked', type === 'oneway' ? 'true' : 'false');
+    }
+    if (tabRoundTrip) {
+      tabRoundTrip.classList.toggle('active', type === 'roundtrip');
+      tabRoundTrip.setAttribute('aria-checked', type === 'roundtrip' ? 'true' : 'false');
+    }
+    if (tabMultiCity) {
+      tabMultiCity.classList.toggle('active', type === 'multicity');
+      tabMultiCity.setAttribute('aria-checked', type === 'multicity' ? 'true' : 'false');
+    }
 
     const stdForm = document.getElementById('standardSearchForm');
     const multiContainer = document.getElementById('multiCityContainer');
@@ -1185,6 +1194,7 @@ const app = {
       if (stdForm) {
         stdForm.style.display = 'grid';
         stdForm.classList.toggle('is-roundtrip', type === 'roundtrip');
+        stdForm.classList.toggle('is-oneway', type === 'oneway');
       }
       if (multiContainer) multiContainer.style.display = 'none';
       if (returnField) {

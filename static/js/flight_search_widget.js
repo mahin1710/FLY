@@ -419,26 +419,42 @@
       const multiForm = document.getElementById('multiCityContainer');
       const retField = document.getElementById('returnDateField');
 
-      [tabRound, tabOneWay, tabMulti].forEach(t => t && t.classList.remove('active'));
+      [tabRound, tabOneWay, tabMulti].forEach(t => {
+        if (t) {
+          t.classList.remove('active');
+          t.setAttribute('aria-checked', 'false');
+        }
+      });
 
       if (type === 'roundtrip') {
-        if (tabRound) tabRound.classList.add('active');
+        if (tabRound) {
+          tabRound.classList.add('active');
+          tabRound.setAttribute('aria-checked', 'true');
+        }
         if (stdForm) {
           stdForm.style.display = 'grid';
           stdForm.classList.add('is-roundtrip');
+          stdForm.classList.remove('is-oneway');
         }
         if (retField) retField.style.display = 'flex';
         if (multiForm) multiForm.style.display = 'none';
       } else if (type === 'oneway') {
-        if (tabOneWay) tabOneWay.classList.add('active');
+        if (tabOneWay) {
+          tabOneWay.classList.add('active');
+          tabOneWay.setAttribute('aria-checked', 'true');
+        }
         if (stdForm) {
           stdForm.style.display = 'grid';
           stdForm.classList.remove('is-roundtrip');
+          stdForm.classList.add('is-oneway');
         }
         if (retField) retField.style.display = 'none';
         if (multiForm) multiForm.style.display = 'none';
       } else if (type === 'multicity') {
-        if (tabMulti) tabMulti.classList.add('active');
+        if (tabMulti) {
+          tabMulti.classList.add('active');
+          tabMulti.setAttribute('aria-checked', 'true');
+        }
         if (stdForm) stdForm.style.display = 'none';
         if (multiForm) {
           multiForm.style.display = 'flex';

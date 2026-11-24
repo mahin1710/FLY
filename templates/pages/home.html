@@ -1,100 +1,153 @@
 {% extends "base.html" %}
 
-{% block title %}FLY — Premium International Flight Booking | Official Site{% endblock %}
-{% block meta_description %}Book domestic and international flights with transparent pricing, guaranteed 15-minute seat holds, and strict customer privacy on FLY.{% endblock %}
+{% block title %}FLY — Fly Beyond Borders | Official International Flight Booking{% endblock %}
+{% block meta_description %}Discover destinations, compare flights, and enjoy a simpler way to travel with FLY. Verified fares, 15-minute seat holds, and transparent pricing.{% endblock %}
 
 {% block content %}
 <!-- View: Homepage Landing -->
 <section class="page-view" id="pageHome">
-  <!-- Hero Section with Calm Travel Visual Backdrop -->
-  <div class="hero-section">
-    <div class="hero-bg-visual"></div>
+  <!-- Cinematic Airport Sunset Hero Section -->
+  <div class="hero-section cinematic-hero" id="cinematicHero">
+    <div class="hero-backdrop-img"></div>
+    <div class="hero-backdrop-overlay"></div>
+
     <div class="hero-content">
+      <!-- Centralized Brand Headline (Genesis-style Luxury Typography) -->
       <div class="hero-text-block">
         <div class="hero-badge">
-          <span>Direct &amp; Connecting Routes</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+          <span>FLY BEYOND BORDERS &bull; GLOBAL FLIGHT NETWORK</span>
         </div>
-        <h1 class="hero-title">
-          Book domestic and regional flights
+        <h1 class="hero-title hero-headline-brand">
+          Fly Beyond Borders
         </h1>
         <p class="hero-subtitle">
-          Direct routes across Bangladesh and South Asia with confirmed 15-minute seat holds and transparent fares.
+          Discover destinations, compare flights, and enjoy a simpler way to travel.
         </p>
       </div>
 
-      <!-- Flight Search Widget Card (Prominent Elevated Visual Focus) -->
-      <div class="search-widget-card" role="search" aria-label="Flight Search Widget">
-        <div class="search-widget-tabs">
-          <button class="tab-btn active" id="tabRoundTrip" onclick="app.setTripType('roundtrip')" type="button">Round Trip</button>
-          <button class="tab-btn" id="tabOneWay" onclick="app.setTripType('oneway')" type="button">One Way</button>
-          <button class="tab-btn" id="tabMultiCity" onclick="app.setTripType('multicity')" type="button">Multi City</button>
-          <div class="tab-indicator-badge">15-minute held fare</div>
+      <!-- Floating White Flight Search Panel (Elevated 24px-28px Rounded Card) -->
+      <div class="search-widget-card genesis-floating-card" role="search" aria-label="Flight Search Widget" id="searchWidgetContainer">
+        
+        <!-- Top Tab Bar: Categories on Left + Trip Type Pills on Right -->
+        <div class="search-card-topbar">
+          <!-- Category Tabs -->
+          <div class="service-category-tabs" role="tablist" aria-label="Travel Services">
+            <button class="cat-tab-btn active" id="catTabFlights" role="tab" aria-selected="true" type="button">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+              <span>Flights</span>
+            </button>
+            <button class="cat-tab-btn" id="catTabHotels" role="tab" aria-selected="false" type="button" onclick="showPartnerModal('Hotels', 'Explore curated accommodations with FLY hospitality partners across 120+ destinations.')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>
+              <span>Hotels</span>
+            </button>
+            <button class="cat-tab-btn" id="catTabExperiences" role="tab" aria-selected="false" type="button" onclick="showPartnerModal('Experiences', 'Discover guided local tours, airport VIP lounges, and curated excursions.')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+              <span>Experiences</span>
+            </button>
+            <button class="cat-tab-btn" id="catTabCarRental" role="tab" aria-selected="false" type="button" onclick="showPartnerModal('Car Rental', 'Reliable airport transfers and flexible rental vehicles waiting at your destination.')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.7 2 11 2 11.3V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h10"/></svg>
+              <span>Car Rental</span>
+            </button>
+          </div>
+
+          <!-- Trip Type Segmented Pills -->
+          <div class="trip-type-segmented-pill" role="radiogroup" aria-label="Trip Type">
+            <button class="trip-pill active" id="tabRoundTrip" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.setTripType('roundtrip'); } else { app.setTripType('roundtrip'); }" type="button" role="radio" aria-checked="true">
+              Round Trip
+            </button>
+            <button class="trip-pill" id="tabOneWay" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.setTripType('oneway'); } else { app.setTripType('oneway'); }" type="button" role="radio" aria-checked="false">
+              One Way
+            </button>
+            <button class="trip-pill" id="tabMultiCity" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.setTripType('multicity'); } else { app.setTripType('multicity'); }" type="button" role="radio" aria-checked="false">
+              Multi City
+            </button>
+          </div>
         </div>
 
         <!-- Validation Alert Banner -->
         <div class="search-validation-alert" id="searchValidationAlert" role="alert" aria-live="polite" style="display: none;"></div>
 
-        <!-- Standard Search Form (One Way & Round Trip) -->
-        <div class="search-widget-form is-roundtrip" id="standardSearchForm">
-          <!-- Origin Airport -->
-          <div class="form-group-airport" id="originGroup">
-            <label for="homeOriginInput" class="input-label">From</label>
-            <div class="input-airport-wrapper">
-              <span class="airport-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 19h19"/><path d="M5 13l4-8 3 1-2 7 5 1.5 2.5-3 1.5.5-1 4.5 4 1.5v1.5L5 13z"/></svg>
+        <!-- Standard Search Form (Round Trip & One Way) -->
+        <div class="search-widget-form genesis-form-grid is-roundtrip" id="standardSearchForm">
+          
+          <!-- Origin Airport Field -->
+          <div class="form-segment-block form-group-airport" id="originGroup">
+            <div class="segment-label-row">
+              <span class="segment-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               </span>
-              <input type="text" id="homeOriginInput" class="airport-input" placeholder="Departure city or airport..." autocomplete="off">
+              <label for="homeOriginInput" class="segment-label">From</label>
+            </div>
+            <div class="segment-input-wrapper">
+              <input type="text" id="homeOriginInput" class="segment-input airport-input" placeholder="Rome (FCO) - Italy" autocomplete="off" aria-label="Departure airport or city">
             </div>
             <div class="field-error-msg" id="originError" role="alert" aria-live="polite"></div>
             <div class="airport-dropdown-list" id="homeOriginDropdown" role="listbox"></div>
           </div>
 
-          <!-- Swap Button -->
-          <button class="btn-swap" id="btnSwapHome" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.swapAirports(); } else { app.swapHomeAirports(); }" title="Swap Departure and Arrival" type="button" aria-label="Swap departure and arrival airports">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="swap-icon"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-          </button>
+          <!-- Swap Button Between Origin & Destination -->
+          <div class="swap-btn-container">
+            <button class="btn-swap-circular" id="btnSwapHome" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.swapAirports(); } else { app.swapHomeAirports(); }" title="Swap Departure and Arrival" type="button" aria-label="Swap departure and arrival airports">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="swap-svg"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            </button>
+          </div>
 
-          <!-- Destination Airport -->
-          <div class="form-group-airport" id="destGroup">
-            <label for="homeDestInput" class="input-label">To</label>
-            <div class="input-airport-wrapper">
-              <span class="airport-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 19h19"/><path d="m19 14.5-14 4.5-1.5-4.5 12.5-4v-2.5l2 1v5.5z"/></svg>
+          <!-- Destination Airport Field -->
+          <div class="form-segment-block form-group-airport" id="destGroup">
+            <div class="segment-label-row">
+              <span class="segment-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               </span>
-              <input type="text" id="homeDestInput" class="airport-input" placeholder="Destination city or airport..." autocomplete="off">
+              <label for="homeDestInput" class="segment-label">To</label>
+            </div>
+            <div class="segment-input-wrapper">
+              <input type="text" id="homeDestInput" class="segment-input airport-input" placeholder="New York (JFK) - United States" autocomplete="off" aria-label="Arrival destination airport or city">
             </div>
             <div class="field-error-msg" id="destError" role="alert" aria-live="polite"></div>
             <div class="airport-dropdown-list" id="homeDestDropdown" role="listbox"></div>
           </div>
 
-          <!-- Departure Date -->
-          <div class="form-group-field" id="departureDateField">
-            <label for="homeDepDate" class="input-label">Departure</label>
-            <div class="input-field-wrapper">
-              <input type="date" id="homeDepDate" class="date-input" aria-label="Departure date">
+          <!-- Departure Date Field -->
+          <div class="form-segment-block form-group-field" id="departureDateField">
+            <div class="segment-label-row">
+              <span class="segment-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              </span>
+              <label for="homeDepDate" class="segment-label">Depart</label>
+            </div>
+            <div class="segment-input-wrapper">
+              <input type="date" id="homeDepDate" class="segment-input date-input" aria-label="Departure date">
             </div>
             <div class="field-error-msg" id="depDateError" role="alert" aria-live="polite"></div>
           </div>
 
-          <!-- Return Date (for Round Trip) -->
-          <div class="form-group-field" id="returnDateField">
-            <label for="homeReturnDate" class="input-label">Return</label>
-            <div class="input-field-wrapper">
-              <input type="date" id="homeReturnDate" class="date-input" aria-label="Return date">
+          <!-- Return Date Field -->
+          <div class="form-segment-block form-group-field" id="returnDateField">
+            <div class="segment-label-row">
+              <span class="segment-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              </span>
+              <label for="homeReturnDate" class="segment-label">Return</label>
+            </div>
+            <div class="segment-input-wrapper">
+              <input type="date" id="homeReturnDate" class="segment-input date-input" aria-label="Return date">
             </div>
             <div class="field-error-msg" id="returnDateError" role="alert" aria-live="polite"></div>
           </div>
 
-          <!-- Travelers & Cabin Class (Interactive Popover) -->
-          <div class="form-group-field passenger-class-picker-group">
-            <label class="input-label">Travelers &amp; cabin</label>
-            <div class="passenger-picker-trigger" id="passengerClassTrigger" onclick="app.togglePassengerPopover(event)" role="button" aria-haspopup="dialog" aria-expanded="false" tabindex="0">
-              <span class="traveler-trigger-icon" aria-hidden="true">
+          <!-- Travelers & Cabin Class Picker -->
+          <div class="form-segment-block form-group-field passenger-class-picker-group" id="travellersField">
+            <div class="segment-label-row">
+              <span class="segment-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </span>
+              <label class="segment-label">Travellers</label>
+            </div>
+            <div class="segment-input-wrapper passenger-picker-trigger" id="passengerClassTrigger" onclick="app.togglePassengerPopover(event)" role="button" aria-haspopup="dialog" aria-expanded="false" tabindex="0">
               <div class="traveler-trigger-info">
-                <span class="traveler-summary-text" id="travelerSummaryText">1 Traveler, Economy</span>
-                <span class="traveler-subtext" id="travelerSubtext">1 Adult &bull; Economy</span>
+                <span class="traveler-summary-text" id="travelerSummaryText">1 Passenger</span>
+                <span class="traveler-subtext" id="travelerSubtext">Economy</span>
               </div>
               <span class="trigger-chevron" aria-hidden="true">▾</span>
             </div>
@@ -137,7 +190,7 @@
               <div class="traveler-counter-row">
                 <div class="counter-label-col">
                   <div class="counter-title">Infants</div>
-                  <div class="counter-subtitle">Under 2 years</div>
+                  <div class="counter-subtitle">Under 2 years (lap)</div>
                 </div>
                 <div class="counter-btn-group">
                   <button type="button" class="btn-counter" onclick="app.changePassengerCount('infants', -1)" id="btnMinusInfants" aria-label="Decrease infants">−</button>
@@ -163,7 +216,7 @@
               </div>
             </div>
 
-            <!-- Hidden inputs -->
+            <!-- Hidden form state inputs -->
             <input type="hidden" id="homePassengers" value="1">
             <input type="hidden" id="homeCabinClass" value="economy">
             <input type="hidden" id="homeAdults" value="1">
@@ -171,16 +224,16 @@
             <input type="hidden" id="homeInfants" value="0">
           </div>
 
-          <!-- Submit Search Button -->
-          <div class="form-group-submit">
-            <button class="btn-primary-search" id="btnHomeSearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { window.location.href='/flights/search'; }" type="button">
-              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <!-- Search CTA Pill Button -->
+          <div class="form-segment-submit">
+            <button class="btn-search-flights-pill" id="btnHomeSearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { window.location.href='/flights/search'; }" type="button">
               <span>Search Flights</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" class="search-arrow-icon" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
           </div>
         </div>
 
-        <!-- Multi City Form Container -->
+        <!-- Multi-City Dynamic Form Container -->
         <div class="multicity-widget-form" id="multiCityContainer" style="display: none;">
           <div class="multicity-legs-list" id="multiCityLegsList"></div>
           <div class="multicity-bottom-bar">
@@ -189,9 +242,9 @@
               <span>Add Another City</span>
             </button>
             <div class="multicity-actions">
-              <button class="btn-primary-search" id="btnMultiCitySearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { window.location.href='/flights/search'; }" type="button">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <button class="btn-search-flights-pill" id="btnMultiCitySearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { window.location.href='/flights/search'; }" type="button">
                 <span>Search Multi-City Flights</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" class="search-arrow-icon" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </button>
             </div>
           </div>
@@ -209,6 +262,50 @@
           <button type="button" class="quick-tag reset-tag" onclick="app.clearHomeSearch()">Clear All</button>
         </div>
       </div>
+
+      <!-- Feature Highlights Ribbon (Directly Below Search Card — Matching Genesis Screenshot) -->
+      <div class="hero-feature-strip" id="heroFeatureStrip" aria-label="FLY Service Guarantees">
+        <div class="feature-strip-item">
+          <div class="feature-item-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div class="feature-item-content">
+            <div class="feature-item-title">Best Price Guarantee</div>
+            <div class="feature-item-desc">Find our best rates</div>
+          </div>
+        </div>
+
+        <div class="feature-strip-item">
+          <div class="feature-item-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <div class="feature-item-content">
+            <div class="feature-item-title">24/7 Customer Support</div>
+            <div class="feature-item-desc">Dedicated travel assistance</div>
+          </div>
+        </div>
+
+        <div class="feature-strip-item">
+          <div class="feature-item-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="feature-item-content">
+            <div class="feature-item-title">Secure Booking</div>
+            <div class="feature-item-desc">100% verified transactions</div>
+          </div>
+        </div>
+
+        <div class="feature-strip-item">
+          <div class="feature-item-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+          </div>
+          <div class="feature-item-content">
+            <div class="feature-item-title">Flexible Options</div>
+            <div class="feature-item-desc">Changes and cancellations made easy</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -216,14 +313,14 @@
   <div class="container active-trip-banner" id="activeTripBanner" style="display: none;"></div>
 
   <!-- ======================================================== -->
-  <!-- SECTION: POPULAR DESTINATIONS (With explicit Example Fares) -->
+  <!-- SECTION: POPULAR DESTINATIONS (#destinations)             -->
   <!-- ======================================================== -->
-  <section class="container popular-destinations-section" id="popularDestinations" aria-label="Popular Flight Destinations">
+  <section class="container popular-destinations-section" id="destinations" aria-label="Popular Flight Destinations">
     <div class="section-header">
       <div>
         <div class="section-eyebrow">Popular routes</div>
         <h2 class="section-title">Popular Destinations</h2>
-        <p class="section-subtitle">Explore top domestic and regional destinations with transparent pricing</p>
+        <p class="section-subtitle">Explore top domestic and regional destinations with transparent, verified pricing</p>
       </div>
       <a href="/flights/search" class="btn-secondary-outline">
         <span>Explore All Routes</span>
@@ -343,7 +440,59 @@
   </section>
 
   <!-- ======================================================== -->
-  <!-- SECTION: WHY BOOK WITH US (Trust & Benefit Pillars)       -->
+  <!-- SECTION: EXCLUSIVE OFFERS & PROMOTIONS (#offers)          -->
+  <!-- ======================================================== -->
+  <section class="container offers-promotions-section" id="offers" aria-label="Exclusive Flight Offers">
+    <div class="section-header">
+      <div>
+        <div class="section-eyebrow">Exclusive savings</div>
+        <h2 class="section-title">Special Travel Offers</h2>
+        <p class="section-subtitle">Take advantage of limited-time seasonal fares and partner discounts</p>
+      </div>
+      <a href="/flights/search" class="btn-secondary-outline">
+        <span>View All Deals</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arrow-icon" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    <div class="offers-grid">
+      <!-- Offer Card 1 -->
+      <div class="offer-card">
+        <div class="offer-badge">Domestic Special</div>
+        <h3 class="offer-title">Fly to Cox's Bazar with 15% Off</h3>
+        <p class="offer-desc">Escape to the world's longest natural sea beach with daily nonstop departures from Hazrat Shahjalal International Airport.</p>
+        <div class="offer-footer">
+          <span class="offer-code-badge">PROMO: BEACH2026</span>
+          <button type="button" class="btn-sm btn-primary" onclick="app.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">Book Now</button>
+        </div>
+      </div>
+
+      <!-- Offer Card 2 -->
+      <div class="offer-card">
+        <div class="offer-badge">Regional Hub</div>
+        <h3 class="offer-title">Dubai &amp; Gulf Direct Connections</h3>
+        <p class="offer-desc">Seamless bookings on Biman Bangladesh, Emirates &amp; flydubai with 15-minute fare holds and extra baggage allowances.</p>
+        <div class="offer-footer">
+          <span class="offer-code-badge">PROMO: GULF10</span>
+          <button type="button" class="btn-sm btn-primary" onclick="app.quickFilterSearch('Dhaka', 'Dubai')">Book Now</button>
+        </div>
+      </div>
+
+      <!-- Offer Card 3 -->
+      <div class="offer-card">
+        <div class="offer-badge">Southeast Asia</div>
+        <h3 class="offer-title">Bangkok &amp; Singapore Weekend Getaway</h3>
+        <p class="offer-desc">Competitive round-trip fares with transparent tax breakdowns and seat reservation included.</p>
+        <div class="offer-footer">
+          <span class="offer-code-badge">PROMO: ASIAFLY</span>
+          <button type="button" class="btn-sm btn-primary" onclick="app.quickFilterSearch('Dhaka', 'Bangkok')">Book Now</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- SECTION: WHY BOOK WITH US                                 -->
   <!-- ======================================================== -->
   <section class="container why-book-section" id="whyBookWithUs" aria-label="Why Travelers Choose FLY">
     <div class="section-header text-center">
@@ -388,14 +537,67 @@
   </section>
 
   <!-- ======================================================== -->
+  <!-- SECTION: TRAVEL INFORMATION & FAQS (#travel-info)         -->
+  <!-- ======================================================== -->
+  <section class="container travel-info-section" id="travel-info" aria-label="Travel Information and Essential FAQs">
+    <div class="section-header text-center">
+      <div class="section-eyebrow">Flight advisories</div>
+      <h2 class="section-title">Travel Information &amp; FAQ</h2>
+      <p class="section-subtitle">Important passenger guidance, check-in requirements, and baggage allowances</p>
+    </div>
+
+    <div class="travel-info-grid">
+      <div class="travel-info-card">
+        <div class="info-card-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <h3 class="info-card-title">Airport Check-In Timing</h3>
+        </div>
+        <p class="info-card-text">
+          For domestic flights within Bangladesh, counter check-in opens 2 hours before departure and closes 45 minutes prior. For international departures, please arrive at least 3 hours before scheduled departure.
+        </p>
+      </div>
+
+      <div class="travel-info-card">
+        <div class="info-card-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <h3 class="info-card-title">Baggage Allowance Policy</h3>
+        </div>
+        <p class="info-card-text">
+          Standard Economy tickets include 20kg checked baggage for domestic routes and 25–30kg for regional flights. Hand luggage is limited to 7kg (one cabin bag plus one laptop bag or handbag).
+        </p>
+      </div>
+
+      <div class="travel-info-card">
+        <div class="info-card-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3 class="info-card-title">Valid Travel Documents</h3>
+        </div>
+        <p class="info-card-text">
+          Domestic travel requires a valid National ID (NID), Passport, Student ID, or Driving License. International routes require a Passport valid for at least 6 months beyond travel dates and appropriate destination visas.
+        </p>
+      </div>
+
+      <div class="travel-info-card">
+        <div class="info-card-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <h3 class="info-card-title">Changes &amp; Cancellation</h3>
+        </div>
+        <p class="info-card-text">
+          Flight changes and refund requests are processed according to the airline fare rules shown during booking review. Manage and track changes anytime via our <a href="/manage-booking" class="text-link">Manage Booking</a> portal.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
   <!-- SECTION: HELP & TRAVEL SUPPORT STRIP                      -->
   <!-- ======================================================== -->
-  <section class="container help-support-strip-section" id="helpSupportStrip" aria-label="Customer Travel Assistance">
+  <section class="container help-support-strip-section" id="support" aria-label="Customer Travel Assistance">
     <div class="help-support-card">
       <div class="help-text-col">
         <span class="help-badge">Passenger Support</span>
         <h3 class="help-title">Need assistance with your booking?</h3>
-        <p class="help-desc">Our travel desk is available to assist with schedule adjustments, baggage policies, or reservation inquiries.</p>
+        <p class="help-desc">Our travel desk is available 24/7 to assist with schedule adjustments, baggage policies, or reservation inquiries.</p>
       </div>
       <div class="help-actions-col">
         <a href="tel:+8809610000359" class="help-contact-item">
@@ -416,16 +618,78 @@
             <span class="help-value">support@fly-booking.com</span>
           </div>
         </a>
-        <a href="/manage-booking" class="btn-primary" onclick="app.navigate('bookings')">
+        <a href="/manage-booking" class="btn-primary">
           Manage Booking
         </a>
       </div>
     </div>
   </section>
+
+  <!-- Interactive Partner Services Modal (Zero Dead Buttons) -->
+  <div class="partner-modal-backdrop" id="partnerModal" role="dialog" aria-modal="true" aria-labelledby="partnerModalTitle" style="display: none;">
+    <div class="partner-modal-card">
+      <div class="partner-modal-header">
+        <h3 class="partner-modal-title" id="partnerModalTitle">Partner Service</h3>
+        <button type="button" class="btn-close-modal" onclick="closePartnerModal()" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="partner-modal-body">
+        <div class="partner-icon-large" id="partnerModalIcon">✨</div>
+        <p class="partner-modal-desc" id="partnerModalDesc">Information</p>
+        <p class="partner-modal-sub">We are currently integrating this partner service directly into FLY. Book your flights now to receive exclusive partner perks and airport discounts upon arrival!</p>
+      </div>
+      <div class="partner-modal-footer">
+        <button type="button" class="btn-secondary-outline" onclick="closePartnerModal()">Got it</button>
+        <a href="/flights/search" class="btn-primary">Explore Flights</a>
+      </div>
+    </div>
+  </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script src="/js/app.js"></script>
 <script src="/js/flight_search_widget.js"></script>
+<script>
+  // Partner modal helper for non-flight tabs
+  function showPartnerModal(title, description) {
+    const modal = document.getElementById('partnerModal');
+    const modalTitle = document.getElementById('partnerModalTitle');
+    const modalDesc = document.getElementById('partnerModalDesc');
+    const modalIcon = document.getElementById('partnerModalIcon');
+    if (modal && modalTitle && modalDesc) {
+      modalTitle.textContent = title + ' with FLY Partners';
+      modalDesc.textContent = description;
+      if (modalIcon) {
+        if (title.includes('Hotel')) modalIcon.textContent = '🏨';
+        else if (title.includes('Car')) modalIcon.textContent = '🚗';
+        else modalIcon.textContent = '✨';
+      }
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closePartnerModal() {
+    const modal = document.getElementById('partnerModal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Close on backdrop click
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('partnerModal');
+    if (e.target === modal) {
+      closePartnerModal();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closePartnerModal();
+    }
+  });
+</script>
 {% endblock %}
