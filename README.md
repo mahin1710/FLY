@@ -62,6 +62,66 @@ Then visit:
 
 ---
 
+## 🛠️ Laravel REST API Backend (`/backend`)
+
+The backend REST API foundation is built with modern, modular **Laravel 13** and **PHP 8.3** featuring:
+- **API Versioning:** Strict `/api/v1` route prefixing.
+- **Consistent Response Envelope:** Standardized `success`, `message`, `data`, `errors`, and `meta` (correlation tracking).
+- **Request Correlation IDs:** `X-Correlation-ID` header injection across every request and response.
+- **Stateless Token Authentication:** Powered by **Laravel Sanctum** personal access tokens with scoped abilities (`customer:access`, `admin:access`).
+- **Role-Based Authorization:** Backend authorization policies (`AdminPolicy`) and middleware (`role:admin,super_admin`).
+- **Defense-in-Depth Security:** Strict CORS, rate limiting (10 attempts/min on auth), and HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`).
+- **Database & Cache Readiness:** Configured for **PostgreSQL** and **Redis** (cache, session, and async queues) with an embedded SQLite driver for zero-dependency local testing.
+- **Diagnostic Health Check:** `GET /api/v1/health` probes app runtime, database connectivity, cache write/read, and queue driver without leaking internal secrets.
+- **OpenAPI 3.1 Documentation:** Interactive schema specification available at `GET /api/v1/docs`.
+
+### Exact Technology & Package Versions
+- **PHP:** `8.3.36` (cli)
+- **Laravel Framework:** `13.43.0`
+- **Laravel Sanctum:** `4.5.0`
+- **PHPUnit:** `12.5.45`
+
+### Backend Local Setup & Commands
+
+```bash
+# 1. Navigate to the backend directory
+cd backend
+
+# 2. Install PHP Composer dependencies (if not already installed)
+composer install
+
+# 3. Environment configuration
+# Copy template and generate application encryption key
+cp .env.example .env
+php artisan key:generate
+
+# 4. Run database migrations (creates users, personal_access_tokens, cache, jobs tables)
+php artisan migrate
+
+# 5. Run automated test suite (19 tests, 137 assertions)
+php artisan test
+# Or with detailed test names:
+php artisan test --testdox
+
+# 6. Start the local Laravel API server
+php artisan serve --port=8000
+```
+
+### Core API Endpoints Reference
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | Public | Subsystem diagnostics (app, database, cache, queue) |
+| `GET` | `/api/v1/docs` | Public | OpenAPI 3.1 specification schema |
+| `POST` | `/api/v1/auth/register` | Public (Rate Limited) | Customer registration & Sanctum token issue |
+| `POST` | `/api/v1/auth/login` | Public (Rate Limited) | Customer / Admin authentication |
+| `GET` | `/api/v1/auth/me` | Bearer Token | Authenticated user profile and token abilities |
+| `POST` | `/api/v1/auth/logout` | Bearer Token | Revokes current Sanctum access token |
+| `GET` | `/api/v1/admin/overview` | Admin Token (`role:admin`) | System operational statistics & metrics |
+| `GET` | `/api/v1/admin/users` | Admin Token (`role:admin`) | Paginated user directory |
+
+---
+
 ## 👨‍💻 Author & Credits
 
 - **Author:** `mahin1710`
