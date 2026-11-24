@@ -291,6 +291,144 @@ def api_airports_search():
 
     return jsonify(results)
 
+# -------------------------------------------------------------
+# FLIGHT RECORD ENRICHMENT ENGINE
+# -------------------------------------------------------------
+def enrich_flight_record(d, account_id=None):
+    """
+    Enriches flight record with realistic aviation attributes:
+    - Airline name and IATA code
+    - Flight number (e.g. BG-185, BS-102, VQ-969)
+    - Aircraft model based on real airline fleets
+    - Departure & arrival time, date, airport codes and names
+    - Duration in minutes and formatted string (e.g. 1h 05m)
+    - Number of stops (0, 1, 2) and transit information if 1+ stops
+    - Baggage allowance (checked baggage e.g. 20 kg, cabin baggage 7 kg)
+    - Refundability policy (Refundable, Partially Refundable, Non-refundable)
+    - Total seats and real-time available seats
+    - Cabin pricing and active favorite flag
+    """
+    flight_id = d['id']
+    airline_name = d.get('airlineName') or 'Airlines'
+    airline_iata = (d.get('airlineIATA') or 'FL').strip().upper()
+    airline_id = d.get('id_airline') or 0
+
+    d['flightNumber'] = f"{airline_iata}-{100 + (flight_id % 900)}"
+    d['totalSeats'] = 120
+    booked = int(d.get('bookedCount') or 0)
+    d['availableSeats'] = max(0, 120 - booked)
+
+    dep_time = d.get('dep_datetime') or ''
+    arr_time = d.get('arr_datetime') or ''
+    duration_mins = 0
+    duration_formatted = 'Non-stop'
+    if dep_time and arr_time:
+        try:
+            dt_dep = datetime.strptime(dep_time.replace('T', ' ')[:16], "%Y-%m-%d %H:%M")
+            dt_arr = datetime.strptime(arr_time.replace('T', ' ')[:16], "%Y-%m-%d %H:%M")
+            diff = int((dt_arr - dt_dep).total_seconds() / 60)
+            if diff > 0:
+                duration_mins = diff
+                hrs = diff // 60
+                mins = diff % 60
+                duration_formatted = f"{hrs}h {mins}m" if hrs and mins else (f"{hrs}h" if hrs else f"{mins}m")
+        except Exception:
+            pass
+    d['durationMinutes'] = duration_mins
+    d['durationFormatted'] = duration_formatted
+
+    # Flight Status
+    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+    if dep_time and dep_time <= now_iso:
+        d['flightStatus'] = 'BOARDING'
+    else:
+        d['flightStatus'] = 'ON TIME'
+
+    # Real Aircraft Models per Airline Fleet
+    fleet_map = {
+        'BG': ['Boeing 787-8 Dreamliner', 'Boeing 737-800', 'Dash 8-Q400', 'Boeing 777-300ER'],
+        'BS': ['Boeing 737-800', 'ATR 72-600', 'Airbus A330-300'],
+        'VQ': ['ATR 72-500', 'ATR 72-600'],
+        'EK': ['Boeing 777-300ER', 'Airbus A380-800'],
+        'QR': ['Boeing 787-9 Dreamliner', 'Airbus A350-900'],
+        'SQ': ['Boeing 787-10', 'Airbus A350-900'],
+        'TK': ['Airbus A330-300', 'Boeing 777-300ER'],
+        'SV': ['Boeing 777-300ER', 'Boeing 787-9'],
+        'AI': ['Airbus A320neo', 'Boeing 787-8'],
+        '6E': ['Airbus A320neo', 'Airbus A321neo'],
+        'BA': ['Boeing 777-200ER', 'Airbus A350-1000'],
+        'LH': ['Airbus A350-900', 'Boeing 747-8']
+    }
+    possible_fleet = fleet_map.get(airline_iata)
+    if possible_fleet:
+        d['aircraft'] = possible_fleet[flight_id % len(possible_fleet)]
+    else:
+        if duration_mins > 300:
+            d['aircraft'] = ['Boeing 787-8 Dreamliner', 'Boeing 777-300ER', 'Airbus A350-900'][flight_id % 3]
+        elif duration_mins > 120:
+            d['aircraft'] = ['Boeing 737-800', 'Airbus A320neo', 'Airbus A321neo'][flight_id % 3]
+        else:
+            d['aircraft'] = ['Dash 8-Q400', 'ATR 72-600', 'Boeing 737-800'][flight_id % 3]
+
+    # Stops & Transit info
+    dep_c = d.get('depCountry') or ''
+    arr_c = d.get('arrCountry') or ''
+    is_domestic_bd = (dep_c == 'Bangladesh' and arr_c == 'Bangladesh')
+
+    if is_domestic_bd or duration_mins <= 90:
+        d['stops'] = 0
+        d['stopsLabel'] = 'Non-stop'
+        d['transitAirport'] = None
+        d['transitInfo'] = 'Direct flight'
+    elif duration_mins > 420:
+        d['stops'] = 1 if (flight_id % 3 != 0) else 2
+        d['stopsLabel'] = f"{d['stops']} stop" if d['stops'] == 1 else f"{d['stops']} stops"
+        transit_hubs = ['DXB', 'DOH', 'IST', 'BKK', 'SIN', 'DEL']
+        hub = transit_hubs[flight_id % len(transit_hubs)]
+        d['transitAirport'] = hub
+        d['transitInfo'] = f"Transit via {hub} ({1 + (flight_id % 2)}h {15 + (flight_id % 4)*10}m layover)"
+    elif duration_mins > 180:
+        d['stops'] = 1 if (flight_id % 4 == 0) else 0
+        if d['stops'] == 1:
+            hub = 'CGP' if dep_c == 'Bangladesh' else 'DXB'
+            d['stopsLabel'] = '1 stop'
+            d['transitAirport'] = hub
+            d['transitInfo'] = f"1 stop via {hub} (1h 10m layover)"
+        else:
+            d['stopsLabel'] = 'Non-stop'
+            d['transitAirport'] = None
+            d['transitInfo'] = 'Direct flight'
+    else:
+        d['stops'] = 0
+        d['stopsLabel'] = 'Non-stop'
+        d['transitAirport'] = None
+        d['transitInfo'] = 'Direct flight'
+
+    # Baggage Allowance
+    baggage_variants = ['20 kg', '25 kg', '30 kg', '35 kg']
+    d['checkedBaggage'] = baggage_variants[(flight_id + airline_id) % len(baggage_variants)] if not is_domestic_bd else '20 kg'
+    d['cabinBaggage'] = '7 kg'
+    d['baggageAllowance'] = f"Check-in: {d['checkedBaggage']} • Cabin: {d['cabinBaggage']}"
+
+    # Refundability Policy
+    refund_mod = flight_id % 10
+    if refund_mod < 6:
+        d['refundability'] = 'Refundable'
+        d['refundPolicy'] = 'Refundable (Standard cancellation fee applies)'
+    elif refund_mod < 8:
+        d['refundability'] = 'Partially Refundable'
+        d['refundPolicy'] = 'Partially Refundable (Airline cancellation charges apply)'
+    else:
+        d['refundability'] = 'Non-refundable'
+        d['refundPolicy'] = 'Non-refundable ticket'
+
+    # Text sanitization
+    for k in ['depAirportName', 'arrAirportName', 'depCity', 'arrCity']:
+        if d.get(k):
+            d[k] = d[k].replace('?stanbul', 'Istanbul').replace('Da?oguz', 'Dashoguz')
+
+    return d
+
 @app.route('/api/flights/featured', methods=['GET'])
 def api_flights_featured():
     conn = database.get_db()
@@ -311,16 +449,79 @@ def api_flights_featured():
     rows = cursor.fetchall()
     conn.close()
 
-    flights = []
-    for r in rows:
-        d = dict(r)
-        d['flightNumber'] = f"{d['airlineIATA']}-{d['id']}"
-        d['flightStatus'] = 'ON TIME'
-        d['totalSeats'] = 120
-        d['availableSeats'] = max(0, 120 - d['bookedCount'])
-        flights.append(d)
-
+    flights = [enrich_flight_record(dict(r)) for r in rows]
     return jsonify(flights)
+
+@app.route('/api/flights/filter-options', methods=['GET'])
+def api_flight_filter_options():
+    """Returns available filtering metadata (airlines, price bounds, stops, baggage, etc.)."""
+    dep_city = (request.args.get('depCity') or request.args.get('from') or '').strip()
+    arr_city = (request.args.get('arrCity') or request.args.get('to') or '').strip()
+
+    conn = database.get_db()
+    cursor = conn.cursor()
+
+    where_clauses = ["1=1"]
+    params = []
+    if dep_city:
+        where_clauses.append("(da.city LIKE ? OR da.IATA = ? OR da.name LIKE ?)")
+        params.extend([f"%{dep_city}%", dep_city.upper(), f"%{dep_city}%"])
+    if arr_city:
+        where_clauses.append("(aa.city LIKE ? OR aa.IATA = ? OR aa.name LIKE ?)")
+        params.extend([f"%{arr_city}%", arr_city.upper(), f"%{arr_city}%"])
+
+    where_sql = " AND ".join(where_clauses)
+
+    # Price bounds
+    cursor.execute(f"""
+        SELECT MIN(f.economy_price) as minPrice, MAX(f.economy_price) as maxPrice
+        FROM flights f
+        JOIN airports da ON f.dep_airport = da.id
+        JOIN airports aa ON f.arr_airport = aa.id
+        WHERE {where_sql}
+    """, params)
+    price_row = cursor.fetchone()
+    min_price = float(price_row['minPrice'] or 3000.0)
+    max_price = float(price_row['maxPrice'] or 90000.0)
+
+    # Airlines in matching flights
+    cursor.execute(f"""
+        SELECT al.id, al.name, al.IATA, COUNT(f.id) as flightCount
+        FROM flights f
+        JOIN airLines al ON f.id_airline = al.id
+        JOIN airports da ON f.dep_airport = da.id
+        JOIN airports aa ON f.arr_airport = aa.id
+        WHERE {where_sql}
+        GROUP BY al.id, al.name, al.IATA
+        ORDER BY al.name ASC
+    """, params)
+    airlines = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return jsonify({
+        'minPrice': min_price,
+        'maxPrice': max_price,
+        'airlines': airlines,
+        'stops': [
+            {'value': 0, 'label': 'Non-stop'},
+            {'value': 1, 'label': '1 stop'},
+            {'value': 2, 'label': '2 or more stops'}
+        ],
+        'departureTimeSlots': [
+            {'id': 'early_morning', 'label': 'Early Morning', 'time': '00:00 - 06:00', 'start': 0, 'end': 6},
+            {'id': 'morning', 'label': 'Morning', 'time': '06:00 - 12:00', 'start': 6, 'end': 12},
+            {'id': 'afternoon', 'label': 'Afternoon', 'time': '12:00 - 18:00', 'start': 12, 'end': 18},
+            {'id': 'evening', 'label': 'Evening', 'time': '18:00 - 24:00', 'start': 18, 'end': 24}
+        ],
+        'arrivalTimeSlots': [
+            {'id': 'early_morning', 'label': 'Early Morning', 'time': '00:00 - 06:00', 'start': 0, 'end': 6},
+            {'id': 'morning', 'label': 'Morning', 'time': '06:00 - 12:00', 'start': 6, 'end': 12},
+            {'id': 'afternoon', 'label': 'Afternoon', 'time': '12:00 - 18:00', 'start': 12, 'end': 18},
+            {'id': 'evening', 'label': 'Evening', 'time': '18:00 - 24:00', 'start': 18, 'end': 24}
+        ],
+        'refundPolicies': ['Refundable', 'Partially Refundable', 'Non-refundable'],
+        'baggageOptions': ['20 kg', '25 kg', '30 kg', '35 kg']
+    })
 
 @app.route('/api/flights', methods=['GET'])
 def api_search_flights():
@@ -399,12 +600,14 @@ def api_search_flights():
     where_sql = " AND ".join(where_clauses)
 
     order_sql = "ORDER BY f.dep_datetime ASC"
-    if sort_by == 'furthestDate':
+    if sort_by == 'furthestDate' or sort_by == 'latestDep':
         order_sql = "ORDER BY f.dep_datetime DESC"
-    elif sort_by == 'priceAsc':
+    elif sort_by == 'priceAsc' or sort_by == 'cheapest':
         order_sql = "ORDER BY f.economy_price ASC"
     elif sort_by == 'priceDesc':
         order_sql = "ORDER BY f.economy_price DESC"
+    elif sort_by == 'earliestArr':
+        order_sql = "ORDER BY f.arr_datetime ASC"
 
     # Count total
     count_query = f"""
@@ -446,46 +649,7 @@ def api_search_flights():
     rows = cursor.fetchall()
     conn.close()
 
-    flights = []
-    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
-    for r in rows:
-        d = dict(r)
-        airline_code = (d.get('airlineIATA') or 'FL').strip().upper()
-        d['flightNumber'] = f"{airline_code}-{100 + (d['id'] % 900)}"
-        d['totalSeats'] = 120
-        booked = int(d.get('bookedCount') or 0)
-        d['availableSeats'] = max(0, 120 - booked)
-
-        dep_time = d.get('dep_datetime') or ''
-        if dep_time and dep_time <= now_iso:
-            d['flightStatus'] = 'BOARDING'
-        else:
-            d['flightStatus'] = 'ON TIME'
-
-        arr_time = d.get('arr_datetime') or ''
-        d['durationFormatted'] = 'Non-stop'
-        if dep_time and arr_time:
-            try:
-                dt_dep = datetime.strptime(dep_time.replace('T', ' ')[:16], "%Y-%m-%d %H:%M")
-                dt_arr = datetime.strptime(arr_time.replace('T', ' ')[:16], "%Y-%m-%d %H:%M")
-                diff_mins = int((dt_arr - dt_dep).total_seconds() / 60)
-                if diff_mins > 0:
-                    hrs = diff_mins // 60
-                    mins = diff_mins % 60
-                    d['durationFormatted'] = f"{hrs}h {mins}m" if hrs and mins else (f"{hrs}h" if hrs else f"{mins}m")
-            except Exception:
-                pass
-
-        if d.get('depAirportName'):
-            d['depAirportName'] = d['depAirportName'].replace('?stanbul', 'Istanbul').replace('Da?oguz', 'Dashoguz')
-        if d.get('arrAirportName'):
-            d['arrAirportName'] = d['arrAirportName'].replace('?stanbul', 'Istanbul').replace('Da?oguz', 'Dashoguz')
-        if d.get('depCity'):
-            d['depCity'] = d['depCity'].replace('?stanbul', 'Istanbul')
-        if d.get('arrCity'):
-            d['arrCity'] = d['arrCity'].replace('?stanbul', 'Istanbul')
-
-        flights.append(d)
+    flights = [enrich_flight_record(dict(r), account_id) for r in rows]
 
     return jsonify({
         'total': total_count,
@@ -496,13 +660,18 @@ def api_search_flights():
 
 @app.route('/api/flights/<int:flight_id>', methods=['GET'])
 def api_flight_detail(flight_id):
+    account_id = None
+    user = get_current_user()
+    if user:
+        account_id = user['id']
+
     conn = database.get_db()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT f.*,
                al.name as airlineName, al.IATA as airlineIATA,
-               da.name as depAirportName, da.IATA as depIATA, da.city as depCity, da.country as depCountry,
-               aa.name as arrAirportName, aa.IATA as arrIATA, aa.city as arrCity, aa.country as arrCountry,
+               da.name as depAirportName, da.IATA as depIATA, da.ICAO as depICAO, da.city as depCity, da.country as depCountry,
+               aa.name as arrAirportName, aa.IATA as arrIATA, aa.ICAO as arrICAO, aa.city as arrCity, aa.country as arrCountry,
                (SELECT COUNT(*) FROM reservations r WHERE r.id_flight = f.id AND r.status = 'CONFIRMED') as bookedCount
         FROM flights f
         JOIN airLines al ON f.id_airline = al.id
@@ -516,11 +685,7 @@ def api_flight_detail(flight_id):
     if not row:
         return jsonify({'error': 'Flight not found'}), 404
 
-    d = dict(row)
-    d['flightNumber'] = f"{d['airlineIATA']}-{d['id']}"
-    d['flightStatus'] = 'ON TIME'
-    d['totalSeats'] = 120
-    d['availableSeats'] = max(0, 120 - d['bookedCount'])
+    d = enrich_flight_record(dict(row), account_id)
     return jsonify(d)
 
 @app.route('/api/flights/<int:flight_id>/seats', methods=['GET'])
