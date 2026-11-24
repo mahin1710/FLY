@@ -374,6 +374,11 @@ async function runAllTests() {
           assert.ok(data.includes('/js/flight_results_controller.js'));
         });
 
+        it('Contains mobile filter drawer toggle button (#btnToggleMobileFilters)', () => {
+          assert.ok(data.includes('id="btnToggleMobileFilters"'));
+          assert.ok(data.includes('aria-controls="filtersSidebar"'));
+        });
+
         resolve();
       });
     }).on('error', (err) => {
@@ -400,6 +405,35 @@ async function runAllTests() {
       failCount++;
       resolve();
     });
+  });
+
+  console.log('\n--- 8. MOBILE LAYOUT & RESPONSIVE STYLING CHECKS ---');
+  const fs = require('fs');
+  const cssContent = fs.readFileSync('./static/css/style.css', 'utf-8');
+
+  it('style.css defines responsive breakpoint for filters sidebar drawer (max-width: 860px)', () => {
+    assert.ok(cssContent.includes('@media (max-width: 860px)'));
+    assert.ok(cssContent.includes('.filters-sidebar.is-drawer-open'));
+    assert.ok(cssContent.includes('.mobile-filter-bar'));
+  });
+
+  it('style.css defines mobile touch card layout (max-width: 480px)', () => {
+    assert.ok(cssContent.includes('@media (max-width: 480px)'));
+    assert.ok(cssContent.includes('.flight-card-body'));
+  });
+
+  it('Controller toggles mobile filter drawer open and closed', () => {
+    const sidebar = document.getElementById('filtersSidebar');
+    Controller.isFilterDrawerOpen = false;
+    Controller.isFilterDrawerOpen = !Controller.isFilterDrawerOpen;
+    sidebar.classList.toggle('is-drawer-open', Controller.isFilterDrawerOpen);
+    assert.strictEqual(Controller.isFilterDrawerOpen, true);
+    assert.strictEqual(sidebar.classList.contains('is-drawer-open'), true);
+
+    Controller.isFilterDrawerOpen = !Controller.isFilterDrawerOpen;
+    sidebar.classList.toggle('is-drawer-open', Controller.isFilterDrawerOpen);
+    assert.strictEqual(Controller.isFilterDrawerOpen, false);
+    assert.strictEqual(sidebar.classList.contains('is-drawer-open'), false);
   });
 
   console.log('\n================================================================');
