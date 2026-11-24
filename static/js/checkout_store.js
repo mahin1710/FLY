@@ -612,6 +612,7 @@
     // PRICE CHANGE REVALIDATION HANDLING
     // -----------------------------------------------------------
     simulatePriceChange(newAmount, reason = 'Airline fare bucket expired; updated to next available booking class.') {
+      this.clearPriceChange();
       const breakdown = this.calculateBreakdown();
       const oldAmount = breakdown.grandTotal;
       const difference = newAmount - oldAmount;

@@ -232,6 +232,10 @@
       return depDate !== arrDate;
     }
 
+    isNextDayArrival() {
+      return this.isOvernight();
+    }
+
     hasDifferentOperatingCarrier() {
       return this.operatingCarrier.code !== this.marketingCarrier.code || 
              this.operatingCarrier.name !== this.marketingCarrier.name;
