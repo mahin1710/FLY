@@ -1,0 +1,49 @@
+{
+  "data": {
+    "type": "flight-offers-pricing",
+    "flightOffers": [
+      {
+        "type": "flight-offer",
+        "id": "AMD-OFFER-001",
+        "source": "GDS",
+        "instantTicketingRequired": false,
+        "nonHomogeneous": false,
+        "oneWay": true,
+        "lastTicketingDate": "2026-12-01",
+        "itineraries": [
+          {
+            "duration": "PT1H00M",
+            "segments": [
+              {
+                "departure": {
+                  "iataCode": "DAC",
+                  "at": "2026-12-01T07:30:00"
+                },
+                "arrival": {
+                  "iataCode": "CXB",
+                  "at": "2026-12-01T08:30:00"
+                },
+                "carrierCode": "BG",
+                "number": "433",
+                "duration": "PT1H00M",
+                "id": "1",
+                "numberOfStops": 0
+              }
+            ]
+          }
+        ],
+        "price": {
+          "currency": "BDT",
+          "total": "4500.00",
+          "base": "3800.00",
+          "grandTotal": "4500.00"
+        },
+        "pricingOptions": {
+          "fareType": ["PUBLISHED"],
+          "includedCheckedBagsOnly": true
+        },
+        "validatingAirlineCodes": ["BG"]
+      }
+    ]
+  }
+}

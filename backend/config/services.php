@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Amadeus Self-Service / Enterprise Flight Provider
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for Amadeus for Developers sandbox / production environments.
+    | Read strictly from environment secrets. Never hardcode API keys.
+    |
+    */
+    'amadeus' => [
+        'client_id'     => env('AMADEUS_CLIENT_ID'),
+        'client_secret' => env('AMADEUS_CLIENT_SECRET'),
+        'environment'   => env('AMADEUS_ENVIRONMENT', 'test'),
+        'base_url'      => env('AMADEUS_BASE_URL', 'https://test.api.amadeus.com'),
+        'timeout'       => (float) env('AMADEUS_TIMEOUT', 15.0),
+    ],
+
 ];

@@ -1,0 +1,186 @@
+{
+  "meta": {
+    "count": 2,
+    "links": {
+      "self": "https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=DAC&destinationLocationCode=CXB"
+    }
+  },
+  "data": [
+    {
+      "type": "flight-offer",
+      "id": "AMD-OFFER-001",
+      "source": "GDS",
+      "instantTicketingRequired": false,
+      "nonHomogeneous": false,
+      "oneWay": true,
+      "lastTicketingDate": "2026-12-01",
+      "numberOfBookableSeats": 9,
+      "itineraries": [
+        {
+          "duration": "PT1H00M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "DAC",
+                "terminal": "1",
+                "at": "2026-12-01T07:30:00"
+              },
+              "arrival": {
+                "iataCode": "CXB",
+                "at": "2026-12-01T08:30:00"
+              },
+              "carrierCode": "BG",
+              "number": "433",
+              "aircraft": {
+                "code": "738"
+              },
+              "operating": {
+                "carrierCode": "BG"
+              },
+              "duration": "PT1H00M",
+              "id": "1",
+              "numberOfStops": 0,
+              "blacklistedInEU": false
+            }
+          ]
+        }
+      ],
+      "price": {
+        "currency": "BDT",
+        "total": "4500.00",
+        "base": "3800.00",
+        "fees": [
+          {
+            "amount": "0.00",
+            "type": "SUPPLIER"
+          }
+        ],
+        "grandTotal": "4500.00"
+      },
+      "pricingOptions": {
+        "fareType": ["PUBLISHED"],
+        "includedCheckedBagsOnly": true
+      },
+      "validatingAirlineCodes": ["BG"],
+      "travelerPricings": [
+        {
+          "travelerId": "1",
+          "fareOption": "STANDARD",
+          "travelerType": "ADULT",
+          "price": {
+            "currency": "BDT",
+            "total": "4500.00",
+            "base": "3800.00"
+          },
+          "fareDetailsBySegment": [
+            {
+              "segmentId": "1",
+              "cabin": "ECONOMY",
+              "fareBasis": "ESAVER",
+              "class": "E",
+              "includedCheckedBags": {
+                "quantity": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "flight-offer",
+      "id": "AMD-OFFER-002",
+      "source": "GDS",
+      "instantTicketingRequired": false,
+      "nonHomogeneous": false,
+      "oneWay": true,
+      "lastTicketingDate": "2026-12-01",
+      "numberOfBookableSeats": 7,
+      "itineraries": [
+        {
+          "duration": "PT1H05M",
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "DAC",
+                "at": "2026-12-01T10:15:00"
+              },
+              "arrival": {
+                "iataCode": "CXB",
+                "at": "2026-12-01T11:20:00"
+              },
+              "carrierCode": "BS",
+              "number": "141",
+              "aircraft": {
+                "code": "AT7"
+              },
+              "operating": {
+                "carrierCode": "BS"
+              },
+              "duration": "PT1H05M",
+              "id": "2",
+              "numberOfStops": 0,
+              "blacklistedInEU": false
+            }
+          ]
+        }
+      ],
+      "price": {
+        "currency": "BDT",
+        "total": "5200.00",
+        "base": "4400.00",
+        "grandTotal": "5200.00"
+      },
+      "pricingOptions": {
+        "fareType": ["PUBLISHED"],
+        "includedCheckedBagsOnly": true
+      },
+      "validatingAirlineCodes": ["BS"],
+      "travelerPricings": [
+        {
+          "travelerId": "1",
+          "fareOption": "STANDARD",
+          "travelerType": "ADULT",
+          "price": {
+            "currency": "BDT",
+            "total": "5200.00",
+            "base": "4400.00"
+          },
+          "fareDetailsBySegment": [
+            {
+              "segmentId": "2",
+              "cabin": "ECONOMY",
+              "fareBasis": "MCLASSIC",
+              "class": "M",
+              "includedCheckedBags": {
+                "quantity": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dictionaries": {
+    "locations": {
+      "DAC": {
+        "cityCode": "DAC",
+        "countryCode": "BD"
+      },
+      "CXB": {
+        "cityCode": "CXB",
+        "countryCode": "BD"
+      }
+    },
+    "aircraft": {
+      "738": "BOEING 737-800",
+      "AT7": "ATR 72-600"
+    },
+    "currencies": {
+      "BDT": "BANGLADESHI TAKA"
+    },
+    "carriers": {
+      "BG": "BIMAN BANGLADESH AIRLINES",
+      "BS": "US-BANGLA AIRLINES"
+    }
+  }
+}

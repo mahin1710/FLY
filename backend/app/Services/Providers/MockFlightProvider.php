@@ -7,6 +7,10 @@ use App\DTOs\FareConditionsDTO;
 use App\DTOs\FlightOfferDTO;
 use App\DTOs\FlightSegmentDTO;
 use App\DTOs\PriceBreakdownDTO;
+use App\DTOs\ProviderCancellationDTO;
+use App\DTOs\ProviderRefundQuoteDTO;
+use App\DTOs\ProviderReservationDTO;
+use App\DTOs\ProviderTicketDTO;
 use App\DTOs\RepriceResultDTO;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -22,6 +26,11 @@ class MockFlightProvider implements FlightProviderInterface
         if (app()->environment('production')) {
             throw new RuntimeException('MockFlightProvider must never run in production.');
         }
+    }
+
+    public function getProviderCode(): string
+    {
+        return self::PROVIDER_CODE;
     }
 
     /**
@@ -446,6 +455,126 @@ class MockFlightProvider implements FlightProviderInterface
                     ],
                 ],
             ],
+        ];
+    }
+
+    /**
+     * Create simulated airline reservation / order (PNR hold).
+     */
+    public function createReservation(
+        FlightOfferDTO $offer,
+        array $passengers,
+        array $contactInfo
+    ): ProviderReservationDTO {
+        $pnr = 'MCK' . strtoupper(Str::random(3));
+        $bookingRef = 'MOCK-ORDER-' . strtoupper(Str::random(8));
+
+        return new ProviderReservationDTO(
+            providerCode: self::PROVIDER_CODE,
+            providerBookingRef: $bookingRef,
+            pnr: $pnr,
+            status: 'CONFIRMED',
+            ticketingRequiredBy: now()->addHours(24)->toIso8601String(),
+            isTicketed: false,
+            rawProviderStatus: 'CONFIRMED_HOLD',
+            currency: $offer->priceBreakdown->currency,
+            totalPrice: $offer->priceBreakdown->totalAmount,
+            passengers: $passengers,
+            segments: array_map(fn ($s) => $s->toArray(), $offer->segments),
+            warnings: [],
+            disclaimer: 'Sandbox reservation – not a valid live airline PNR'
+        );
+    }
+
+    /**
+     * Retrieve simulated reservation.
+     */
+    public function getReservation(string $providerBookingRef): ProviderReservationDTO
+    {
+        return new ProviderReservationDTO(
+            providerCode: self::PROVIDER_CODE,
+            providerBookingRef: $providerBookingRef,
+            pnr: 'MCK778',
+            status: 'CONFIRMED',
+            ticketingRequiredBy: now()->addHours(12)->toIso8601String(),
+            isTicketed: false,
+            rawProviderStatus: 'CONFIRMED_HOLD',
+            currency: 'BDT',
+            totalPrice: 4850.00,
+            passengers: [],
+            segments: [],
+            warnings: [],
+            disclaimer: 'Sandbox reservation – not a valid live airline PNR'
+        );
+    }
+
+    /**
+     * Issue simulated ticket.
+     */
+    public function issueTicket(
+        string $providerBookingRef,
+        array $paymentDetails
+    ): ProviderTicketDTO {
+        return new ProviderTicketDTO(
+            providerCode: self::PROVIDER_CODE,
+            ticketNumber: '098-' . rand(1000000000, 9999999999),
+            passengerName: 'DEMO/PASSENGER',
+            status: 'ISSUED',
+            issuedAt: now()->toIso8601String(),
+            coupons: [
+                ['segment_order' => 1, 'status' => 'OPEN_FOR_USE'],
+            ],
+            documentType: 'ELECTRONIC_TICKET',
+            disclaimer: 'Sandbox ticket – not valid for live passenger boarding'
+        );
+    }
+
+    /**
+     * Cancel simulated reservation.
+     */
+    public function cancelReservation(string $providerBookingRef): ProviderCancellationDTO
+    {
+        return new ProviderCancellationDTO(
+            providerCode: self::PROVIDER_CODE,
+            providerBookingRef: $providerBookingRef,
+            isCancelled: true,
+            cancellationRef: 'MOCK-CANC-' . strtoupper(Str::random(6)),
+            status: 'CANCELLED',
+            cancelledAt: now()->toIso8601String(),
+            penalties: ['cancellation_fee' => 1000.00, 'currency' => 'BDT'],
+            disclaimer: 'Sandbox cancellation'
+        );
+    }
+
+    /**
+     * Calculate simulated refund quote.
+     */
+    public function getRefundQuote(string $providerBookingRef): ProviderRefundQuoteDTO
+    {
+        return new ProviderRefundQuoteDTO(
+            providerCode: self::PROVIDER_CODE,
+            providerBookingRef: $providerBookingRef,
+            refundable: true,
+            originalAmount: 4850.00,
+            cancellationFee: 1000.00,
+            estimatedRefundAmount: 3850.00,
+            currency: 'BDT',
+            quoteRef: 'REFUND-QUOTE-' . strtoupper(Str::random(6)),
+            quotedAt: now()->toIso8601String(),
+            disclaimer: 'Estimated sandbox refund calculation – subject to airline tariff validation'
+        );
+    }
+
+    /**
+     * Check provider gateway health.
+     */
+    public function checkHealth(): array
+    {
+        return [
+            'status'     => 'healthy',
+            'provider'   => self::PROVIDER_CODE,
+            'latency_ms' => 5,
+            'timestamp'  => now()->toIso8601String(),
         ];
     }
 }
