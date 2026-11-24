@@ -501,6 +501,7 @@ def api_flight_filter_options():
     return jsonify({
         'minPrice': min_price,
         'maxPrice': max_price,
+        'price_range': {'min': min_price, 'max': max_price},
         'airlines': airlines,
         'stops': [
             {'value': 0, 'label': 'Non-stop'},
@@ -519,8 +520,16 @@ def api_flight_filter_options():
             {'id': 'afternoon', 'label': 'Afternoon', 'time': '12:00 - 18:00', 'start': 12, 'end': 18},
             {'id': 'evening', 'label': 'Evening', 'time': '18:00 - 24:00', 'start': 18, 'end': 24}
         ],
+        'time_slots': [
+            {'id': 'early_morning', 'label': 'Early Morning', 'time': '00:00 - 06:00'},
+            {'id': 'morning', 'label': 'Morning', 'time': '06:00 - 12:00'},
+            {'id': 'afternoon', 'label': 'Afternoon', 'time': '12:00 - 18:00'},
+            {'id': 'evening', 'label': 'Evening', 'time': '18:00 - 24:00'}
+        ],
         'refundPolicies': ['Refundable', 'Partially Refundable', 'Non-refundable'],
-        'baggageOptions': ['20 kg', '25 kg', '30 kg', '35 kg']
+        'refund_policies': ['Refundable', 'Partially Refundable', 'Non-refundable'],
+        'baggageOptions': ['20 kg', '25 kg', '30 kg', '35 kg'],
+        'baggage_options': ['20 kg', '25 kg', '30 kg', '35 kg']
     })
 
 @app.route('/api/flights', methods=['GET'])
