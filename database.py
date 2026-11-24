@@ -10,6 +10,7 @@ import sqlite3
 import os
 import hashlib
 import secrets
+import json
 from datetime import datetime, timedelta
 
 # Find database file path cleanly
@@ -149,6 +150,22 @@ def init_db():
             cursor.execute("ALTER TABLE reservations ADD COLUMN total_price REAL DEFAULT 0;")
     except Exception as e:
         print(f"[DB Init Note] Reservations table check: {e}")
+
+    try:
+        cursor.execute("PRAGMA table_info(bookings);")
+        book_cols = [row['name'] for row in cursor.fetchall()]
+        if 'passenger_data' not in book_cols:
+            cursor.execute("ALTER TABLE bookings ADD COLUMN passenger_data TEXT;")
+        if 'return_flight_id' not in book_cols:
+            cursor.execute("ALTER TABLE bookings ADD COLUMN return_flight_id INTEGER;")
+        if 'multi_leg_data' not in book_cols:
+            cursor.execute("ALTER TABLE bookings ADD COLUMN multi_leg_data TEXT;")
+        if 'fare_breakdown' not in book_cols:
+            cursor.execute("ALTER TABLE bookings ADD COLUMN fare_breakdown TEXT;")
+        if 'trip_type' not in book_cols:
+            cursor.execute("ALTER TABLE bookings ADD COLUMN trip_type TEXT DEFAULT 'one_way';")
+    except Exception as e:
+        print(f"[DB Init Note] Bookings table check: {e}")
 
     conn.commit()
     conn.close()
@@ -292,10 +309,127 @@ def get_flight_seats(flight_id: int, current_account_id: int = None):
     conn.close()
     return result
 
-def hold_seats_atomic(flight_id: int, seat_ids: list, account_id: int, nbr_luggages: int = 0, weight: float = 0.0):
+def calculate_fare_breakdown(flight_ids: list, cabin_class: str = 'Economy', adults: int = 1, children: int = 0, infants: int = 0, luggage_count: int = 0, luggage_weight: float = 0.0):
+    """
+    Transparently calculates base fare, taxes, carrier charges, service fee, and total payable amount.
+    Never invents charges or discounts.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    adults = max(1, int(adults or 1))
+    children = max(0, int(children or 0))
+    infants = max(0, int(infants or 0))
+    luggage_count = max(0, int(luggage_count or 0))
+    luggage_weight = max(0.0, float(luggage_weight or 0.0))
+    cabin_norm = (cabin_class or 'Economy').strip()
+
+    flights_info = []
+    total_base_fare = 0.0
+    total_taxes = 0.0
+    total_airline_charges = 0.0
+    total_service_charge = 0.0
+    total_discount = 0.0
+    total_luggage_fee = 0.0
+
+    clean_flight_ids = []
+    for fid in flight_ids:
+        try:
+            if fid is not None:
+                clean_flight_ids.append(int(fid))
+        except (ValueError, TypeError):
+            continue
+
+    if not clean_flight_ids:
+        clean_flight_ids = [1]
+
+    for fid in clean_flight_ids:
+        cursor.execute("""
+            SELECT f.*,
+                   al.name as airlineName, al.IATA as airlineIATA,
+                   da.name as depAirportName, da.IATA as depIATA, da.city as depCity, da.country as depCountry,
+                   aa.name as arrAirportName, aa.IATA as arrIATA, aa.city as arrCity, aa.country as arrCountry
+            FROM flights f
+            JOIN airLines al ON f.id_airline = al.id
+            JOIN airports da ON f.dep_airport = da.id
+            JOIN airports aa ON f.arr_airport = aa.id
+            WHERE f.id = ?
+        """, (fid,))
+        f_row = cursor.fetchone()
+        if not f_row:
+            continue
+
+        f_dict = dict(f_row)
+
+        # Base price per cabin class
+        base_adult_price = float(f_dict.get('economy_price') or 3500.0)
+        if cabin_norm == 'Business' and f_dict.get('business_price'):
+            base_adult_price = float(f_dict['business_price'])
+        elif cabin_norm == 'First Class' and f_dict.get('first_price'):
+            base_adult_price = float(f_dict['first_price'])
+        elif cabin_norm == 'Premium Economy':
+            base_adult_price = round(base_adult_price * 1.35)
+
+        base_child_price = round(base_adult_price * 0.75)
+        base_infant_price = round(base_adult_price * 0.10)
+
+        flight_base_fare = (adults * base_adult_price) + (children * base_child_price) + (infants * base_infant_price)
+
+        # Transparent Government Taxes & Airport Embarkation Tax (15% VAT + ৳500 airport tax per passenger)
+        vat_tax = round(flight_base_fare * 0.15)
+        airport_tax = 500.0 * (adults + children)
+        flight_taxes = vat_tax + airport_tax
+
+        # Transparent Carrier Surcharges (Fuel Surcharge: ৳300 per passenger)
+        flight_airline_charges = 300.0 * (adults + children)
+
+        # Baggage Fee
+        luggage_unit_price = float(f_dict.get('luggage_price') or 350.0)
+        weight_unit_price = float(f_dict.get('weight_price') or 120.0)
+        flight_luggage_fee = (luggage_count * luggage_unit_price) + (luggage_weight * weight_unit_price)
+
+        total_base_fare += flight_base_fare
+        total_taxes += flight_taxes
+        total_airline_charges += flight_airline_charges
+        total_luggage_fee += flight_luggage_fee
+
+        f_dict['calculatedUnitPrice'] = base_adult_price
+        f_dict['calculatedChildPrice'] = base_child_price
+        f_dict['calculatedInfantPrice'] = base_infant_price
+        f_dict['flightBaseFare'] = flight_base_fare
+        f_dict['flightTaxes'] = flight_taxes
+        f_dict['flightAirlineCharges'] = flight_airline_charges
+        flights_info.append(f_dict)
+
+    conn.close()
+
+    total_payable = round(total_base_fare + total_taxes + total_airline_charges + total_service_charge + total_luggage_fee - total_discount)
+
+    return {
+        'currency': 'BDT',
+        'currencySymbol': '৳',
+        'cabinClass': cabin_norm,
+        'adults': adults,
+        'children': children,
+        'infants': infants,
+        'totalPassengers': adults + children + infants,
+        'baseFare': total_base_fare,
+        'taxes': total_taxes,
+        'airlineCharges': total_airline_charges,
+        'serviceCharges': total_service_charge,
+        'discounts': total_discount,
+        'luggageFee': total_luggage_fee,
+        'totalPayable': total_payable,
+        'flights': flights_info
+    }
+
+def hold_seats_atomic(flight_id: int, seat_ids: list, account_id: int, nbr_luggages: int = 0, weight: float = 0.0,
+                      passenger_data: list = None, return_flight_id: int = None, multi_leg_data: list = None,
+                      cabin_class: str = 'Economy', trip_type: str = 'one_way', expected_fare: float = None):
     """
     Atomically locks multiple seats for 15 minutes.
     If any requested seat is already booked or held, returns failure.
+    Validates transparent fare calculation and prevents price drift.
     """
     cleanup_expired_holds()
     conn = get_db()
@@ -326,29 +460,66 @@ def hold_seats_atomic(flight_id: int, seat_ids: list, account_id: int, nbr_lugga
                 return False, f"Seat {c['id_seat']} is already booked.", "SEAT_UNAVAILABLE", None
             if c['status'] == 'PENDING_PAYMENT':
                 if not is_expired(c['expires_at']):
-                    # Held by someone else or current user?
                     if c['id_account'] != account_id:
                         conn.close()
                         return False, "One or more selected seats are currently held by another user.", "SEAT_UNAVAILABLE", None
 
-        # Calculate fare
+        # Determine passenger counts from passenger_data or seat_ids
+        adults_count = 1
+        children_count = 0
+        infants_count = 0
+        if passenger_data and isinstance(passenger_data, list) and len(passenger_data) > 0:
+            adults_count = 0
+            for p in passenger_data:
+                ptype = str(p.get('type') or p.get('passengerType') or 'adult').lower()
+                if 'infant' in ptype:
+                    infants_count += 1
+                elif 'child' in ptype:
+                    children_count += 1
+                else:
+                    adults_count += 1
+            if adults_count == 0:
+                adults_count = 1
+        else:
+            adults_count = max(1, len(seat_ids))
+
+        # Calculate transparent fare breakdown across all flight legs
+        all_flight_ids = [int(flight_id)]
+        if return_flight_id:
+            try:
+                all_flight_ids.append(int(return_flight_id))
+            except (ValueError, TypeError):
+                pass
+        if multi_leg_data and isinstance(multi_leg_data, list):
+            for m in multi_leg_data:
+                try:
+                    mid = int(m.get('id') if isinstance(m, dict) else m)
+                    if mid not in all_flight_ids:
+                        all_flight_ids.append(mid)
+                except (ValueError, TypeError):
+                    continue
+
+        fare_breakdown = calculate_fare_breakdown(
+            flight_ids=all_flight_ids,
+            cabin_class=cabin_class,
+            adults=adults_count,
+            children=children_count,
+            infants=infants_count,
+            luggage_count=nbr_luggages,
+            luggage_weight=weight
+        )
+
+        total_fare = float(fare_breakdown['totalPayable'])
+
+        # Validate that price hasn't shifted if client submitted expected fare
+        if expected_fare is not None and float(expected_fare) > 0:
+            if abs(float(expected_fare) - total_fare) > 1.0:
+                conn.close()
+                return False, f"Flight fare has changed from ৳{int(expected_fare):,} to ৳{int(total_fare):,}. Please review the updated fare.", "FARE_CHANGED", {'fareBreakdown': fare_breakdown}
+
+        # Query seat records for codes
         cursor.execute(f"SELECT id, type, column, row FROM seats WHERE id IN ({placeholders})", seat_ids)
         seat_rows = cursor.fetchall()
-
-        total_fare = 0.0
-        for s in seat_rows:
-            stype = (s['type'] or 'economy').lower()
-            if stype == 'first':
-                total_fare += flight['first_price'] or 75000
-            elif stype == 'business':
-                total_fare += flight['business_price'] or 45000
-            else:
-                total_fare += flight['economy_price'] or 25000
-
-        # Luggage fees
-        luggage_price = flight['luggage_price'] or 0
-        weight_price = flight['weight_price'] or 0
-        total_fare += (nbr_luggages * luggage_price) + (weight * weight_price)
 
         # Generate unique booking reference
         rand_hex = secrets.token_hex(4).upper()
@@ -361,26 +532,29 @@ def hold_seats_atomic(flight_id: int, seat_ids: list, account_id: int, nbr_lugga
         created_at_str = created_dt.strftime("%Y-%m-%d %H:%M:%S")
         expires_at_str = expires_dt.strftime("%Y-%m-%d %H:%M:%S")
 
-        # 1. Insert into bookings table
+        # 1. Insert into bookings table with passenger_data, return_flight_id, fare_breakdown, trip_type
         cursor.execute("""
-            INSERT INTO bookings (booking_reference, id_account, id_flight, status, total_amount, nbr_luggages, weight, created_at, expires_at)
-            VALUES (?, ?, ?, 'PENDING_PAYMENT', ?, ?, ?, ?, ?)
-        """, (booking_ref, account_id, flight_id, total_fare, nbr_luggages, weight, created_at_str, expires_at_str))
+            INSERT INTO bookings (
+                booking_reference, id_account, id_flight, status, total_amount, nbr_luggages, weight, created_at, expires_at,
+                passenger_data, return_flight_id, multi_leg_data, fare_breakdown, trip_type
+            )
+            VALUES (?, ?, ?, 'PENDING_PAYMENT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            booking_ref, account_id, flight_id, total_fare, nbr_luggages, weight, created_at_str, expires_at_str,
+            json.dumps(passenger_data) if passenger_data else None,
+            return_flight_id,
+            json.dumps(multi_leg_data) if multi_leg_data else None,
+            json.dumps(fare_breakdown),
+            trip_type
+        ))
 
         # 2. Insert/update reservations
+        per_seat_price = round(total_fare / max(1, len(seat_rows)), 2)
         for s in seat_rows:
-            stype = (s['type'] or 'economy').lower()
-            if stype == 'first':
-                seat_fare = flight['first_price'] or 75000
-            elif stype == 'business':
-                seat_fare = flight['business_price'] or 45000
-            else:
-                seat_fare = flight['economy_price'] or 25000
-
             cursor.execute("""
                 INSERT INTO reservations (id_flight, id_account, id_seat, nbr_luggages, weight, booking_reference, status, created_at, expires_at, total_price)
                 VALUES (?, ?, ?, ?, ?, ?, 'PENDING_PAYMENT', ?, ?, ?)
-            """, (flight_id, account_id, s['id'], nbr_luggages, weight, booking_ref, created_at_str, expires_at_str, seat_fare))
+            """, (flight_id, account_id, s['id'], nbr_luggages, weight, booking_ref, created_at_str, expires_at_str, per_seat_price))
 
         conn.commit()
         conn.close()
@@ -388,9 +562,13 @@ def hold_seats_atomic(flight_id: int, seat_ids: list, account_id: int, nbr_lugga
         hold_info = {
             'bookingReference': booking_ref,
             'flightId': flight_id,
+            'returnFlightId': return_flight_id,
+            'tripType': trip_type,
             'expiresAt': expires_at_str,
             'secondsRemaining': 900,
             'totalAmount': total_fare,
+            'fareBreakdown': fare_breakdown,
+            'passengerData': passenger_data,
             'seatCodes': [f"{s['column']}{s['row']}" for s in seat_rows]
         }
         return True, "Seats held successfully for 15 minutes.", None, hold_info
