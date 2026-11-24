@@ -23,6 +23,7 @@ class Booking extends Model
         'ticket_status',
         'servicing_status',
         'hold_expires_at',
+        'ticketing_deadline_at',
         'currency',
         'total_amount',
         'contact_email',
@@ -31,11 +32,15 @@ class Booking extends Model
         'airline_pnr',
         'provider_booking_ref',
         'remarks',
+        'requires_manual_review',
+        'manual_review_reason',
     ];
 
     protected $casts = [
-        'hold_expires_at' => 'datetime',
-        'total_amount'    => 'decimal:2',
+        'hold_expires_at'        => 'datetime',
+        'ticketing_deadline_at'  => 'datetime',
+        'total_amount'           => 'decimal:2',
+        'requires_manual_review' => 'boolean',
     ];
 
     protected $hidden = [
@@ -108,5 +113,10 @@ class Booking extends Model
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(FinancialLedgerEntry::class);
+    }
+
+    public function workflowSteps(): HasMany
+    {
+        return $this->hasMany(BookingWorkflowStep::class)->orderBy('id', 'asc');
     }
 }
