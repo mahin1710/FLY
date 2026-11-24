@@ -44,12 +44,22 @@ Route::prefix('v1')->group(function () {
     // 4. BOOKING RESERVATION DRAFT & PASSENGERS (PUBLIC / OPTIONAL AUTH)
     // -------------------------------------------------------------
     Route::prefix('bookings')->group(function () {
+        Route::get('/', [BookingController::class, 'index'])->name('v1.bookings.index');
+        Route::post('/guest-retrieve', [BookingController::class, 'guestRetrieve'])
+            ->middleware('throttle:5,1')
+            ->name('v1.bookings.guest_retrieve');
         Route::post('/draft', [BookingController::class, 'createDraft'])->name('v1.bookings.draft');
         Route::post('/{ulid}/passengers', [BookingController::class, 'addPassengers'])->name('v1.bookings.passengers');
+        Route::get('/{ulid}', [BookingController::class, 'show'])->name('v1.bookings.show');
         Route::get('/{ulid}/status', [BookingController::class, 'getStatus'])->name('v1.bookings.status');
         Route::post('/{ulid}/confirm', [BookingController::class, 'confirm'])->name('v1.bookings.confirm');
         Route::get('/{ulid}/tickets', [BookingController::class, 'getTickets'])->name('v1.bookings.tickets');
         Route::get('/{ulid}/document', [BookingController::class, 'downloadDocument'])->name('v1.bookings.document.download');
+
+        // Servicing, Cancellation & Refund
+        Route::post('/{ulid}/servicing/request', [BookingController::class, 'requestServicing'])->name('v1.bookings.servicing.request');
+        Route::post('/{ulid}/servicing/refund-quote', [BookingController::class, 'getRefundQuote'])->name('v1.bookings.servicing.refund_quote');
+        Route::post('/{ulid}/servicing/refund-approve', [BookingController::class, 'approveRefund'])->name('v1.bookings.servicing.refund_approve');
     });
 
     // -------------------------------------------------------------

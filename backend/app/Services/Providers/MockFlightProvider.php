@@ -600,15 +600,17 @@ class MockFlightProvider implements FlightProviderInterface
      */
     public function cancelReservation(string $providerBookingRef): ProviderCancellationDTO
     {
+        $isRejected = str_contains(strtoupper($providerBookingRef), 'REJECT');
+
         return new ProviderCancellationDTO(
             providerCode: self::PROVIDER_CODE,
             providerBookingRef: $providerBookingRef,
-            isCancelled: true,
-            cancellationRef: 'MOCK-CANC-' . strtoupper(Str::random(6)),
-            status: 'CANCELLED',
-            cancelledAt: now()->toIso8601String(),
+            isCancelled: !$isRejected,
+            cancellationRef: $isRejected ? null : ('MOCK-CANC-' . strtoupper(Str::random(6))),
+            status: $isRejected ? 'REJECTED' : 'CANCELLED',
+            cancelledAt: $isRejected ? null : now()->toIso8601String(),
             penalties: ['cancellation_fee' => 1000.00, 'currency' => 'BDT'],
-            disclaimer: 'Sandbox cancellation'
+            disclaimer: $isRejected ? 'Airline rejected cancellation request' : 'Sandbox cancellation'
         );
     }
 
@@ -617,17 +619,21 @@ class MockFlightProvider implements FlightProviderInterface
      */
     public function getRefundQuote(string $providerBookingRef): ProviderRefundQuoteDTO
     {
+        $isNonRef = str_contains(strtoupper($providerBookingRef), 'NONREF');
+
         return new ProviderRefundQuoteDTO(
             providerCode: self::PROVIDER_CODE,
             providerBookingRef: $providerBookingRef,
-            refundable: true,
+            refundable: !$isNonRef,
             originalAmount: 4850.00,
-            cancellationFee: 1000.00,
-            estimatedRefundAmount: 3850.00,
+            cancellationFee: $isNonRef ? 4850.00 : 1000.00,
+            estimatedRefundAmount: $isNonRef ? 0.00 : 3850.00,
             currency: 'BDT',
             quoteRef: 'REFUND-QUOTE-' . strtoupper(Str::random(6)),
             quotedAt: now()->toIso8601String(),
-            disclaimer: 'Estimated sandbox refund calculation – subject to airline tariff validation'
+            disclaimer: $isNonRef
+                ? 'Non-refundable fare category – zero airfare refund per airline tariff rules'
+                : 'Estimated sandbox refund calculation – subject to airline tariff validation'
         );
     }
 
