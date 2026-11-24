@@ -41,7 +41,24 @@ const app = {
       depDateAfter: '',
       depDateBefore: '',
       sortBy: 'closestDate',
-      search: ''
+      search: '',
+      cabinClass: 'economy',
+      passengers: 1
+    },
+    rawSearchResults: [],
+    filteredSearchResults: [],
+    activeSort: 'recommended',
+    filters: {
+      keyword: '',
+      minPrice: 0,
+      maxPrice: Infinity,
+      selectedAirlines: new Set(),
+      selectedStops: new Set(),
+      depTimeSlots: new Set(),
+      arrTimeSlots: new Set(),
+      maxDuration: Infinity,
+      refundPolicies: new Set(),
+      baggageOptions: new Set()
     },
     airportsCache: [],
     countriesCache: [],
@@ -1025,6 +1042,8 @@ const app = {
   setupAutocomplete() {
     this.bindAirportAutocomplete('homeOriginInput', 'homeOriginDropdown');
     this.bindAirportAutocomplete('homeDestInput', 'homeDestDropdown');
+    this.bindAirportAutocomplete('modifyOriginInput', 'modifyOriginDropdown');
+    this.bindAirportAutocomplete('modifyDestInput', 'modifyDestDropdown');
   },
 
   bindAirportAutocomplete(inputId, dropdownId, onSelectCallback = null) {
@@ -1772,56 +1791,210 @@ const app = {
   },
 
   // -------------------------------------------------------------
-  // SEARCH PAGE & FILTER LOGIC
+  // ADVANCED FLIGHT SEARCH, SUMMARY & FILTER LOGIC
   // -------------------------------------------------------------
-  async onDepCountryChange() {
-    const c = document.getElementById('filterDepCountry').value;
-    const citySel = document.getElementById('filterDepCity');
-    if (!c) {
-      citySel.innerHTML = '<option value="">All Cities</option>';
-      this.triggerFilteredSearch();
+  updateSearchSummaryBar() {
+    const p = this.state.searchParams;
+    const depEl = document.getElementById('summaryDepCity');
+    const arrEl = document.getElementById('summaryArrCity');
+    const depPill = document.getElementById('summaryDepDatePill');
+    const retPill = document.getElementById('summaryReturnDatePill');
+    const paxPill = document.getElementById('summaryPassengersPill');
+    const cabinPill = document.getElementById('summaryCabinPill');
+
+    const origVal = document.getElementById('homeOriginInput')?.value || p.depCity || 'Dhaka (DAC)';
+    const destVal = document.getElementById('homeDestInput')?.value || p.arrCity || "Cox's Bazar (CXB)";
+
+    if (depEl) depEl.textContent = origVal;
+    if (arrEl) arrEl.textContent = destVal;
+
+    if (depPill) {
+      depPill.textContent = p.depDateAfter ? `📅 Departure: ${p.depDateAfter}` : '📅 Departure: Any Date';
+    }
+    if (retPill) {
+      if (this.state.currentTripType === 'roundtrip' && p.depDateBefore) {
+        retPill.textContent = `🔄 Return: ${p.depDateBefore}`;
+        retPill.style.display = 'inline-flex';
+      } else {
+        retPill.style.display = 'none';
+      }
+    }
+    const paxCount = (this.state.passengers?.adults || 1) + (this.state.passengers?.children || 0) + (this.state.passengers?.infants || 0);
+    if (paxPill) {
+      paxPill.textContent = `👥 ${paxCount} Traveler${paxCount > 1 ? 's' : ''}`;
+    }
+    if (cabinPill) {
+      cabinPill.textContent = `💺 ${this.state.cabinClass || 'Economy'}`;
+    }
+  },
+
+  toggleModifySearch(forceState) {
+    const panel = document.getElementById('modifySearchPanel');
+    if (!panel) return;
+    const isVisible = panel.style.display === 'block';
+    const nextState = forceState !== undefined ? forceState : !isVisible;
+    panel.style.display = nextState ? 'block' : 'none';
+
+    if (nextState) {
+      const origInp = document.getElementById('modifyOriginInput');
+      const destInp = document.getElementById('modifyDestInput');
+      const depDateInp = document.getElementById('modifyDepDate');
+      const retDateInp = document.getElementById('modifyReturnDate');
+      const retGroup = document.getElementById('modifyReturnGroup');
+      const cabinSel = document.getElementById('modifyCabinClass');
+
+      const homeOrig = document.getElementById('homeOriginInput');
+      const homeDest = document.getElementById('homeDestInput');
+      const homeDep = document.getElementById('homeDepDate');
+      const homeRet = document.getElementById('homeReturnDate');
+
+      if (origInp) {
+        origInp.value = homeOrig?.value || this.state.searchParams.depCity || 'Dhaka (DAC)';
+        origInp.dataset.city = homeOrig?.dataset?.city || this.state.searchParams.depCity || 'Dhaka';
+        origInp.dataset.code = homeOrig?.dataset?.code || 'DAC';
+      }
+      if (destInp) {
+        destInp.value = homeDest?.value || this.state.searchParams.arrCity || "Cox's Bazar (CXB)";
+        destInp.dataset.city = homeDest?.dataset?.city || this.state.searchParams.arrCity || "Cox's Bazar";
+        destInp.dataset.code = homeDest?.dataset?.code || 'CXB';
+      }
+      if (depDateInp) {
+        depDateInp.value = this.state.searchParams.depDateAfter || homeDep?.value || '';
+        depDateInp.min = new Date().toISOString().split('T')[0];
+      }
+      if (retDateInp && retGroup) {
+        if (this.state.currentTripType === 'roundtrip') {
+          retGroup.style.display = 'block';
+          retDateInp.value = this.state.searchParams.depDateBefore || homeRet?.value || '';
+          if (depDateInp && depDateInp.value) retDateInp.min = depDateInp.value;
+        } else {
+          retGroup.style.display = 'none';
+        }
+      }
+      if (cabinSel) {
+        cabinSel.value = this.state.cabinClass || 'Economy';
+      }
+    }
+  },
+
+  swapModifyAirports() {
+    const orig = document.getElementById('modifyOriginInput');
+    const dest = document.getElementById('modifyDestInput');
+    if (!orig || !dest) return;
+
+    const tmpVal = orig.value;
+    const tmpCity = orig.dataset.city;
+    const tmpCode = orig.dataset.code;
+
+    orig.value = dest.value;
+    orig.dataset.city = dest.dataset.city || '';
+    orig.dataset.code = dest.dataset.code || '';
+
+    dest.value = tmpVal;
+    dest.dataset.city = tmpCity || '';
+    dest.dataset.code = tmpCode || '';
+  },
+
+  submitModifiedSearch() {
+    const orig = document.getElementById('modifyOriginInput');
+    const dest = document.getElementById('modifyDestInput');
+    const depDate = document.getElementById('modifyDepDate')?.value || '';
+    const retDate = document.getElementById('modifyReturnDate')?.value || '';
+    const cabin = document.getElementById('modifyCabinClass')?.value || 'Economy';
+
+    if (!orig || !orig.value.trim()) {
+      this.showToast('Please specify departure airport', 'error');
+      return;
+    }
+    if (!dest || !dest.value.trim()) {
+      this.showToast('Please specify destination airport', 'error');
       return;
     }
 
-    const res = await fetch(`/api/airports/cities?country=${encodeURIComponent(c)}`);
-    const cities = await res.json();
-    citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(city => `<option value="${city}">${city}</option>`).join('');
-    this.triggerFilteredSearch();
+    const fromCity = orig.dataset.city || orig.value.replace(/\s*\(.*?\)/, '').trim();
+    const toCity = dest.dataset.city || dest.value.replace(/\s*\(.*?\)/, '').trim();
+    const fromCode = orig.dataset.code || fromCity;
+    const toCode = dest.dataset.code || toCity;
+
+    const homeOrig = document.getElementById('homeOriginInput');
+    const homeDest = document.getElementById('homeDestInput');
+    const homeDep = document.getElementById('homeDepDate');
+    const homeRet = document.getElementById('homeReturnDate');
+    if (homeOrig) {
+      homeOrig.value = orig.value;
+      homeOrig.dataset.city = fromCity;
+      homeOrig.dataset.code = fromCode;
+    }
+    if (homeDest) {
+      homeDest.value = dest.value;
+      homeDest.dataset.city = toCity;
+      homeDest.dataset.code = toCode;
+    }
+    if (homeDep) homeDep.value = depDate;
+    if (homeRet) homeRet.value = retDate;
+
+    this.state.searchParams.depCity = fromCity;
+    this.state.searchParams.arrCity = toCity;
+    this.state.searchParams.depDateAfter = depDate;
+    this.state.searchParams.depDateBefore = retDate;
+    this.selectCabinClass(cabin);
+
+    const urlParams = new URLSearchParams();
+    const tripType = this.state.currentTripType === 'roundtrip' ? 'round_trip' : 'one_way';
+    urlParams.set('trip_type', tripType);
+    urlParams.set('from', fromCode);
+    urlParams.set('to', toCode);
+    if (depDate) urlParams.set('departure', depDate);
+    if (retDate && tripType === 'round_trip') urlParams.set('return', retDate);
+    urlParams.set('adults', this.state.passengers.adults);
+    urlParams.set('children', this.state.passengers.children);
+    urlParams.set('infants', this.state.passengers.infants);
+    urlParams.set('cabin', cabin);
+
+    const newUrl = `/flight/list?${urlParams.toString()}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+
+    this.toggleModifySearch(false);
+    this.updateSearchSummaryBar();
+    this.executeSearchQuery();
+  },
+
+  async onDepCountryChange() {
+    const c = document.getElementById('filterDepCountry')?.value;
+    const citySel = document.getElementById('filterDepCity');
+    if (!citySel) return;
+    if (!c) {
+      citySel.innerHTML = '<option value="">All Cities</option>';
+      this.executeSearchQuery();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/airports/cities?country=${encodeURIComponent(c)}`);
+      const cities = await res.json();
+      citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(city => `<option value="${city}">${city}</option>`).join('');
+      this.executeSearchQuery();
+    } catch (e) {
+      console.error(e);
+    }
   },
 
   async onArrCountryChange() {
-    const c = document.getElementById('filterArrCountry').value;
+    const c = document.getElementById('filterArrCountry')?.value;
     const citySel = document.getElementById('filterArrCity');
+    if (!citySel) return;
     if (!c) {
       citySel.innerHTML = '<option value="">All Cities</option>';
-      this.triggerFilteredSearch();
+      this.executeSearchQuery();
       return;
     }
-
-    const res = await fetch(`/api/airports/cities?country=${encodeURIComponent(c)}`);
-    const cities = await res.json();
-    citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(city => `<option value="${city}">${city}</option>`).join('');
-    this.triggerFilteredSearch();
-  },
-
-  triggerFilteredSearch() {
-    this.state.searchParams.depCountry = document.getElementById('filterDepCountry').value;
-    const depCityVal = document.getElementById('filterDepCity').value;
-    if (depCityVal || document.getElementById('filterDepCountry').value) {
-      this.state.searchParams.depCity = depCityVal;
+    try {
+      const res = await fetch(`/api/airports/cities?country=${encodeURIComponent(c)}`);
+      const cities = await res.json();
+      citySel.innerHTML = '<option value="">All Cities</option>' + cities.map(city => `<option value="${city}">${city}</option>`).join('');
+      this.executeSearchQuery();
+    } catch (e) {
+      console.error(e);
     }
-    this.state.searchParams.arrCountry = document.getElementById('filterArrCountry').value;
-    const arrCityVal = document.getElementById('filterArrCity').value;
-    if (arrCityVal || document.getElementById('filterArrCountry').value) {
-      this.state.searchParams.arrCity = arrCityVal;
-    }
-    this.state.searchParams.depDateAfter = document.getElementById('filterDateAfter').value;
-    this.state.searchParams.depDateBefore = document.getElementById('filterDateBefore').value;
-    this.state.searchParams.sortBy = document.getElementById('filterSortBy').value;
-    this.state.searchParams.search = document.getElementById('filterKeyword').value.trim();
-    this.state.searchParams.page = 1;
-
-    this.executeSearchQuery();
   },
 
   clearSearchRoute() {
@@ -1831,40 +2004,27 @@ const app = {
     this.executeSearchQuery();
   },
 
-  resetSearchFilters() {
-    document.getElementById('filterDepCountry').value = '';
-    document.getElementById('filterDepCity').innerHTML = '<option value="">All Cities</option>';
-    document.getElementById('filterArrCountry').value = '';
-    document.getElementById('filterArrCity').innerHTML = '<option value="">All Cities</option>';
-    document.getElementById('filterDateAfter').value = '';
-    document.getElementById('filterDateBefore').value = '';
-    document.getElementById('filterSortBy').value = 'closestDate';
-    document.getElementById('filterKeyword').value = '';
-
-    this.state.searchParams = {
-      page: 1,
-      limit: 10,
-      depCountry: '',
-      arrCountry: '',
-      depCity: '',
-      arrCity: '',
-      depDateAfter: '',
-      depDateBefore: '',
-      sortBy: 'closestDate',
-      search: ''
-    };
-    this.executeSearchQuery();
-  },
-
   swapSearchAirports() {
-    const dc = document.getElementById('filterDepCountry');
-    const ac = document.getElementById('filterArrCountry');
-    const tempCountry = dc.value;
-    dc.value = ac.value;
-    ac.value = tempCountry;
+    const orig = this.state.searchParams.depCity;
+    this.state.searchParams.depCity = this.state.searchParams.arrCity;
+    this.state.searchParams.arrCity = orig;
 
-    this.onDepCountryChange();
-    this.onArrCountryChange();
+    const homeOrig = document.getElementById('homeOriginInput');
+    const homeDest = document.getElementById('homeDestInput');
+    if (homeOrig && homeDest) {
+      const tmpVal = homeOrig.value;
+      const tmpCity = homeOrig.dataset.city;
+      const tmpCode = homeOrig.dataset.code;
+      homeOrig.value = homeDest.value;
+      homeOrig.dataset.city = homeDest.dataset.city || '';
+      homeOrig.dataset.code = homeDest.dataset.code || '';
+      homeDest.value = tmpVal;
+      homeDest.dataset.city = tmpCity || '';
+      homeDest.dataset.code = tmpCode || '';
+    }
+
+    this.updateSearchSummaryBar();
+    this.executeSearchQuery();
   },
 
   async executeSearchQuery() {
@@ -1872,21 +2032,21 @@ const app = {
     const badge = document.getElementById('resultsCountBadge');
     if (!listContainer) return;
 
+    this.updateSearchSummaryBar();
+
     listContainer.innerHTML = `
-      <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle);">
         <div class="pulsing-dot" style="margin: 0 auto 12px auto;"></div>
-        Searching scheduled routes across worldwide network...
+        Searching available flights and live schedules...
       </div>
     `;
 
     const p = this.state.searchParams;
-    const offset = (p.page - 1) * p.limit;
     const accId = this.state.user ? this.state.user.id : 0;
 
     const query = new URLSearchParams({
-      limit: p.limit,
-      offset: offset,
-      sortBy: p.sortBy,
+      limit: 200,
+      offset: 0,
       accountId: accId
     });
 
@@ -1896,48 +2056,574 @@ const app = {
     if (p.arrCity) query.append('arrCity', p.arrCity);
     if (p.depDateAfter) query.append('dateAfter', p.depDateAfter);
     if (p.depDateBefore) query.append('dateBefore', p.depDateBefore);
-    if (p.search) query.append('q', p.search);
     if (p.cabinClass && p.cabinClass !== 'all') query.append('cabinClass', p.cabinClass);
 
     try {
       const res = await fetch(`/api/flights?${query.toString()}`);
       const data = await res.json();
+      const flights = data.flights || [];
 
-      badge.innerText = `${data.total} Flights Found`;
-      const hint = document.getElementById('resultsFilterHint');
-      if (hint) {
-        if (this.state.currentTripType === 'multicity' && this.state.multiCityLegs && this.state.multiCityLegs.length > 0) {
-          const legsSummary = this.state.multiCityLegs.map((l, i) => `Flight ${i + 1}: ${l.fromCity || l.fromCode} ➔ ${l.toCity || l.toCode}`).join(' | ');
-          hint.innerHTML = `Multi-City: <strong>${legsSummary}</strong> <button class="btn-clear-route-pill" onclick="app.clearSearchRoute()" title="Clear route filter">✕ Clear</button>`;
-        } else if (this.state.currentTripType === 'roundtrip' && (p.depCity || p.arrCity)) {
-          hint.innerHTML = `Round Trip: <strong>${p.depCity || 'Any'}</strong> ⇄ <strong>${p.arrCity || 'Any'}</strong> (Depart: ${p.depDateAfter || 'Any'} | Return: ${p.depDateBefore || 'Any'}) <button class="btn-clear-route-pill" onclick="app.clearSearchRoute()" title="Clear route filter">✕ Clear</button>`;
-        } else if (p.depCity || p.arrCity) {
-          hint.innerHTML = `Route: <strong>${p.depCity || 'Any'}</strong> ➔ <strong>${p.arrCity || 'Any'}</strong> <button class="btn-clear-route-pill" onclick="app.clearSearchRoute()" title="Clear route filter">✕ Clear</button>`;
-        } else {
-          hint.innerText = 'Showing scheduled flights worldwide';
-        }
-      }
-
-      if (!data.flights || data.flights.length === 0) {
-        listContainer.innerHTML = `
-          <div class="empty-search-state" style="padding: 56px 24px; text-align: center; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
-            <div style="font-size: 2.8rem; margin-bottom: 14px;">🛫</div>
-            <h3 style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 8px; font-family: var(--font-heading);">No Flights Found Matching Your Criteria</h3>
-            <p style="color: var(--text-secondary); max-width: 460px; margin: 0 auto 20px auto; font-size: 0.94rem; line-height: 1.5;">
-              We couldn't find any scheduled flights for this route and date combination. Try selecting a nearby date, checking another departure airport, or clearing your filters.
-            </p>
-            <button class="btn-primary" onclick="app.resetSearchFilters()">Reset Search Filters</button>
-          </div>
-        `;
-        document.getElementById('searchPagination').innerHTML = '';
-        return;
-      }
-
-      listContainer.innerHTML = data.flights.map(f => this.renderFlightCard(f)).join('');
-      this.renderPagination(data.total, p.limit, p.page);
+      this.state.rawSearchResults = flights;
+      this.populateSidebarFilters(flights);
+      this.applyClientFiltersAndSort();
     } catch (e) {
       console.error(e);
       listContainer.innerHTML = '<div style="color: #ef4444; padding: 24px; text-align: center; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">Failed to load flights. Please verify server status and try again.</div>';
+    }
+  },
+
+  populateSidebarFilters(flights) {
+    if (!flights) flights = [];
+
+    // 1. Price slider bounds & value
+    const prices = flights.map(f => {
+      let p = f.economy_price || 0;
+      if (this.state.cabinClass === 'Business' && f.business_price) p = f.business_price;
+      else if (this.state.cabinClass === 'First Class' && f.first_price) p = f.first_price;
+      const pax = (this.state.passengers?.adults || 1) + (this.state.passengers?.children || 0);
+      return Math.round(p * Math.max(1, pax));
+    }).filter(p => p > 0);
+
+    const minPrice = prices.length ? Math.min(...prices) : 3000;
+    const maxPrice = prices.length ? Math.max(...prices) : 90000;
+
+    const priceSlider = document.getElementById('filterPriceSlider');
+    const minBoundEl = document.getElementById('priceMinBound');
+    const maxBoundEl = document.getElementById('priceMaxBound');
+    const priceValDisplay = document.getElementById('priceSliderValDisplay');
+
+    if (priceSlider) {
+      priceSlider.min = minPrice;
+      priceSlider.max = Math.max(minPrice + 500, maxPrice);
+      if (this.state.filters.maxPrice === Infinity || this.state.filters.maxPrice > maxPrice || this.state.filters.maxPrice < minPrice) {
+        this.state.filters.maxPrice = Math.max(minPrice + 500, maxPrice);
+        priceSlider.value = this.state.filters.maxPrice;
+      } else {
+        priceSlider.value = this.state.filters.maxPrice;
+      }
+    }
+    if (minBoundEl) minBoundEl.innerText = this.formatCurrency(minPrice);
+    if (maxBoundEl) maxBoundEl.innerText = this.formatCurrency(Math.max(minPrice + 500, maxPrice));
+    if (priceValDisplay) priceValDisplay.innerText = this.formatCurrency(this.state.filters.maxPrice);
+
+    // 2. Airlines: ONLY airlines available in current search results!
+    const airlineCounts = {};
+    flights.forEach(f => {
+      const name = f.airlineName || 'Other Airline';
+      airlineCounts[name] = (airlineCounts[name] || 0) + 1;
+    });
+
+    const airlinesContainer = document.getElementById('filterAirlinesList');
+    if (airlinesContainer) {
+      const airlineNames = Object.keys(airlineCounts).sort();
+      if (airlineNames.length === 0) {
+        airlinesContainer.innerHTML = '<div class="filter-empty-hint">No airlines for route</div>';
+      } else {
+        airlinesContainer.innerHTML = airlineNames.map(name => {
+          const isChecked = this.state.filters.selectedAirlines.has(name);
+          return `
+            <label class="filter-checkbox-item">
+              <input type="checkbox" value="${name}" class="filter-airline-cb" ${isChecked ? 'checked' : ''} onchange="app.onAirlineFilterChange()">
+              <span class="cb-custom"></span>
+              <span class="cb-label">${name}</span>
+              <span class="cb-count">(${airlineCounts[name]})</span>
+            </label>
+          `;
+        }).join('');
+      }
+    }
+
+    // 3. Stops counts
+    let stop0 = 0, stop1 = 0, stop2 = 0;
+    flights.forEach(f => {
+      const s = typeof f.stops === 'number' ? f.stops : 0;
+      if (s === 0) stop0++;
+      else if (s === 1) stop1++;
+      else stop2++;
+    });
+    const c0 = document.getElementById('countStop0');
+    const c1 = document.getElementById('countStop1');
+    const c2 = document.getElementById('countStop2');
+    if (c0) c0.innerText = `(${stop0})`;
+    if (c1) c1.innerText = `(${stop1})`;
+    if (c2) c2.innerText = `(${stop2})`;
+
+    // 4. Max Duration slider bounds
+    const durations = flights.map(f => f.durationMinutes || 60);
+    const maxDur = durations.length ? Math.max(...durations) : 720;
+    const durSlider = document.getElementById('filterDurationSlider');
+    const durMaxBound = document.getElementById('durationMaxBound');
+    const durValDisplay = document.getElementById('durationSliderValDisplay');
+
+    if (durSlider) {
+      durSlider.max = Math.max(120, maxDur);
+      if (this.state.filters.maxDuration === Infinity || this.state.filters.maxDuration > maxDur) {
+        this.state.filters.maxDuration = Math.max(120, maxDur);
+        durSlider.value = this.state.filters.maxDuration;
+      } else {
+        durSlider.value = this.state.filters.maxDuration;
+      }
+    }
+    const maxDurHrs = Math.floor(Math.max(120, maxDur) / 60);
+    const maxDurMins = Math.max(120, maxDur) % 60;
+    if (durMaxBound) durMaxBound.innerText = `${maxDurHrs}h ${maxDurMins ? maxDurMins + 'm' : ''}`;
+    if (durValDisplay) {
+      const h = Math.floor(this.state.filters.maxDuration / 60);
+      const m = this.state.filters.maxDuration % 60;
+      durValDisplay.innerText = `${h}h ${m < 10 ? '0' : ''}${m}m`;
+    }
+
+    // 5. Refund Policy counts
+    let refYes = 0, refPart = 0, refNo = 0;
+    flights.forEach(f => {
+      const r = f.refundability || 'Non-refundable';
+      if (r === 'Refundable') refYes++;
+      else if (r === 'Partially Refundable') refPart++;
+      else refNo++;
+    });
+    const cRefYes = document.getElementById('countRefundYes');
+    const cRefPart = document.getElementById('countRefundPartial');
+    const cRefNo = document.getElementById('countRefundNo');
+    if (cRefYes) cRefYes.innerText = `(${refYes})`;
+    if (cRefPart) cRefPart.innerText = `(${refPart})`;
+    if (cRefNo) cRefNo.innerText = `(${refNo})`;
+
+    // 6. Baggage Allowance counts
+    let b20 = 0, b25 = 0, b30 = 0, b35 = 0;
+    flights.forEach(f => {
+      const b = f.baggageAllowance || '';
+      if (b.includes('20 kg')) b20++;
+      if (b.includes('25 kg')) b25++;
+      if (b.includes('30 kg')) b30++;
+      if (b.includes('35 kg') || b.includes('40 kg')) b35++;
+    });
+    const cb20 = document.getElementById('countBaggage20');
+    const cb25 = document.getElementById('countBaggage25');
+    const cb30 = document.getElementById('countBaggage30');
+    const cb35 = document.getElementById('countBaggage35');
+    if (cb20) cb20.innerText = `(${b20})`;
+    if (cb25) cb25.innerText = `(${b25})`;
+    if (cb30) cb30.innerText = `(${b30})`;
+    if (cb35) cb35.innerText = `(${b35})`;
+  },
+
+  getTimeSlot(datetimeStr) {
+    if (!datetimeStr) return 'morning';
+    const parts = datetimeStr.split(' ');
+    const timePart = parts[1] || datetimeStr;
+    const hour = parseInt(timePart.split(':')[0], 10) || 0;
+    if (hour >= 0 && hour < 6) return 'early_morning';
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 18) return 'afternoon';
+    return 'evening';
+  },
+
+  applyClientFiltersAndSort() {
+    const raw = this.state.rawSearchResults || [];
+    const fState = this.state.filters;
+    const pax = (this.state.passengers?.adults || 1) + (this.state.passengers?.children || 0);
+
+    const filtered = raw.filter(f => {
+      // 1. Keyword search (airline, flight code, airports, cities, aircraft)
+      if (fState.keyword) {
+        const text = [
+          f.airlineName,
+          f.flightNumber,
+          f.aircraft,
+          f.depCity,
+          f.arrCity,
+          f.depAirportName,
+          f.arrAirportName,
+          f.depIATA,
+          f.arrIATA
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!text.includes(fState.keyword)) return false;
+      }
+
+      // Compute total ticket price based on selected cabin and passenger count
+      let unitPrice = f.economy_price || 0;
+      if (this.state.cabinClass === 'Business' && f.business_price) unitPrice = f.business_price;
+      else if (this.state.cabinClass === 'First Class' && f.first_price) unitPrice = f.first_price;
+      else if (this.state.cabinClass === 'Premium Economy') unitPrice = Math.round(unitPrice * 1.35);
+      const totalPrice = Math.round(unitPrice * Math.max(1, pax));
+      f.calculatedTotalPrice = totalPrice;
+
+      // 2. Price filter
+      if (totalPrice > fState.maxPrice) return false;
+
+      // 3. Airline filter (OR within selected airlines)
+      if (fState.selectedAirlines.size > 0) {
+        if (!fState.selectedAirlines.has(f.airlineName)) return false;
+      }
+
+      // 4. Stops filter
+      if (fState.selectedStops.size > 0) {
+        const s = typeof f.stops === 'number' ? f.stops : 0;
+        let matchStop = false;
+        if (s === 0 && fState.selectedStops.has('0')) matchStop = true;
+        if (s === 1 && fState.selectedStops.has('1')) matchStop = true;
+        if (s >= 2 && fState.selectedStops.has('2')) matchStop = true;
+        if (!matchStop) return false;
+      }
+
+      // 5. Departure Time Slot
+      if (fState.depTimeSlots.size > 0) {
+        const slot = this.getTimeSlot(f.dep_datetime);
+        if (!fState.depTimeSlots.has(slot)) return false;
+      }
+
+      // 6. Arrival Time Slot
+      if (fState.arrTimeSlots.size > 0) {
+        const slot = this.getTimeSlot(f.arr_datetime);
+        if (!fState.arrTimeSlots.has(slot)) return false;
+      }
+
+      // 7. Max Journey Duration
+      const dur = f.durationMinutes || 60;
+      if (dur > fState.maxDuration) return false;
+
+      // 8. Refund Policy
+      if (fState.refundPolicies.size > 0) {
+        if (!fState.refundPolicies.has(f.refundability)) return false;
+      }
+
+      // 9. Baggage Allowance
+      if (fState.baggageOptions.size > 0) {
+        const b = f.baggageAllowance || '';
+        let matchBag = false;
+        fState.baggageOptions.forEach(opt => {
+          if (b.includes(opt)) matchBag = true;
+          if (opt === '35 kg' && (b.includes('35 kg') || b.includes('40 kg'))) matchBag = true;
+        });
+        if (!matchBag) return false;
+      }
+
+      return true;
+    });
+
+    // Sort results
+    const sortKey = this.state.activeSort || 'recommended';
+    filtered.sort((a, b) => {
+      const priceA = a.calculatedTotalPrice || a.economy_price || 0;
+      const priceB = b.calculatedTotalPrice || b.economy_price || 0;
+      const durA = a.durationMinutes || 0;
+      const durB = b.durationMinutes || 0;
+      const depA = (a.dep_datetime || '').replace(' ', 'T');
+      const depB = (b.dep_datetime || '').replace(' ', 'T');
+      const arrA = (a.arr_datetime || '').replace(' ', 'T');
+      const arrB = (b.arr_datetime || '').replace(' ', 'T');
+      const stopsA = typeof a.stops === 'number' ? a.stops : 0;
+      const stopsB = typeof b.stops === 'number' ? b.stops : 0;
+
+      switch (sortKey) {
+        case 'cheapest':
+          return priceA - priceB;
+        case 'fastest':
+          return durA - durB;
+        case 'earliestDep':
+          return depA.localeCompare(depB);
+        case 'latestDep':
+          return depB.localeCompare(depA);
+        case 'earliestArr':
+          return arrA.localeCompare(arrB);
+        case 'recommended':
+        default:
+          if (stopsA !== stopsB) return stopsA - stopsB;
+          if (priceA !== priceB) return priceA - priceB;
+          return depA.localeCompare(depB);
+      }
+    });
+
+    this.state.filteredSearchResults = filtered;
+
+    // Update Result count badge
+    const badge = document.getElementById('resultsCountBadge');
+    if (badge) {
+      if (filtered.length === raw.length) {
+        badge.innerText = `${raw.length} Flights Found`;
+      } else {
+        badge.innerText = `Showing ${filtered.length} of ${raw.length} Flights Found`;
+      }
+    }
+
+    // Render active filter tags
+    this.renderActiveFilterTags();
+
+    // Render list or empty state
+    const listContainer = document.getElementById('flightsListContainer');
+    if (!listContainer) return;
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = `
+        <div class="empty-search-state" style="padding: 56px 24px; text-align: center; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+          <div style="font-size: 2.8rem; margin-bottom: 14px;">🔍</div>
+          <h3 style="font-size: 1.35rem; color: var(--text-main); margin-bottom: 8px; font-family: var(--font-heading);">No Flights Match Your Filters</h3>
+          <p style="color: var(--text-secondary); max-width: 460px; margin: 0 auto 20px auto; font-size: 0.94rem; line-height: 1.5;">
+            We found flights on this route, but none match the specific filters (airlines, price, departure times, or baggage) you selected.
+          </p>
+          <button class="btn-primary" onclick="app.clearAllFilters()">Reset All Filters</button>
+        </div>
+      `;
+      const pag = document.getElementById('searchPagination');
+      if (pag) pag.innerHTML = '';
+      return;
+    }
+
+    listContainer.innerHTML = filtered.map(f => this.renderFlightCard(f)).join('');
+  },
+
+  renderActiveFilterTags() {
+    const row = document.getElementById('activeFilterTagsRow');
+    const mobileBadge = document.getElementById('mobileFilterBadge');
+    const resetInline = document.getElementById('btnResetFiltersInline');
+    const fState = this.state.filters;
+    const tags = [];
+
+    if (fState.keyword) {
+      tags.push({ label: `"${fState.keyword}"`, clear: () => { fState.keyword = ''; const el = document.getElementById('filterKeyword'); if (el) el.value = ''; } });
+    }
+    if (fState.maxPrice < Infinity) {
+      const slider = document.getElementById('filterPriceSlider');
+      if (slider && Number(slider.value) < Number(slider.max)) {
+        tags.push({ label: `Max ${this.formatCurrency(fState.maxPrice)}`, clear: () => {
+          fState.maxPrice = Number(slider.max);
+          slider.value = slider.max;
+          const disp = document.getElementById('priceSliderValDisplay');
+          if (disp) disp.innerText = this.formatCurrency(slider.max);
+        }});
+      }
+    }
+    fState.selectedAirlines.forEach(name => {
+      tags.push({ label: `Airline: ${name}`, clear: () => {
+        fState.selectedAirlines.delete(name);
+        document.querySelectorAll('.filter-airline-cb').forEach(cb => { if (cb.value === name) cb.checked = false; });
+      }});
+    });
+    fState.selectedStops.forEach(st => {
+      const lbl = st === '0' ? 'Non-stop' : (st === '1' ? '1 stop' : '2+ stops');
+      tags.push({ label: lbl, clear: () => {
+        fState.selectedStops.delete(st);
+        document.querySelectorAll('.filter-stop-cb').forEach(cb => { if (cb.value === st) cb.checked = false; });
+      }});
+    });
+    fState.depTimeSlots.forEach(slot => {
+      const titles = { early_morning: 'Dep: Early Morning', morning: 'Dep: Morning', afternoon: 'Dep: Afternoon', evening: 'Dep: Evening' };
+      tags.push({ label: titles[slot] || slot, clear: () => {
+        fState.depTimeSlots.delete(slot);
+        document.querySelectorAll(`.time-slot-btn[data-slot="${slot}"]`).forEach(btn => {
+          if (btn.getAttribute('onclick')?.includes("'dep'")) btn.classList.remove('active');
+        });
+      }});
+    });
+    fState.arrTimeSlots.forEach(slot => {
+      const titles = { early_morning: 'Arr: Early Morning', morning: 'Arr: Morning', afternoon: 'Arr: Afternoon', evening: 'Arr: Evening' };
+      tags.push({ label: titles[slot] || slot, clear: () => {
+        fState.arrTimeSlots.delete(slot);
+        document.querySelectorAll(`.time-slot-btn[data-slot="${slot}"]`).forEach(btn => {
+          if (btn.getAttribute('onclick')?.includes("'arr'")) btn.classList.remove('active');
+        });
+      }});
+    });
+    fState.refundPolicies.forEach(ref => {
+      tags.push({ label: ref, clear: () => {
+        fState.refundPolicies.delete(ref);
+        document.querySelectorAll('.filter-refund-cb').forEach(cb => { if (cb.value === ref) cb.checked = false; });
+      }});
+    });
+    fState.baggageOptions.forEach(bag => {
+      tags.push({ label: `${bag} Bag`, clear: () => {
+        fState.baggageOptions.delete(bag);
+        document.querySelectorAll('.filter-baggage-cb').forEach(cb => { if (cb.value === bag) cb.checked = false; });
+      }});
+    });
+
+    if (mobileBadge) {
+      if (tags.length > 0) {
+        mobileBadge.innerText = tags.length;
+        mobileBadge.style.display = 'inline-flex';
+      } else {
+        mobileBadge.style.display = 'none';
+      }
+    }
+    if (resetInline) {
+      resetInline.style.display = tags.length > 0 ? 'inline-flex' : 'none';
+    }
+
+    if (!row) return;
+    if (tags.length === 0) {
+      row.style.display = 'none';
+      row.innerHTML = '';
+      return;
+    }
+
+    row.style.display = 'flex';
+    row.innerHTML = `
+      <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600; margin-right: 4px;">Active Filters (${tags.length}):</span>
+      ${tags.map((t, idx) => `
+        <span class="active-filter-tag">
+          ${t.label}
+          <button type="button" class="btn-tag-remove" onclick="app.removeFilterTag(${idx})" title="Remove filter">✕</button>
+        </span>
+      `).join('')}
+      <button type="button" class="btn-clear-filters-link" onclick="app.clearAllFilters()" style="margin-left: 8px;">Clear All</button>
+    `;
+    this._activeFilterTagClosures = tags.map(t => t.clear);
+  },
+
+  removeFilterTag(idx) {
+    if (this._activeFilterTagClosures && this._activeFilterTagClosures[idx]) {
+      this._activeFilterTagClosures[idx]();
+      this.applyClientFiltersAndSort();
+    }
+  },
+
+  onPriceSliderChange(val) {
+    this.state.filters.maxPrice = Number(val);
+    const disp = document.getElementById('priceSliderValDisplay');
+    if (disp) disp.innerText = this.formatCurrency(val);
+    this.applyClientFiltersAndSort();
+  },
+
+  onFilterKeywordInput(val) {
+    this.state.filters.keyword = (val || '').trim().toLowerCase();
+    this.applyClientFiltersAndSort();
+  },
+
+  onAirlineFilterChange() {
+    const selected = new Set();
+    document.querySelectorAll('.filter-airline-cb:checked').forEach(cb => {
+      selected.add(cb.value);
+    });
+    this.state.filters.selectedAirlines = selected;
+    this.applyClientFiltersAndSort();
+  },
+
+  toggleSelectAllAirlines(selectAll) {
+    document.querySelectorAll('.filter-airline-cb').forEach(cb => {
+      cb.checked = selectAll;
+    });
+    this.onAirlineFilterChange();
+  },
+
+  onStopFilterChange() {
+    const selected = new Set();
+    document.querySelectorAll('.filter-stop-cb:checked').forEach(cb => {
+      selected.add(cb.value);
+    });
+    this.state.filters.selectedStops = selected;
+    this.applyClientFiltersAndSort();
+  },
+
+  toggleTimeSlot(type, slot) {
+    const targetSet = type === 'dep' ? this.state.filters.depTimeSlots : this.state.filters.arrTimeSlots;
+    if (targetSet.has(slot)) {
+      targetSet.delete(slot);
+    } else {
+      targetSet.add(slot);
+    }
+
+    document.querySelectorAll(`.time-slot-btn[data-slot="${slot}"]`).forEach(btn => {
+      if (btn.getAttribute('onclick')?.includes(`'${type}'`)) {
+        btn.classList.toggle('active', targetSet.has(slot));
+      }
+    });
+
+    this.applyClientFiltersAndSort();
+  },
+
+  onDurationSliderChange(val) {
+    this.state.filters.maxDuration = Number(val);
+    const disp = document.getElementById('durationSliderValDisplay');
+    if (disp) {
+      const h = Math.floor(val / 60);
+      const m = val % 60;
+      disp.innerText = `${h}h ${m < 10 ? '0' : ''}${m}m`;
+    }
+    this.applyClientFiltersAndSort();
+  },
+
+  onRefundFilterChange() {
+    const selected = new Set();
+    document.querySelectorAll('.filter-refund-cb:checked').forEach(cb => {
+      selected.add(cb.value);
+    });
+    this.state.filters.refundPolicies = selected;
+    this.applyClientFiltersAndSort();
+  },
+
+  onBaggageFilterChange() {
+    const selected = new Set();
+    document.querySelectorAll('.filter-baggage-cb:checked').forEach(cb => {
+      selected.add(cb.value);
+    });
+    this.state.filters.baggageOptions = selected;
+    this.applyClientFiltersAndSort();
+  },
+
+  setSortOption(sortKey) {
+    this.state.activeSort = sortKey;
+    document.querySelectorAll('.sort-pill').forEach(pill => {
+      pill.classList.toggle('active', pill.dataset.sort === sortKey);
+    });
+    this.applyClientFiltersAndSort();
+  },
+
+  clearAllFilters() {
+    this.state.filters = {
+      keyword: '',
+      minPrice: 0,
+      maxPrice: Infinity,
+      selectedAirlines: new Set(),
+      selectedStops: new Set(),
+      depTimeSlots: new Set(),
+      arrTimeSlots: new Set(),
+      maxDuration: Infinity,
+      refundPolicies: new Set(),
+      baggageOptions: new Set()
+    };
+
+    const kw = document.getElementById('filterKeyword');
+    if (kw) kw.value = '';
+
+    const priceSlider = document.getElementById('filterPriceSlider');
+    if (priceSlider) {
+      priceSlider.value = priceSlider.max;
+      const disp = document.getElementById('priceSliderValDisplay');
+      if (disp) disp.innerText = this.formatCurrency(priceSlider.max);
+      this.state.filters.maxPrice = Number(priceSlider.max);
+    }
+
+    document.querySelectorAll('.filter-airline-cb').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.filter-stop-cb').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.time-slot-btn').forEach(btn => { btn.classList.remove('active'); });
+
+    const durSlider = document.getElementById('filterDurationSlider');
+    if (durSlider) {
+      durSlider.value = durSlider.max;
+      const disp = document.getElementById('durationSliderValDisplay');
+      if (disp) {
+        const h = Math.floor(durSlider.max / 60);
+        const m = durSlider.max % 60;
+        disp.innerText = `${h}h ${m < 10 ? '0' : ''}${m}m`;
+      }
+      this.state.filters.maxDuration = Number(durSlider.max);
+    }
+
+    document.querySelectorAll('.filter-refund-cb').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.filter-baggage-cb').forEach(cb => { cb.checked = false; });
+
+    this.applyClientFiltersAndSort();
+  },
+
+  toggleMobileFilterDrawer(open) {
+    const sidebar = document.getElementById('searchSidebar');
+    const overlay = document.getElementById('sidebarDrawerOverlay');
+    if (sidebar) sidebar.classList.toggle('mobile-open', open);
+    if (overlay) overlay.classList.toggle('active', open);
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
   },
 
@@ -1954,8 +2640,25 @@ const app = {
     const durationLabel = f.durationFormatted || this.calculateDuration(f.dep_datetime, f.arr_datetime);
     const flightNum = f.flightNumber || `${(f.airlineIATA || 'FL').trim().toUpperCase()}-${100 + (f.id % 900)}`;
     const flightStatus = f.flightStatus || 'ON TIME';
+    const aircraft = f.aircraft || 'Boeing 737-800';
     const availableSeats = typeof f.availableSeats === 'number' ? f.availableSeats : Math.max(0, 120 - (Number(f.bookedCount) || 0));
     const seatsBadgeClass = availableSeats > 25 ? 'seats-plenty' : (availableSeats > 5 ? 'seats-limited' : 'seats-almost-full');
+
+    const stopsCount = typeof f.stops === 'number' ? f.stops : 0;
+    const stopsLabel = stopsCount === 0 ? 'Non-stop' : (stopsCount === 1 ? `1 stop (${f.transitAirport || 'Transit'})` : `${stopsCount} stops`);
+    const stopsBadgeClass = stopsCount === 0 ? 'nonstop-badge' : 'stop-badge';
+
+    const refundText = f.refundability || 'Refundable';
+    let refundClass = 'refundable';
+    if (refundText === 'Partially Refundable') refundClass = 'partially';
+    else if (refundText === 'Non-refundable') refundClass = 'non-refundable';
+
+    const baggage = f.baggageAllowance || 'Check-in: 20 kg • Cabin: 7 kg';
+    const cabin = this.state.cabinClass || 'Economy';
+
+    const paxCount = (this.state.passengers?.adults || 1) + (this.state.passengers?.children || 0);
+    const paxText = paxCount === 1 ? '1 adult' : `${paxCount} travelers`;
+    const totalPrice = f.calculatedTotalPrice || f.economy_price || 0;
 
     const favClass = f.isFavorite ? 'active' : '';
 
@@ -1968,14 +2671,16 @@ const app = {
               <div class="airline-name" title="${f.airlineName}">${f.airlineName}</div>
               <div class="flight-id-tag">
                 <span class="flight-code">${flightNum}</span>
+                <span class="aircraft-pill">${aircraft}</span>
                 <span class="flight-status-pill status-${flightStatus.toLowerCase().replace(/\s+/g, '-')}">● ${flightStatus}</span>
               </div>
             </div>
           </div>
           <div class="header-card-right">
+            <span class="refund-badge ${refundClass}">${refundText}</span>
             <span class="seats-available-badge ${seatsBadgeClass}">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 11v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
-              ${availableSeats} Seats Available
+              ${availableSeats} Seats
             </span>
             <button class="btn-favorite-card ${favClass}" onclick="app.toggleFavorite(${f.id}, this)" title="Save to Favorites">
               <svg viewBox="0 0 24 24" fill="${f.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
@@ -1997,7 +2702,8 @@ const app = {
               <div class="path-line"></div>
               <span class="path-plane-icon">✈</span>
             </div>
-            <span class="nonstop-badge" title="${f.flightType || 'Direct / Non-stop'}">${f.flightType || 'Direct / Non-stop'}</span>
+            <span class="${stopsBadgeClass}" title="${stopsLabel}">${stopsLabel}</span>
+            ${f.transitInfo ? `<div class="transit-info-badge">${f.transitInfo}</div>` : ''}
           </div>
 
           <div class="timeline-point text-right">
@@ -2009,25 +2715,19 @@ const app = {
         </div>
 
         <div class="flight-card-footer">
-          <div class="card-pricing-classes">
-            <div class="price-col">
-              <span class="price-class-name">Economy</span>
-              <span class="price-amount eco">${this.formatCurrency(f.economy_price)}</span>
-            </div>
-            <div class="price-col">
-              <span class="price-class-name">Business</span>
-              <span class="price-amount biz">${this.formatCurrency(f.business_price)}</span>
-            </div>
-            <div class="price-col">
-              <span class="price-class-name">First</span>
-              <span class="price-amount first">${this.formatCurrency(f.first_price)}</span>
-            </div>
+          <div class="flight-card-features-row">
+            <span class="baggage-pill" title="Baggage allowance">🧳 ${baggage}</span>
+            <span class="baggage-pill" title="Cabin class">💺 ${cabin}</span>
           </div>
 
-          <button class="btn-select-seats" onclick="app.openSeatMap(${f.id})">
-            <span>Select Seats</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
+          <div class="card-total-price-box">
+            <span class="price-subtext">Total Price (${paxText})</span>
+            <span class="price-total-large">${this.formatCurrency(totalPrice)}</span>
+            <button class="btn-select-flight-main" onclick="app.openSeatMap(${f.id})">
+              <span>Select Flight</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     `;

@@ -339,98 +339,358 @@
     </section>
 
     <!-- ============================================== -->
-    <!-- VIEW 2: SEARCH & RESULTS PAGE -->
+    <!-- VIEW 2: ADVANCED FLIGHT SEARCH & RESULTS PAGE -->
     <!-- ============================================== -->
     <section class="page-view" id="pageSearch" style="display: none;">
-      <div class="container search-page-layout">
-        <!-- Sidebar Filters -->
-        <aside class="search-sidebar glassmorphism">
-          <div class="sidebar-header">
-            <h3>Filters & Sorting</h3>
-            <button class="btn-text-link" onclick="app.resetSearchFilters()">Reset</button>
-          </div>
+      <div class="container search-page-container">
 
-          <!-- Quick Text Search -->
-          <div class="filter-group">
-            <label class="filter-label">Quick Search</label>
-            <input type="text" id="filterKeyword" class="filter-input" placeholder="City, country, airport or airline..." oninput="app.triggerFilteredSearch()">
-          </div>
+        <!-- Mobile Filter Backdrop Overlay -->
+        <div class="sidebar-drawer-overlay" id="sidebarDrawerOverlay" onclick="app.toggleMobileFilterDrawer(false)"></div>
 
-          <!-- Departure Country & City -->
-          <div class="filter-group">
-            <label class="filter-label">Departure Country</label>
-            <select id="filterDepCountry" class="filter-select" onchange="app.onDepCountryChange()">
-              <option value="">All Countries</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">Departure City</label>
-            <select id="filterDepCity" class="filter-select" onchange="app.triggerFilteredSearch()">
-              <option value="">All Cities</option>
-            </select>
-          </div>
-
-          <!-- Arrival Country & City -->
-          <div class="filter-group">
-            <label class="filter-label">Arrival Country</label>
-            <select id="filterArrCountry" class="filter-select" onchange="app.onArrCountryChange()">
-              <option value="">All Countries</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">Arrival City</label>
-            <select id="filterArrCity" class="filter-select" onchange="app.triggerFilteredSearch()">
-              <option value="">All Cities</option>
-            </select>
-          </div>
-
-          <!-- Date Filters -->
-          <div class="filter-group">
-            <label class="filter-label">Departure From</label>
-            <input type="date" id="filterDateAfter" class="filter-input" onchange="app.triggerFilteredSearch()">
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">Departure Until</label>
-            <input type="date" id="filterDateBefore" class="filter-input" onchange="app.triggerFilteredSearch()">
-          </div>
-
-          <!-- Sorting -->
-          <div class="filter-group">
-            <label class="filter-label">Sort Results By</label>
-            <select id="filterSortBy" class="filter-select" onchange="app.triggerFilteredSearch()">
-              <option value="closestDate">Closest Date (Earliest)</option>
-              <option value="furthestDate">Furthest Date</option>
-              <option value="priceAsc">Price: Low to High</option>
-              <option value="priceDesc">Price: High to Low</option>
-            </select>
-          </div>
-
-          <button class="btn-primary w-100" onclick="app.triggerFilteredSearch()">Apply Filters</button>
-        </aside>
-
-        <!-- Search Results Main Column -->
-        <div class="search-results-wrapper">
-          <div class="results-top-bar glassmorphism">
-            <div class="results-count-wrapper">
-              <span class="results-badge" id="resultsCountBadge">Loading...</span>
-              <span class="results-hint" id="resultsFilterHint">Showing scheduled flights</span>
+        <!-- Top Flight Search Summary & Inline Search Modification Card -->
+        <div class="results-summary-card glassmorphism" id="resultsSummaryCard">
+          <div class="summary-left-col">
+            <div class="summary-route-header">
+              <span class="summary-route-city" id="summaryDepCity">Dhaka (DAC)</span>
+              <span class="summary-plane-icon">✈</span>
+              <span class="summary-route-city" id="summaryArrCity">Cox's Bazar (CXB)</span>
             </div>
-            <div class="results-actions">
-              <button class="btn-secondary-sm" onclick="app.swapSearchAirports()" title="Swap Departure and Arrival Filters">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                <span>Swap Origin / Dest</span>
-              </button>
+            <div class="summary-pills-row">
+              <span class="summary-pill" id="summaryDepDatePill">📅 Departure: Any</span>
+              <span class="summary-pill" id="summaryReturnDatePill" style="display: none;">🔄 Return: Any</span>
+              <span class="summary-pill" id="summaryPassengersPill">👥 1 Traveler</span>
+              <span class="summary-pill" id="summaryCabinPill">💺 Economy</span>
             </div>
           </div>
-
-          <!-- Flight Cards List -->
-          <div class="flights-list-container" id="flightsListContainer">
-            <!-- Flight cards populated dynamically -->
+          <div class="summary-actions-col">
+            <button type="button" class="btn-modify-search" id="btnToggleModifySearch" onclick="app.toggleModifySearch()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              <span>Modify Search</span>
+            </button>
+            <button type="button" class="btn-mobile-filter-trigger" onclick="app.toggleMobileFilterDrawer(true)">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span>Filters</span>
+              <span class="mobile-filter-count-badge" id="mobileFilterBadge" style="display: none;">0</span>
+            </button>
           </div>
+        </div>
 
-          <!-- Pagination -->
-          <div class="pagination-bar" id="searchPagination">
-            <!-- Loaded via JS -->
+        <!-- Inline Collapsible Search Modification Panel -->
+        <div class="modify-search-panel glassmorphism" id="modifySearchPanel" style="display: none;">
+          <div class="modify-search-grid">
+            <div class="form-group-field">
+              <label class="input-label">FROM</label>
+              <div class="input-airport-wrapper">
+                <span class="airport-icon">🛫</span>
+                <input type="text" id="modifyOriginInput" class="airport-input" placeholder="Departure Airport..." autocomplete="off">
+              </div>
+              <div class="airport-dropdown-list" id="modifyOriginDropdown"></div>
+            </div>
+
+            <button type="button" class="btn-swap-sm" onclick="app.swapModifyAirports()" title="Swap Departure and Arrival">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            </button>
+
+            <div class="form-group-field">
+              <label class="input-label">TO</label>
+              <div class="input-airport-wrapper">
+                <span class="airport-icon">🛬</span>
+                <input type="text" id="modifyDestInput" class="airport-input" placeholder="Destination Airport..." autocomplete="off">
+              </div>
+              <div class="airport-dropdown-list" id="modifyDestDropdown"></div>
+            </div>
+
+            <div class="form-group-field">
+              <label class="input-label">DEPARTURE</label>
+              <div class="input-field-wrapper">
+                <input type="date" id="modifyDepDate" class="date-input">
+              </div>
+            </div>
+
+            <div class="form-group-field" id="modifyReturnGroup" style="display: none;">
+              <label class="input-label">RETURN</label>
+              <div class="input-field-wrapper">
+                <input type="date" id="modifyReturnDate" class="date-input">
+              </div>
+            </div>
+
+            <div class="form-group-field">
+              <label class="input-label">CABIN CLASS</label>
+              <div class="input-field-wrapper">
+                <select id="modifyCabinClass" class="select-input">
+                  <option value="Economy">Economy</option>
+                  <option value="Premium Economy">Premium Economy</option>
+                  <option value="Business">Business</option>
+                  <option value="First Class">First Class</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modify-search-actions">
+              <button type="button" class="btn-primary" onclick="app.submitModifiedSearch()">Update Search</button>
+              <button type="button" class="btn-secondary" onclick="app.toggleModifySearch(false)">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Search Layout: Advanced Filtering Sidebar + Results Column -->
+        <div class="search-page-layout">
+
+          <!-- Advanced Filtering Sidebar -->
+          <aside class="search-sidebar glassmorphism" id="searchSidebar">
+            <!-- Mobile Drawer Header -->
+            <div class="sidebar-mobile-header">
+              <h3>Filters</h3>
+              <button type="button" class="btn-close-drawer" onclick="app.toggleMobileFilterDrawer(false)" aria-label="Close filters">✕</button>
+            </div>
+
+            <!-- Standard Sidebar Header -->
+            <div class="sidebar-header">
+              <div class="sidebar-header-title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                <span>Filter Flights</span>
+              </div>
+              <button type="button" class="btn-clear-filters-link" id="btnClearAllFilters" onclick="app.clearAllFilters()">Clear All</button>
+            </div>
+
+            <!-- Quick Text Search -->
+            <div class="filter-group">
+              <label class="filter-label">Quick Search</label>
+              <div class="filter-input-wrapper">
+                <input type="text" id="filterKeyword" class="filter-input" placeholder="Search airline, flight # or airport..." oninput="app.onFilterKeywordInput(this.value)">
+                <span class="filter-input-icon">🔍</span>
+              </div>
+            </div>
+
+            <!-- Filter A: Price Range Slider -->
+            <div class="filter-group">
+              <div class="filter-header-row">
+                <label class="filter-label">Max Price</label>
+                <span class="filter-value-badge" id="priceSliderValDisplay">৳90,000</span>
+              </div>
+              <input type="range" id="filterPriceSlider" class="filter-range-slider" min="3000" max="90000" step="500" value="90000" oninput="app.onPriceSliderChange(this.value)">
+              <div class="slider-bounds-row">
+                <span id="priceMinBound">৳3,000</span>
+                <span id="priceMaxBound">৳90,000</span>
+              </div>
+            </div>
+
+            <!-- Filter B: Airlines (Dynamically extracted from actual search results) -->
+            <div class="filter-group">
+              <div class="filter-header-row">
+                <label class="filter-label">Airlines</label>
+                <div class="filter-sublinks">
+                  <button type="button" class="filter-sublink" onclick="app.toggleSelectAllAirlines(true)">All</button>
+                  <span class="sublink-sep">•</span>
+                  <button type="button" class="filter-sublink" onclick="app.toggleSelectAllAirlines(false)">Clear</button>
+                </div>
+              </div>
+              <div class="filter-checkbox-list" id="filterAirlinesList">
+                <div class="filter-empty-hint">Loading airlines...</div>
+              </div>
+            </div>
+
+            <!-- Filter C: Number of Stops -->
+            <div class="filter-group">
+              <label class="filter-label">Stops</label>
+              <div class="filter-checkbox-list" id="filterStopsList">
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="0" class="filter-stop-cb" onchange="app.onStopFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">Non-stop</span>
+                  <span class="cb-count" id="countStop0"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="1" class="filter-stop-cb" onchange="app.onStopFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">1 stop</span>
+                  <span class="cb-count" id="countStop1"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="2" class="filter-stop-cb" onchange="app.onStopFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">2 or more stops</span>
+                  <span class="cb-count" id="countStop2"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Filter D: Departure Time Slots -->
+            <div class="filter-group">
+              <label class="filter-label">Departure Time</label>
+              <div class="time-slots-grid">
+                <button type="button" class="time-slot-btn" data-slot="early_morning" onclick="app.toggleTimeSlot('dep', 'early_morning')">
+                  <span class="slot-icon">🌅</span>
+                  <span class="slot-title">Early Morning</span>
+                  <span class="slot-hours">00:00–06:00</span>
+                </button>
+                <button type="button" class="time-slot-btn" data-slot="morning" onclick="app.toggleTimeSlot('dep', 'morning')">
+                  <span class="slot-icon">☀️</span>
+                  <span class="slot-title">Morning</span>
+                  <span class="slot-hours">06:00–12:00</span>
+                </button>
+                <button type="button" class="time-slot-btn" data-slot="afternoon" onclick="app.toggleTimeSlot('dep', 'afternoon')">
+                  <span class="slot-icon">🌤️</span>
+                  <span class="slot-title">Afternoon</span>
+                  <span class="slot-hours">12:00–18:00</span>
+                </button>
+                <button type="button" class="time-slot-btn" data-slot="evening" onclick="app.toggleTimeSlot('dep', 'evening')">
+                  <span class="slot-icon">🌙</span>
+                  <span class="slot-title">Evening</span>
+                  <span class="slot-hours">18:00–24:00</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter E: Arrival Time Slots -->
+            <div class="filter-group">
+              <label class="filter-label">Arrival Time</label>
+              <div class="time-slots-grid">
+                <button type="button" class="time-slot-btn" data-slot="early_morning" onclick="app.toggleTimeSlot('arr', 'early_morning')">
+                  <span class="slot-icon">🌅</span>
+                  <span class="slot-title">Early Morning</span>
+                  <span class="slot-hours">00:00–06:00</span>
+                </button>
+                <button type="button" class="time-slot-btn" data-slot="morning" onclick="app.toggleTimeSlot('arr', 'morning')">
+                  <span class="slot-icon">☀️</span>
+                  <span class="slot-title">Morning</span>
+                  <span class="slot-hours">06:00–12:00</span>
+                </button>
+                <button type="button" class="time-slot-btn" data-slot="afternoon" onclick="app.toggleTimeSlot('arr', 'afternoon')">
+                  <span class="slot-icon">🌤️</span>
+                  <span class="slot-title">Afternoon</span>
+                  <span class="slot-hours">12:00–18:00</span>
+                </button>
+                <button type="button" class="time-slot-btn" data-slot="evening" onclick="app.toggleTimeSlot('arr', 'evening')">
+                  <span class="slot-icon">🌙</span>
+                  <span class="slot-title">Evening</span>
+                  <span class="slot-hours">18:00–24:00</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter F: Flight Duration -->
+            <div class="filter-group">
+              <div class="filter-header-row">
+                <label class="filter-label">Max Journey Duration</label>
+                <span class="filter-value-badge" id="durationSliderValDisplay">24h 00m</span>
+              </div>
+              <input type="range" id="filterDurationSlider" class="filter-range-slider" min="30" max="1440" step="30" value="1440" oninput="app.onDurationSliderChange(this.value)">
+              <div class="slider-bounds-row">
+                <span>30m</span>
+                <span id="durationMaxBound">24h+</span>
+              </div>
+            </div>
+
+            <!-- Filter G: Refund Policy -->
+            <div class="filter-group">
+              <label class="filter-label">Refund Policy</label>
+              <div class="filter-checkbox-list" id="filterRefundList">
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="Refundable" class="filter-refund-cb" onchange="app.onRefundFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">Refundable</span>
+                  <span class="cb-count" id="countRefundYes"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="Partially Refundable" class="filter-refund-cb" onchange="app.onRefundFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">Partially Refundable</span>
+                  <span class="cb-count" id="countRefundPartial"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="Non-refundable" class="filter-refund-cb" onchange="app.onRefundFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">Non-refundable</span>
+                  <span class="cb-count" id="countRefundNo"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Filter H: Baggage Allowance -->
+            <div class="filter-group">
+              <label class="filter-label">Checked Baggage</label>
+              <div class="filter-checkbox-list" id="filterBaggageList">
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="20 kg" class="filter-baggage-cb" onchange="app.onBaggageFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">20 kg Checked</span>
+                  <span class="cb-count" id="countBaggage20"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="25 kg" class="filter-baggage-cb" onchange="app.onBaggageFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">25 kg Checked</span>
+                  <span class="cb-count" id="countBaggage25"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="30 kg" class="filter-baggage-cb" onchange="app.onBaggageFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">30 kg Checked</span>
+                  <span class="cb-count" id="countBaggage30"></span>
+                </label>
+                <label class="filter-checkbox-item">
+                  <input type="checkbox" value="35 kg" class="filter-baggage-cb" onchange="app.onBaggageFilterChange()">
+                  <span class="cb-custom"></span>
+                  <span class="cb-label">35 kg+ Checked</span>
+                  <span class="cb-count" id="countBaggage35"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Mobile Drawer Bottom Apply Button -->
+            <div class="sidebar-mobile-footer">
+              <button type="button" class="btn-primary w-100" onclick="app.toggleMobileFilterDrawer(false)">Apply Filters</button>
+            </div>
+          </aside>
+
+          <!-- Search Results Main Column -->
+          <div class="search-results-wrapper">
+
+            <!-- Sorting Tabs Bar (Above Results) -->
+            <div class="results-sort-bar glassmorphism">
+              <span class="sort-bar-label">Sort Results:</span>
+              <div class="sort-pills-group" id="sortPillsGroup">
+                <button type="button" class="sort-pill active" data-sort="recommended" onclick="app.setSortOption('recommended')">Recommended</button>
+                <button type="button" class="sort-pill" data-sort="cheapest" onclick="app.setSortOption('cheapest')">Cheapest</button>
+                <button type="button" class="sort-pill" data-sort="fastest" onclick="app.setSortOption('fastest')">Fastest</button>
+                <button type="button" class="sort-pill" data-sort="earliestDep" onclick="app.setSortOption('earliestDep')">Earliest Departure</button>
+                <button type="button" class="sort-pill" data-sort="latestDep" onclick="app.setSortOption('latestDep')">Latest Departure</button>
+                <button type="button" class="sort-pill" data-sort="earliestArr" onclick="app.setSortOption('earliestArr')">Earliest Arrival</button>
+              </div>
+            </div>
+
+            <!-- Top Results Count & Active Filters Indicator Bar -->
+            <div class="results-top-bar glassmorphism">
+              <div class="results-count-wrapper">
+                <span class="results-badge" id="resultsCountBadge">Loading...</span>
+                <span class="results-hint" id="resultsFilterHint">Showing scheduled flights</span>
+              </div>
+              <div class="results-actions">
+                <button type="button" class="btn-secondary-sm" id="btnResetFiltersInline" onclick="app.clearAllFilters()" style="display: none;">
+                  <span>✕ Clear Filters</span>
+                </button>
+                <button type="button" class="btn-secondary-sm" onclick="app.swapSearchAirports()" title="Swap Departure and Arrival Filters">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                  <span>Swap Origin / Dest</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Filter Tags Row -->
+            <div class="active-filter-tags-row" id="activeFilterTagsRow" style="display: none;">
+              <!-- Dynamic tags rendered via JS -->
+            </div>
+
+            <!-- Flight Cards List Container -->
+            <div class="flights-list-container" id="flightsListContainer">
+              <!-- Flight cards populated dynamically -->
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-bar" id="searchPagination">
+              <!-- Loaded via JS -->
+            </div>
           </div>
         </div>
       </div>

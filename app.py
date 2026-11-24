@@ -541,7 +541,7 @@ def api_search_flights():
     sort_by = request.args.get('sortBy', 'closestDate')
 
     try:
-        limit = min(int(request.args.get('limit', 12)), 100)
+        limit = min(int(request.args.get('limit', 12)), 500)
     except (ValueError, TypeError):
         limit = 12
     try:
@@ -606,8 +606,12 @@ def api_search_flights():
         order_sql = "ORDER BY f.economy_price ASC"
     elif sort_by == 'priceDesc':
         order_sql = "ORDER BY f.economy_price DESC"
+    elif sort_by == 'fastest':
+        order_sql = "ORDER BY (julianday(f.arr_datetime) - julianday(f.dep_datetime)) ASC"
     elif sort_by == 'earliestArr':
         order_sql = "ORDER BY f.arr_datetime ASC"
+    elif sort_by == 'earliestDep':
+        order_sql = "ORDER BY f.dep_datetime ASC"
 
     # Count total
     count_query = f"""
