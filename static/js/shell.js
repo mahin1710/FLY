@@ -139,7 +139,9 @@
       const userHtml = `
         <div class="user-menu-wrapper" style="position: relative;">
           <button class="user-profile-pill" id="userMenuTrigger" type="button" aria-haspopup="true" aria-expanded="false" onclick="this.nextElementSibling.classList.toggle('show')">
-            <span style="font-size: 1.1rem;">👤</span>
+            <span style="display: inline-flex; align-items: center; color: var(--accent-primary);">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
             <div class="user-pill-info">
               <span class="user-pill-name">${displayName}</span>
               <span class="user-pill-role">${user.role || 'Passenger'}</span>
@@ -148,14 +150,14 @@
           </button>
           <div class="user-dropdown-menu">
             <a href="/my-bookings" class="dropdown-item">
-              <span>🎟️ My Bookings</span>
+              <span>My Bookings</span>
             </a>
             <a href="/profile" class="dropdown-item">
-              <span>👤 Profile & Settings</span>
+              <span>Profile & Settings</span>
             </a>
             <div class="dropdown-divider"></div>
             <button type="button" class="dropdown-item danger" onclick="window.flyLogout()">
-              <span>🚪 Sign Out</span>
+              <span>Sign Out</span>
             </button>
           </div>
         </div>

@@ -360,25 +360,25 @@ const app = {
           <div class="user-dropdown-menu" id="userDropdownMenu">
             ${isAirline ? `
               <button class="dropdown-item" onclick="app.navigate('dashboard'); app.closeUserMenu();">
-                <span>🏢 Airline Dashboard</span>
+                <span>Airline Dashboard</span>
               </button>
             ` : `
               <button class="dropdown-item" onclick="app.navigate('bookings'); app.closeUserMenu();">
-                <span>🎟️ My Booked Trips</span>
+                <span>My Booked Trips</span>
               </button>
               <button class="dropdown-item" onclick="app.navigate('favorites'); app.closeUserMenu();">
-                <span>❤️ Saved Favorites</span>
+                <span>Saved Favorites</span>
               </button>
               <button class="dropdown-item" onclick="app.navigate('account'); app.closeUserMenu();">
-                <span>👤 Passport & Profile</span>
+                <span>Passport & Profile</span>
               </button>
             `}
             <button class="dropdown-item" onclick="app.navigate('auth'); app.closeUserMenu();">
-              <span>🛡️ Session & Security</span>
+              <span>Session & Security</span>
             </button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item danger" onclick="app.promptLogout(); app.closeUserMenu();">
-              <span>🚪 Log Out</span>
+              <span>Log Out</span>
             </button>
           </div>
         </div>
@@ -1351,9 +1351,9 @@ const app = {
 
           <!-- Origin -->
           <div class="form-group-airport">
-            <label class="input-label">FROM</label>
+            <label class="input-label">From</label>
             <div class="input-airport-wrapper">
-              <span class="airport-icon">🛫</span>
+              <span class="airport-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg></span>
               <input type="text" id="mcOriginInput_${idx}" class="airport-input" placeholder="Departure City..." value="${leg.from || ''}" autocomplete="off">
             </div>
             <div class="airport-dropdown-list" id="mcOriginDropdown_${idx}"></div>
@@ -1366,9 +1366,9 @@ const app = {
 
           <!-- Destination -->
           <div class="form-group-airport">
-            <label class="input-label">TO</label>
+            <label class="input-label">To</label>
             <div class="input-airport-wrapper">
-              <span class="airport-icon">🛬</span>
+              <span class="airport-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6z"/></svg></span>
               <input type="text" id="mcDestInput_${idx}" class="airport-input" placeholder="Arrival City..." value="${leg.to || ''}" autocomplete="off">
             </div>
             <div class="airport-dropdown-list" id="mcDestDropdown_${idx}"></div>
@@ -1857,11 +1857,11 @@ const app = {
     if (arrEl) arrEl.textContent = destVal;
 
     if (depPill) {
-      depPill.textContent = p.depDateAfter ? `📅 Departure: ${p.depDateAfter}` : '📅 Departure: Any Date';
+      depPill.textContent = p.depDateAfter ? `Departure: ${p.depDateAfter}` : 'Departure: Any Date';
     }
     if (retPill) {
       if (this.state.currentTripType === 'roundtrip' && p.depDateBefore) {
-        retPill.textContent = `🔄 Return: ${p.depDateBefore}`;
+        retPill.textContent = `Return: ${p.depDateBefore}`;
         retPill.style.display = 'inline-flex';
       } else {
         retPill.style.display = 'none';
@@ -1869,10 +1869,10 @@ const app = {
     }
     const paxCount = (this.state.passengers?.adults || 1) + (this.state.passengers?.children || 0) + (this.state.passengers?.infants || 0);
     if (paxPill) {
-      paxPill.textContent = `👥 ${paxCount} Traveler${paxCount > 1 ? 's' : ''}`;
+      paxPill.textContent = `${paxCount} Traveler${paxCount > 1 ? 's' : ''}`;
     }
     if (cabinPill) {
-      cabinPill.textContent = `💺 ${this.state.cabinClass || 'Economy'}`;
+      cabinPill.textContent = `${this.state.cabinClass || 'Economy'}`;
     }
   },
 
