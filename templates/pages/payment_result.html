@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% import "components/breadcrumb.html" as bc %}
+{% import "components/page_heading.html" as ph %}
+{% import "components/stepper.html" as st %}
+{% import "components/demo_notice.html" as dn %}
+
+{% block title %}Payment Result Verification — FLY{% endblock %}
+{% block meta_description %}Customer payment outcome and server-side verification status.{% endblock %}
+
+{% block breadcrumbs %}
+{{ bc.render_breadcrumb([
+  {'label': 'Home', 'url': '/'},
+  {'label': 'Payment Checkout', 'url': '/booking/payment'},
+  {'label': 'Payment Result', 'url': None}
+]) }}
+{% endblock %}
+
+{% block content %}
+<div class="page-container container" style="max-width: 860px;">
+  <!-- Stepper: Step 5 Payment to Step 6 Confirmation -->
+  {{ st.render_booking_stepper(current_step='confirmation' if result_status in ['success', 'captured'] else 'payment', completed_steps=['search', 'flight', 'travellers', 'review', 'payment'] if result_status in ['success', 'captured'] else ['search', 'flight', 'travellers', 'review']) }}
+
+  {{ dn.render_demo_notice('Payment Gateway Sandbox Verification Boundary') }}
+
+  <!-- Crucial Security Notice: Return URL is UX Only -->
+  <div class="alert alert-info" style="margin-bottom: 24px; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.08); border: 2px solid #3b82f6; display: flex; align-items: flex-start; gap: 14px;">
+    <span style="font-size: 1.8rem;" aria-hidden="true">🔒</span>
+    <div>
+      <strong style="font-size: 0.98rem; color: #1e40af; display: block; margin-bottom: 4px;">
+        SECURITY PROTOCOL: RETURN URL IS UX ONLY &bull; SERVER-SIDE IPN VERIFIED
+      </strong>
+      <p style="font-size: 0.86rem; color: var(--text-main); margin: 0; line-height: 1.5;">
+        In compliance with PCI-DSS and airline financial integrity standards, browser redirects and return URLs serve only as visual navigation for travellers. Final reservation confirmation and airline e-ticket issuance occur exclusively upon authenticated <strong>Server-to-Server Instant Payment Notification (IPN)</strong> verification and gateway validation.
+      </p>
+    </div>
+  </div>
+
+  {% if result_status in ['success', 'captured'] %}
+  <!-- Success / Captured Outcome -->
+  <div class="card glassmorphism" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #10b981;">
+    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">✅</div>
+    <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 12px; background: rgba(16, 185, 129, 0.15); color: #047857; font-weight: 700;">
+      SERVER-VERIFIED &bull; CAPTURED
+    </div>
+    <h1 style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 8px;">
+      Payment Successfully Received
+    </h1>
+    <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px auto; font-size: 0.92rem; line-height: 1.5;">
+      Your transaction has been securely captured by the payment gateway. The server has reconciled your payment and queued your booking for airline ticketing.
+    </p>
+
+    <!-- Financial & Transaction Details Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; max-width: 720px; margin: 0 auto 28px auto; text-align: left;">
+      <div style="background: rgba(15, 23, 42, 0.03); padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Merchant Transaction ID</div>
+        <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--accent-primary); word-break: break-all;">
+          {{ transaction_id or 'TXN-SIMULATED-SUCCESS' }}
+        </div>
+      </div>
+      <div style="background: rgba(15, 23, 42, 0.03); padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Booking Reference</div>
+        <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-main);">
+          {{ booking_ref or 'FLY-DEMO-REF' }}
+        </div>
+      </div>
+      <div style="background: rgba(15, 23, 42, 0.03); padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Amount Settled</div>
+        <div style="font-weight: 700; font-size: 1.05rem; color: #047857;">
+          {{ currency or 'BDT' }} {{ amount or '5,100.00' }}
+        </div>
+      </div>
+      <div style="background: rgba(15, 23, 42, 0.03); padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Gateway Provider</div>
+        <div style="font-weight: 600; font-size: 0.92rem; color: var(--text-main);">
+          {{ gateway_provider or 'SSLCOMMERZ (Sandbox)' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Security & Isolation Guarantees -->
+    <div style="background: rgba(15, 23, 42, 0.02); border-radius: var(--radius-md); padding: 16px 20px; max-width: 720px; margin: 0 auto 28px auto; text-align: left; border-left: 3px solid #10b981;">
+      <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 4px;">
+        <span>🛡️</span> Zero Raw Card Storage Guarantee
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.45;">
+        All cardholder data was processed exclusively inside the PCI-DSS Level 1 compliant hosted checkout environment. FLY never receives, handles, or stores your primary account number (PAN) or CVV code.
+      </p>
+    </div>
+
+    <!-- CTAs -->
+    <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+      <a href="/booking/status/{{ booking_ref or 'DEMO' }}" class="btn-primary" style="padding: 12px 28px; font-weight: 700;">
+        View Digital Boarding Pass &bull; Status
+      </a>
+      <a href="/my-bookings" class="btn-secondary" style="padding: 12px 24px;">
+        My Bookings
+      </a>
+    </div>
+  </div>
+
+  {% elif result_status in ['cancelled', 'cancel'] %}
+  <!-- Cancelled Outcome -->
+  <div class="card glassmorphism" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #f59e0b;">
+    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">⚠️</div>
+    <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 12px; background: rgba(245, 158, 11, 0.15); color: #b45309; font-weight: 700;">
+      PAYMENT CANCELLED BY USER
+    </div>
+    <h1 style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 8px;">
+      Payment Checkout Was Cancelled
+    </h1>
+    <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px auto; font-size: 0.92rem; line-height: 1.5;">
+      You cancelled the payment session before authorization. If your reservation hold timer has not yet expired, your seats remain reserved.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+      <a href="/booking/payment" class="btn-primary" style="padding: 12px 28px; font-weight: 700;">
+        Resume Payment Checkout
+      </a>
+      <a href="/" class="btn-secondary" style="padding: 12px 24px;">
+        Return to Flight Search
+      </a>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Failed Outcome -->
+  <div class="card glassmorphism" style="padding: 36px 28px; text-align: center; margin-bottom: 24px; border-top: 4px solid #ef4444;">
+    <div style="font-size: 3.5rem; margin-bottom: 12px;" aria-hidden="true">❌</div>
+    <div class="dest-fare-pill" style="display: inline-block; margin-bottom: 12px; background: rgba(239, 68, 68, 0.15); color: #b91c1c; font-weight: 700;">
+      TRANSACTION DECLINED OR FAILED
+    </div>
+    <h1 style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 8px;">
+      Payment Authorization Failed
+    </h1>
+    <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 24px auto; font-size: 0.92rem; line-height: 1.5;">
+      The payment gateway could not process this transaction. No funds were debited from your account. You may try another payment method or contact your card issuer.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+      <a href="/booking/payment" class="btn-primary" style="padding: 12px 28px; font-weight: 700;">
+        Try Another Payment Method
+      </a>
+      <a href="/support" class="btn-secondary" style="padding: 12px 24px;">
+        Contact 24/7 Support
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

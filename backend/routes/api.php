@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\DocsController;
 use App\Http\Controllers\Api\V1\FlightController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -50,7 +51,16 @@ Route::prefix('v1')->group(function () {
     });
 
     // -------------------------------------------------------------
-    // 5. AUTHENTICATION (RATE LIMITED: 10 ATTEMPTS / MINUTE)
+    // 5. PAYMENT GATEWAY INTEGRATION (SANDBOX & IPN WEBHOOKS)
+    // -------------------------------------------------------------
+    Route::prefix('payments')->group(function () {
+        Route::post('/intent', [PaymentController::class, 'createIntent'])->name('v1.payments.intent');
+        Route::post('/ipn', [PaymentController::class, 'handleIpnWebhook'])->name('v1.payments.ipn');
+        Route::get('/{transactionId}/status', [PaymentController::class, 'getStatus'])->name('v1.payments.status');
+    });
+
+    // -------------------------------------------------------------
+    // 6. AUTHENTICATION (RATE LIMITED: 10 ATTEMPTS / MINUTE)
     // -------------------------------------------------------------
     Route::middleware('throttle:10,1')->prefix('auth')->group(function () {
         Route::post('/register', [AuthController::class, 'register'])->name('v1.auth.register');
@@ -74,6 +84,7 @@ Route::prefix('v1')->group(function () {
             ->group(function () {
                 Route::get('/overview', [AdminController::class, 'overview'])->name('v1.admin.overview');
                 Route::get('/users', [AdminController::class, 'users'])->name('v1.admin.users');
+                Route::post('/payments/{ulid}/refund', [PaymentController::class, 'refund'])->name('v1.admin.payments.refund');
             });
     });
 });

@@ -113,6 +113,31 @@ def booking_payment_page():
     """Serves payment checkout with 15-minute seat reservation timer."""
     return render_template('pages/payment.html')
 
+@app.route('/payment/result')
+@app.route('/booking/payment/result')
+def payment_result_page():
+    """
+    Serves customer payment result screen after redirect from payment gateway.
+    Explicitly enforces that return URL is for UI presentation only,
+    while final confirmation requires server-side IPN verification.
+    """
+    status = request.args.get('status', 'success').lower()
+    tran_id = request.args.get('tran_id') or request.args.get('transaction_id')
+    booking_ref = request.args.get('booking_ref') or request.args.get('reference')
+    amount = request.args.get('amount')
+    currency = request.args.get('currency', 'BDT')
+    gateway = request.args.get('gateway', 'SSLCOMMERZ (Sandbox)')
+
+    return render_template(
+        'pages/payment_result.html',
+        result_status=status,
+        transaction_id=tran_id,
+        booking_ref=booking_ref,
+        amount=amount,
+        currency=currency,
+        gateway_provider=gateway
+    )
+
 @app.route('/booking/status/<reference>')
 def booking_status_page(reference):
     """Serves booking confirmation and digital boarding pass view."""

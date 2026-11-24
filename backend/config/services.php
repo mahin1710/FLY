@@ -52,4 +52,22 @@ return [
         'timeout'       => (float) env('AMADEUS_TIMEOUT', 15.0),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Gateway Configuration (SSLCOMMERZ / SIMULATED SANDBOX)
+    |--------------------------------------------------------------------------
+    */
+    'payment' => [
+        'gateway' => env('PAYMENT_GATEWAY', 'sslcommerz'),
+        'sslcommerz' => [
+            'store_id'       => env('SSLCOMMERZ_STORE_ID'),
+            'store_password' => env('SSLCOMMERZ_STORE_PASSWORD'),
+            'sandbox'        => env('SSLCOMMERZ_SANDBOX', true),
+            'base_url'       => env('SSLCOMMERZ_BASE_URL', 'https://sandbox.sslcommerz.com'),
+        ],
+        'simulated' => [
+            'secret_key' => env('SIMULATED_PAYMENT_SECRET', 'simulated_payment_secret_key_12345'),
+        ],
+    ],
+
 ];
