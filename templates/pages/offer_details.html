@@ -25,8 +25,8 @@
   {{ ph.render_page_heading(
     title='Flight Offer Review',
     subtitle='Detailed itinerary breakdown, fare rules, and seat allocation parameters',
-    eyebrow='OFFER ' ~ offer_id,
-    badge='Verified Availability'
+    eyebrow='OFFER ' ~ offer_id ~ ' &bull; DEMO DATA &bull; NOT BOOKABLE',
+    badge='Simulated Availability'
   ) }}
 
   <div class="flight-details-layout">
@@ -118,21 +118,42 @@
           </div>
           <div class="fare-row total">
             <span>Total Payable</span>
-            <span class="fare-val">৳4,500</span>
+            <span class="fare-val" id="detailTotalPayable">৳4,500</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 4px;">
+            Demo quote &bull; Not bookable
           </div>
         </div>
 
         <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
-          <a href="/booking/travellers?offer_id={{ offer_id }}" class="btn-primary w-100" style="text-align: center;">
-            <span>Continue to Travellers</span>
+          <a href="/flights/search" class="btn-primary w-100" style="text-align: center;">
+            <span>Choose Different Flight</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </a>
-          <a href="/flights/search" class="btn-secondary w-100" style="text-align: center;">
-            Choose Different Flight
+          <a href="/" class="btn-secondary w-100" style="text-align: center;">
+            Modify Search Route
           </a>
         </div>
       </div>
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/flight_models.js"></script>
+<script src="/js/flight_fixtures.js"></script>
+<script>
+  // Hydrate offer details from demo fixture if matching ID exists
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof FlightFixtures !== 'undefined') {
+      const offerId = '{{ offer_id }}';
+      const offer = FlightFixtures.getOfferById(offerId);
+      if (offer) {
+        const totalEl = document.getElementById('detailTotalPayable');
+        if (totalEl) totalEl.textContent = offer.priceBreakdown.getFormattedTotal();
+      }
+    }
+  });
+</script>
 {% endblock %}

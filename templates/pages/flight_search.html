@@ -5,8 +5,8 @@
 {% import "components/demo_notice.html" as dn %}
 {% import "components/empty_state.html" as es %}
 
-{% block title %}Flight Search Results — FLY{% endblock %}
-{% block meta_description %}Compare and select available flights across Bangladesh and international destinations with FLY.{% endblock %}
+{% block title %}Available Flight Offers (Demo Data) — FLY{% endblock %}
+{% block meta_description %}Compare and select available demo flights across Bangladesh and international routes with transparent pricing and real-time filters on FLY.{% endblock %}
 
 {% block breadcrumbs %}
 {{ bc.render_breadcrumb([
@@ -17,193 +17,227 @@
 
 {% block content %}
 <div class="page-container container">
-  <!-- Booking Flow Stepper (Step 1: Search Active) -->
+  <!-- Booking Flow Progress Stepper (Step 1: Search Active) -->
   {{ st.render_booking_stepper(current_step='search', completed_steps=[]) }}
 
-  <!-- Demo Notice Banner -->
-  {{ dn.render_demo_notice('Live Flight GDS/NDC Search API') }}
+  <!-- Prominent Demo Data Disclaimer Banner -->
+  <aside class="demo-integration-notice" role="note" aria-label="Demo environment notice">
+    <div class="demo-notice-icon" aria-hidden="true">⚡</div>
+    <div class="demo-notice-content">
+      <strong class="demo-notice-tag">DEMO DATA &bull; NOT BOOKABLE</strong>
+      <p class="demo-notice-text">
+        Sample flight offers and schedules displayed below are <strong>typed demo fixtures only</strong>. This is a UI/integration boundary stage and does not represent live airline inventory or confirmed reservations. No live payment will be processed.
+      </p>
+    </div>
+  </aside>
 
   <!-- Page Heading -->
   {{ ph.render_page_heading(
     title='Available Flight Offers',
-    subtitle='Showing verified domestic and international departures with real-time seat availability',
-    eyebrow='ROUND TRIP &bull; 1 PASSENGER &bull; ECONOMY',
-    badge='Live Inventory Simulated'
+    subtitle='Explore verified schedule fixtures, transparent fare families, and baggage allowances',
+    eyebrow='DEMO DATA &bull; NOT BOOKABLE',
+    badge='Simulated Inventory'
   ) }}
 
-  <!-- Search Summary Filter Bar -->
-  <div class="results-summary-card glassmorphism" style="margin-bottom: 24px;">
+  <!-- Top Search Summary Bar (with Route, Dates, Cabin & Edit Search Action) -->
+  <div class="results-summary-card glassmorphism" id="searchSummaryCard" role="region" aria-label="Search parameters summary">
     <div class="summary-left-col">
       <div class="summary-route-header">
-        <span class="summary-route-city">Dhaka (DAC)</span>
-        <span class="summary-plane-icon">✈</span>
-        <span class="summary-route-city">Cox's Bazar (CXB)</span>
+        <span class="summary-route-city" id="summaryRouteFrom">Dhaka (DAC)</span>
+        <span class="summary-plane-icon" aria-hidden="true">➔</span>
+        <span class="summary-route-city" id="summaryRouteTo">Cox's Bazar (CXB)</span>
+        <span class="demo-tag-pill">⚠️ Demo data – not bookable</span>
       </div>
       <div class="summary-pills-row">
-        <span class="summary-pill">📅 Departure: Flexible</span>
-        <span class="summary-pill">👥 1 Passenger</span>
-        <span class="summary-pill">💺 Economy</span>
+        <span class="summary-pill" id="summaryTripTypePill">✈️ Round Trip</span>
+        <span class="summary-pill" id="summaryDepPill">📅 Departure: Flexible</span>
+        <span class="summary-pill" id="summaryPaxPill">👥 1 Traveler (1A)</span>
+        <span class="summary-pill" id="summaryCabinPill">💺 Economy</span>
       </div>
     </div>
     <div class="summary-actions-col">
-      <a href="/" class="btn-secondary-sm">Modify Search</a>
+      <a href="/" class="btn-secondary-sm edit-search-btn" id="btnEditSearch" title="Return to flight search form with your selections intact">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Edit Search</span>
+      </a>
     </div>
   </div>
 
-  <!-- Flight Cards List -->
-  <div class="flights-list-container" id="flightOffersList">
-    <!-- Flight Offer 1: Biman Bangladesh Airlines -->
-    <article class="flight-card glassmorphism">
-      <div class="flight-card-header">
-        <div class="airline-brand-group">
-          <div class="airline-logo-box">✈️</div>
-          <div>
-            <h4 class="airline-title">Biman Bangladesh Airlines</h4>
-            <span class="flight-num-tag">BG-433 &bull; Boeing 737-800</span>
-          </div>
+  <!-- Search Results Two-Column Layout -->
+  <div class="search-results-layout">
+    <!-- Left Sidebar: Filters Panel -->
+    <aside class="filters-sidebar glassmorphism" id="filtersSidebar" role="search" aria-label="Flight filters">
+      <div class="filters-sidebar-header">
+        <div class="filters-title-group">
+          <span class="filters-icon" aria-hidden="true">⚙️</span>
+          <h3 class="filters-heading">Filter Flights</h3>
         </div>
-        <div class="flight-badges-group">
-          <span class="dest-badge">Non-stop</span>
-          <span class="dest-fare-pill">Refundable</span>
-        </div>
+        <button type="button" class="btn-text-link" id="btnResetFilters" title="Reset all filters to default">Reset All</button>
       </div>
-      <div class="flight-card-body">
-        <div class="flight-time-point">
-          <div class="point-time">10:30 AM</div>
-          <div class="point-city">Dhaka (DAC)</div>
-          <div class="point-sub">Hazrat Shahjalal Intl</div>
-        </div>
-        <div class="flight-duration-col">
-          <div class="duration-text">55m</div>
-          <div class="flight-track-line">
-            <span class="track-dot"></span>
-            <span class="track-line"></span>
-            <span class="track-dot"></span>
-          </div>
-          <div class="stops-text">Direct Flight</div>
-        </div>
-        <div class="flight-time-point">
-          <div class="point-time">11:25 AM</div>
-          <div class="point-city">Cox's Bazar (CXB)</div>
-          <div class="point-sub">Cox's Bazar Airport</div>
-        </div>
-      </div>
-      <div class="flight-card-footer">
-        <div class="baggage-pill">🧳 20 kg Check-in &bull; 7 kg Cabin</div>
-        <div class="price-cta-group">
-          <div class="price-box">
-            <span class="price-label">Total per passenger</span>
-            <span class="price-val">৳4,500</span>
-          </div>
-          <a href="/flights/offer/OFFER-DAC-CXB-433" class="btn-primary">
-            <span>Select Offer</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </a>
-        </div>
-      </div>
-    </article>
 
-    <!-- Flight Offer 2: US-Bangla Airlines -->
-    <article class="flight-card glassmorphism">
-      <div class="flight-card-header">
-        <div class="airline-brand-group">
-          <div class="airline-logo-box">🛫</div>
-          <div>
-            <h4 class="airline-title">US-Bangla Airlines</h4>
-            <span class="flight-num-tag">BS-141 &bull; ATR 72-600</span>
-          </div>
-        </div>
-        <div class="flight-badges-group">
-          <span class="dest-badge">Non-stop</span>
-          <span class="dest-fare-pill">Free Meal</span>
-        </div>
-      </div>
-      <div class="flight-card-body">
-        <div class="flight-time-point">
-          <div class="point-time">02:15 PM</div>
-          <div class="point-city">Dhaka (DAC)</div>
-          <div class="point-sub">Hazrat Shahjalal Intl</div>
-        </div>
-        <div class="flight-duration-col">
-          <div class="duration-text">1h 00m</div>
-          <div class="flight-track-line">
-            <span class="track-dot"></span>
-            <span class="track-line"></span>
-            <span class="track-dot"></span>
-          </div>
-          <div class="stops-text">Direct Flight</div>
-        </div>
-        <div class="flight-time-point">
-          <div class="point-time">03:15 PM</div>
-          <div class="point-city">Cox's Bazar (CXB)</div>
-          <div class="point-sub">Cox's Bazar Airport</div>
+      <!-- Filter: Stops -->
+      <div class="filter-group">
+        <h4 class="filter-group-title">Stops</h4>
+        <div class="filter-radio-list">
+          <label class="filter-radio-item">
+            <input type="radio" name="filterStops" value="all" checked>
+            <span class="custom-radio"></span>
+            <span>All Flights</span>
+          </label>
+          <label class="filter-radio-item">
+            <input type="radio" name="filterStops" value="direct">
+            <span class="custom-radio"></span>
+            <span>Non-stop only</span>
+          </label>
+          <label class="filter-radio-item">
+            <input type="radio" name="filterStops" value="1stop">
+            <span class="custom-radio"></span>
+            <span>1 Stop</span>
+          </label>
+          <label class="filter-radio-item">
+            <input type="radio" name="filterStops" value="2plus">
+            <span class="custom-radio"></span>
+            <span>2+ Stops</span>
+          </label>
         </div>
       </div>
-      <div class="flight-card-footer">
-        <div class="baggage-pill">🧳 20 kg Check-in &bull; 7 kg Cabin</div>
-        <div class="price-cta-group">
-          <div class="price-box">
-            <span class="price-label">Total per passenger</span>
-            <span class="price-val">৳4,800</span>
-          </div>
-          <a href="/flights/offer/OFFER-DAC-CXB-141" class="btn-primary">
-            <span>Select Offer</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </a>
-        </div>
-      </div>
-    </article>
 
-    <!-- Flight Offer 3: Air Astra -->
-    <article class="flight-card glassmorphism">
-      <div class="flight-card-header">
-        <div class="airline-brand-group">
-          <div class="airline-logo-box">✨</div>
-          <div>
-            <h4 class="airline-title">Air Astra</h4>
-            <span class="flight-num-tag">2A-441 &bull; ATR 72-600</span>
-          </div>
-        </div>
-        <div class="flight-badges-group">
-          <span class="dest-badge">Non-stop</span>
-          <span class="dest-fare-pill">Popular</span>
+      <!-- Filter: Airlines (Populated dynamically) -->
+      <div class="filter-group">
+        <h4 class="filter-group-title">Airlines</h4>
+        <div class="filter-checkbox-list" id="filterAirlinesList">
+          <!-- Rendered dynamically by FlightResultsController -->
         </div>
       </div>
-      <div class="flight-card-body">
-        <div class="flight-time-point">
-          <div class="point-time">05:40 PM</div>
-          <div class="point-city">Dhaka (DAC)</div>
-          <div class="point-sub">Hazrat Shahjalal Intl</div>
-        </div>
-        <div class="flight-duration-col">
-          <div class="duration-text">55m</div>
-          <div class="flight-track-line">
-            <span class="track-dot"></span>
-            <span class="track-line"></span>
-            <span class="track-dot"></span>
-          </div>
-          <div class="stops-text">Direct Flight</div>
-        </div>
-        <div class="flight-time-point">
-          <div class="point-time">06:35 PM</div>
-          <div class="point-city">Cox's Bazar (CXB)</div>
-          <div class="point-sub">Cox's Bazar Airport</div>
-        </div>
-      </div>
-      <div class="flight-card-footer">
-        <div class="baggage-pill">🧳 20 kg Check-in &bull; 7 kg Cabin</div>
-        <div class="price-cta-group">
-          <div class="price-box">
-            <span class="price-label">Total per passenger</span>
-            <span class="price-val">৳4,250</span>
-          </div>
-          <a href="/flights/offer/OFFER-DAC-CXB-441" class="btn-primary">
-            <span>Select Offer</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </a>
+
+      <!-- Filter: Departure Time of Day -->
+      <div class="filter-group">
+        <h4 class="filter-group-title">Departure Time</h4>
+        <div class="time-slots-grid">
+          <button type="button" class="time-slot-btn dep-time-slot-btn active" data-slot="all">Anytime</button>
+          <button type="button" class="time-slot-btn dep-time-slot-btn" data-slot="morning">
+            <span class="slot-icon">🌅</span>
+            <span class="slot-label">Morning</span>
+            <span class="slot-hours">00:00 - 12:00</span>
+          </button>
+          <button type="button" class="time-slot-btn dep-time-slot-btn" data-slot="afternoon">
+            <span class="slot-icon">☀️</span>
+            <span class="slot-label">Afternoon</span>
+            <span class="slot-hours">12:00 - 18:00</span>
+          </button>
+          <button type="button" class="time-slot-btn dep-time-slot-btn" data-slot="evening">
+            <span class="slot-icon">🌙</span>
+            <span class="slot-label">Evening</span>
+            <span class="slot-hours">18:00 - 24:00</span>
+          </button>
         </div>
       </div>
-    </article>
+
+      <!-- Filter: Arrival Time of Day -->
+      <div class="filter-group">
+        <h4 class="filter-group-title">Arrival Time</h4>
+        <div class="time-slots-grid">
+          <button type="button" class="time-slot-btn arr-time-slot-btn active" data-slot="all">Anytime</button>
+          <button type="button" class="time-slot-btn arr-time-slot-btn" data-slot="morning">
+            <span class="slot-icon">🌅</span>
+            <span class="slot-label">Morning</span>
+          </button>
+          <button type="button" class="time-slot-btn arr-time-slot-btn" data-slot="afternoon">
+            <span class="slot-icon">☀️</span>
+            <span class="slot-label">Afternoon</span>
+          </button>
+          <button type="button" class="time-slot-btn arr-time-slot-btn" data-slot="evening">
+            <span class="slot-icon">🌙</span>
+            <span class="slot-label">Evening</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter: Max Price -->
+      <div class="filter-group">
+        <div class="filter-group-header-flex">
+          <h4 class="filter-group-title">Max Price</h4>
+          <span class="filter-val-pill" id="priceRangeMaxText">৳200,000</span>
+        </div>
+        <input type="range" class="filter-slider" id="priceRangeSlider" min="1000" max="100000" step="500" value="100000" aria-label="Maximum flight price">
+      </div>
+
+      <!-- Filter: Max Duration -->
+      <div class="filter-group">
+        <div class="filter-group-header-flex">
+          <h4 class="filter-group-title">Max Duration</h4>
+          <span class="filter-val-pill" id="durationRangeMaxText">12h 00m</span>
+        </div>
+        <input type="range" class="filter-slider" id="durationRangeSlider" min="45" max="1440" step="15" value="1440" aria-label="Maximum flight duration">
+      </div>
+
+      <!-- Filter: Baggage & Refundable -->
+      <div class="filter-group">
+        <h4 class="filter-group-title">Policies &amp; Extras</h4>
+        <div class="filter-checkbox-list">
+          <label class="filter-checkbox-item">
+            <input type="checkbox" id="filterBaggageIncluded">
+            <span class="custom-checkbox"></span>
+            <span class="filter-label-text">Checked baggage included</span>
+          </label>
+          <label class="filter-checkbox-item">
+            <input type="checkbox" id="filterRefundableOnly">
+            <span class="custom-checkbox"></span>
+            <span class="filter-label-text">Refundable fares only</span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Main Column: Results & Sort Bar -->
+    <main class="results-main-col" id="resultsMainCol">
+      <!-- Mobile Filter Drawer Toggle Button -->
+      <div class="mobile-filter-bar">
+        <button type="button" class="btn-toggle-filters-mobile" id="btnToggleMobileFilters" aria-expanded="false" aria-controls="filtersSidebar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+          <span>Filter &amp; Refine</span>
+        </button>
+      </div>
+
+      <!-- Sort & Results Header Bar -->
+      <div class="results-sort-bar glassmorphism" role="toolbar" aria-label="Sort flight results">
+        <div class="sort-options-group">
+          <span class="sort-label">Sort by:</span>
+          <div class="sort-tabs-container">
+            <button type="button" class="sort-tab-btn active" data-sort="recommended" id="sortTabRecommended" title="Recommended: Balanced score considering price, duration, and direct routing">
+              <span>Recommended</span>
+              <span class="sort-hint">Best Value</span>
+            </button>
+            <button type="button" class="sort-tab-btn" data-sort="cheapest" id="sortTabCheapest" title="Cheapest: Pure ascending order of total price">
+              <span>Cheapest</span>
+              <span class="sort-hint">Lowest Fare</span>
+            </button>
+            <button type="button" class="sort-tab-btn" data-sort="fastest" id="sortTabFastest" title="Fastest: Pure ascending order of journey time">
+              <span>Fastest</span>
+              <span class="sort-hint">Shortest Travel</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="results-count-badge" id="resultsCountText">
+          Showing available demo offers
+        </div>
+      </div>
+
+      <!-- State Notification Container (Timeout, Expired, Loading) -->
+      <div id="searchStateContainer" style="display: none; margin-bottom: 20px;"></div>
+
+      <!-- Flight Offers List Container -->
+      <div class="flights-list-container" id="flightOffersList" role="feed" aria-busy="false" aria-label="Available Flight Offers">
+        <!-- Flight cards are injected dynamically by FlightResultsController -->
+      </div>
+    </main>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/flight_models.js"></script>
+<script src="/js/flight_fixtures.js"></script>
+<script src="/js/flight_results_controller.js"></script>
 {% endblock %}

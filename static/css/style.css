@@ -7581,11 +7581,441 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* ==========================================================================
+   FLIGHT SEARCH RESULTS & DEMO FIXTURE EXPERIENCE STYLES
+   ========================================================================== */
+.search-results-layout {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 48px;
+}
+
+.filters-sidebar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  position: sticky;
+  top: 85px;
+  box-shadow: 0 4px 20px rgba(16, 29, 44, 0.05);
+}
+
+.filters-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.filters-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.btn-text-link {
+  background: transparent;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.btn-text-link:hover {
+  text-decoration: underline;
+}
+
+.filter-group-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.filter-val-pill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(2, 132, 199, 0.1);
+  color: var(--accent-primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.filter-slider {
+  width: 100%;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.filter-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.filter-radio-item input[type="radio"] {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.filter-count-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+}
+
+.mobile-filter-bar {
+  display: none;
+  margin-bottom: 16px;
+}
+
+.btn-toggle-filters-mobile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Sort Bar */
+.results-sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sort-options-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sort-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sort-tabs-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sort-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-medium);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.sort-tab-btn .sort-hint {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.sort-tab-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-main);
+}
+
+.sort-tab-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+[data-theme="dark"] .sort-tab-btn.active {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  color: #101D2C;
+}
+
+.results-count-badge {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Connecting Flight Accordion */
+.connecting-accordion-wrapper {
+  border-top: 1px dashed var(--border-medium);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+.btn-toggle-segments {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--accent-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.btn-toggle-segments:hover {
+  text-decoration: underline;
+}
+
+.btn-toggle-segments .accordion-chevron {
+  transition: transform 0.2s ease-in-out;
+}
+
+.btn-toggle-segments.is-open .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.connecting-segments-container {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  animation: fadeInDown 0.2s ease-out;
+}
+
+.segment-timeline-item {
+  padding: 10px 0;
+}
+
+.seg-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.seg-aircraft {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.seg-item-times {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.seg-duration {
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.seg-operating-note {
+  font-size: 0.76rem;
+  color: #b45309;
+  margin-top: 4px;
+}
+
+.layover-divider-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  background: rgba(234, 179, 8, 0.1);
+  border-left: 3px solid #eab308;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+
+/* Overnight and Demo Badges */
+.badge-overnight {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #854d0e;
+  background: #fef9c3;
+  border: 1px solid #fef08a;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .badge-overnight {
+  color: #fde047;
+  background: rgba(234, 179, 8, 0.15);
+  border-color: rgba(234, 179, 8, 0.3);
+}
+
+.overnight-sup {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #dc2626;
+  vertical-align: super;
+  margin-left: 3px;
+}
+
+.demo-tag-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #b45309;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}
+
+[data-theme="dark"] .demo-tag-pill {
+  color: #fcd34d;
+  background: rgba(234, 179, 8, 0.2);
+}
+
+.demo-card-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(100, 116, 139, 0.12);
+  border: 1px solid rgba(100, 116, 139, 0.25);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.operating-carrier-tag {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--accent-primary);
+}
+
+.flight-track-line.has-stops .stop-dot {
+  background: #eab308;
+  border-color: #ca8a04;
+}
+
+.stops-text.text-layover {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.price-sub-note {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.footer-amenities-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fare-family-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+/* ==========================================================================
    RESPONSIVE BREAKPOINTS (1024px, 768px, 480px, 390px)
    ========================================================================== */
 @media (max-width: 1024px) {
+  .search-results-layout {
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+  }
   .flight-details-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .search-results-layout {
+    grid-template-columns: 1fr;
+  }
+  .mobile-filter-bar {
+    display: block;
+  }
+  .filters-sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1050;
+    border-radius: 0;
+    overflow-y: auto;
+    background: var(--bg-surface);
+  }
+  .filters-sidebar.is-drawer-open {
+    display: block;
+    animation: slideInLeft 0.25s ease-out;
   }
 }
 
@@ -7618,5 +8048,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
   .flight-time-point .point-time {
     font-size: 1.2rem;
+  }
+  .flight-card-body {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .flight-duration-col {
+    width: 100%;
   }
 }
