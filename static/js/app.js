@@ -10,6 +10,16 @@ const app = {
     theme: 'light',
     currentPage: 'home',
     currentTripType: 'oneway',
+    passengers: {
+      adults: 1,
+      children: 0,
+      infants: 0
+    },
+    cabinClass: 'Economy',
+    multiCityLegs: [
+      { from: 'Dhaka (DAC)', fromCode: 'DAC', fromCity: 'Dhaka', to: 'Chittagong (CGP)', toCode: 'CGP', toCity: 'Chittagong', date: '' },
+      { from: 'Chittagong (CGP)', fromCode: 'CGP', fromCity: 'Chittagong', to: "Cox's Bazar (CXB)", toCode: 'CXB', toCity: "Cox's Bazar", date: '' }
+    ],
     selectedFlight: null,
     selectedSeat: null,
     selectedSeats: [],
@@ -74,6 +84,8 @@ const app = {
     this.setupAutocomplete();
     this.renderHeaderAuth();
     this.initHashRouting();
+    this.updatePassengerUI();
+    this.handleUrlSearchRoute();
     const initialPage = this.getPageFromHash() || 'home';
     this.navigate(initialPage, false);
 
@@ -112,13 +124,21 @@ const app = {
     this.checkActiveTrips();
     this.checkPendingBookingOnLoad();
 
-    // Close user dropdown menu when clicking anywhere outside
+    // Close user dropdown menu and passenger popover when clicking anywhere outside
     document.addEventListener('click', (e) => {
       const menu = document.getElementById('userDropdownMenu');
       const pill = document.querySelector('.user-profile-pill');
       if (menu && menu.classList.contains('show')) {
         if (!menu.contains(e.target) && (!pill || !pill.contains(e.target))) {
           menu.classList.remove('show');
+        }
+      }
+
+      const popover = document.getElementById('passengerClassPopover');
+      const trigger = document.getElementById('passengerClassTrigger');
+      if (popover && popover.classList.contains('show')) {
+        if (!popover.contains(e.target) && (!trigger || !trigger.contains(e.target))) {
+          this.closePassengerPopover();
         }
       }
     });
@@ -249,6 +269,9 @@ const app = {
     }
     if (hash === 'logout' || path === 'logout') {
       return 'logout';
+    }
+    if (path.startsWith('flight/list') || path.startsWith('flight/search') || hash === 'search') {
+      return 'search';
     }
     const validPages = ['home', 'search', 'seatmap', 'bookings', 'favorites', 'dashboard', 'account', 'auth'];
     return validPages.includes(hash) ? hash : null;
@@ -1000,24 +1023,29 @@ const app = {
   },
 
   setupAutocomplete() {
-    const bindInput = (inputId, dropdownId, onSelect) => {
-      const inp = document.getElementById(inputId);
-      const drop = document.getElementById(dropdownId);
-      if (!inp || !drop) return;
+    this.bindAirportAutocomplete('homeOriginInput', 'homeOriginDropdown');
+    this.bindAirportAutocomplete('homeDestInput', 'homeDestDropdown');
+  },
 
-      let timeout = null;
-      inp.addEventListener('input', () => {
-        clearTimeout(timeout);
-        timeout = setTimeout(async () => {
-          const val = inp.value.trim();
-          if (val.length < 1) {
-            drop.classList.remove('show');
-            return;
-          }
+  bindAirportAutocomplete(inputId, dropdownId, onSelectCallback = null) {
+    const inp = document.getElementById(inputId);
+    const drop = document.getElementById(dropdownId);
+    if (!inp || !drop) return;
 
+    let timeout = null;
+    inp.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(async () => {
+        const val = inp.value.trim();
+        if (val.length < 1) {
+          drop.classList.remove('show');
+          return;
+        }
+
+        try {
           const res = await fetch(`/api/airports/search?q=${encodeURIComponent(val)}`);
           const airports = await res.json();
-          if (airports.length === 0) {
+          if (!airports || airports.length === 0) {
             drop.innerHTML = '<div style="padding: 10px; font-size: 0.8rem; color: var(--text-muted);">No airports found</div>';
             drop.classList.add('show');
             return;
@@ -1033,19 +1061,17 @@ const app = {
             </div>
           `).join('');
           drop.classList.add('show');
-        }, 200);
-      });
-
-      // Close on outside click
-      document.addEventListener('click', (e) => {
-        if (!inp.contains(e.target) && !drop.contains(e.target)) {
-          drop.classList.remove('show');
+        } catch (e) {
+          console.error('Airport search error:', e);
         }
-      });
-    };
+      }, 150);
+    });
 
-    bindInput('homeOriginInput', 'homeOriginDropdown');
-    bindInput('homeDestInput', 'homeDestDropdown');
+    document.addEventListener('click', (e) => {
+      if (!inp.contains(e.target) && !drop.contains(e.target)) {
+        drop.classList.remove('show');
+      }
+    });
   },
 
   selectAirport(inputId, dropdownId, city, code, country, airportId) {
@@ -1060,6 +1086,24 @@ const app = {
       inp.dataset.id = airportId || '';
     }
     if (drop) drop.classList.remove('show');
+
+    // If input is part of multi-city, sync state
+    const mcMatch = inputId.match(/^mc(Origin|Dest)Input_(\d+)$/);
+    if (mcMatch) {
+      const type = mcMatch[1];
+      const idx = parseInt(mcMatch[2], 10);
+      if (this.state.multiCityLegs && this.state.multiCityLegs[idx]) {
+        if (type === 'Origin') {
+          this.state.multiCityLegs[idx].from = `${city} (${code})`;
+          this.state.multiCityLegs[idx].fromCode = code;
+          this.state.multiCityLegs[idx].fromCity = city;
+        } else {
+          this.state.multiCityLegs[idx].to = `${city} (${code})`;
+          this.state.multiCityLegs[idx].toCode = code;
+          this.state.multiCityLegs[idx].toCity = city;
+        }
+      }
+    }
   },
 
   swapHomeAirports() {
@@ -1091,16 +1135,297 @@ const app = {
 
   setTripType(type) {
     this.state.currentTripType = type;
-    document.getElementById('tabOneWay').classList.toggle('active', type === 'oneway');
-    document.getElementById('tabRoundTrip').classList.toggle('active', type === 'roundtrip');
-    const form = document.querySelector('.search-widget-form');
-    if (form) {
-      form.classList.toggle('is-roundtrip', type === 'roundtrip');
-    }
+    const tabOneWay = document.getElementById('tabOneWay');
+    const tabRoundTrip = document.getElementById('tabRoundTrip');
+    const tabMultiCity = document.getElementById('tabMultiCity');
+    if (tabOneWay) tabOneWay.classList.toggle('active', type === 'oneway');
+    if (tabRoundTrip) tabRoundTrip.classList.toggle('active', type === 'roundtrip');
+    if (tabMultiCity) tabMultiCity.classList.toggle('active', type === 'multicity');
+
+    const stdForm = document.getElementById('standardSearchForm');
+    const multiContainer = document.getElementById('multiCityContainer');
     const returnField = document.getElementById('returnDateField');
-    if (returnField) {
-      returnField.style.display = type === 'roundtrip' ? 'flex' : 'none';
+
+    if (type === 'multicity') {
+      if (stdForm) stdForm.style.display = 'none';
+      if (multiContainer) {
+        multiContainer.style.display = 'flex';
+        this.renderMultiCityLegs();
+      }
+    } else {
+      if (stdForm) {
+        stdForm.style.display = 'grid';
+        stdForm.classList.toggle('is-roundtrip', type === 'roundtrip');
+      }
+      if (multiContainer) multiContainer.style.display = 'none';
+      if (returnField) {
+        returnField.style.display = type === 'roundtrip' ? 'flex' : 'none';
+      }
     }
+  },
+
+  // -------------------------------------------------------------
+  // PASSENGER & CABIN CLASS POPOVER (GoZayaan Inspiration)
+  // -------------------------------------------------------------
+  togglePassengerPopover(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('passengerClassPopover');
+    const trigger = document.getElementById('passengerClassTrigger');
+    if (!popover) return;
+    const isShowing = popover.classList.contains('show');
+    if (isShowing) {
+      this.closePassengerPopover();
+    } else {
+      popover.classList.add('show');
+      if (trigger) trigger.classList.add('active');
+    }
+  },
+
+  closePassengerPopover(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById('passengerClassPopover');
+    const trigger = document.getElementById('passengerClassTrigger');
+    if (popover) popover.classList.remove('show');
+    if (trigger) trigger.classList.remove('active');
+  },
+
+  changePassengerCount(type, delta) {
+    const p = this.state.passengers;
+    if (type === 'adults') {
+      const next = p.adults + delta;
+      if (next >= 1 && next <= 9) {
+        p.adults = next;
+        if (p.infants > p.adults) {
+          p.infants = p.adults;
+        }
+      }
+    } else if (type === 'children') {
+      const next = p.children + delta;
+      if (next >= 0 && next <= 8) {
+        p.children = next;
+      }
+    } else if (type === 'infants') {
+      const next = p.infants + delta;
+      if (next >= 0 && next <= p.adults) {
+        p.infants = next;
+      } else if (next > p.adults) {
+        this.showToast('Number of infants cannot exceed number of adults.', 'warning');
+        return;
+      }
+    }
+
+    this.updatePassengerUI();
+  },
+
+  selectCabinClass(cabin) {
+    this.state.cabinClass = cabin;
+    document.querySelectorAll('.cabin-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.cabin === cabin);
+    });
+    const cabinInput = document.getElementById('homeCabinClass');
+    if (cabinInput) cabinInput.value = cabin.toLowerCase();
+    this.updatePassengerUI();
+  },
+
+  updatePassengerUI() {
+    const p = this.state.passengers;
+    const total = p.adults + p.children + p.infants;
+
+    const valA = document.getElementById('valAdults');
+    const valC = document.getElementById('valChildren');
+    const valI = document.getElementById('valInfants');
+    if (valA) valA.textContent = p.adults;
+    if (valC) valC.textContent = p.children;
+    if (valI) valI.textContent = p.infants;
+
+    const btnMinusA = document.getElementById('btnMinusAdults');
+    const btnMinusC = document.getElementById('btnMinusChildren');
+    const btnMinusI = document.getElementById('btnMinusInfants');
+    if (btnMinusA) btnMinusA.disabled = (p.adults <= 1);
+    if (btnMinusC) btnMinusC.disabled = (p.children <= 0);
+    if (btnMinusI) btnMinusI.disabled = (p.infants <= 0);
+
+    const popTotal = document.getElementById('popoverTotalIndicator');
+    if (popTotal) popTotal.textContent = `Total: ${total}`;
+
+    const summaryText = document.getElementById('travelerSummaryText');
+    const subText = document.getElementById('travelerSubtext');
+    const cabin = this.state.cabinClass || 'Economy';
+
+    const travelerLabel = total === 1 ? '1 Traveler' : `${total} Travelers`;
+    if (summaryText) summaryText.textContent = `${travelerLabel}, ${cabin}`;
+
+    const parts = [];
+    parts.push(`${p.adults} ${p.adults === 1 ? 'Adult' : 'Adults'}`);
+    if (p.children > 0) parts.push(`${p.children} ${p.children === 1 ? 'Child' : 'Children'}`);
+    if (p.infants > 0) parts.push(`${p.infants} ${p.infants === 1 ? 'Infant' : 'Infants'}`);
+    if (subText) subText.textContent = `${parts.join(', ')} • ${cabin}`;
+
+    // Sync hidden inputs
+    const homePass = document.getElementById('homePassengers');
+    if (homePass) homePass.value = total;
+    const homeAdults = document.getElementById('homeAdults');
+    if (homeAdults) homeAdults.value = p.adults;
+    const homeChildren = document.getElementById('homeChildren');
+    if (homeChildren) homeChildren.value = p.children;
+    const homeInfants = document.getElementById('homeInfants');
+    if (homeInfants) homeInfants.value = p.infants;
+  },
+
+  // -------------------------------------------------------------
+  // MULTI-CITY TRIP BUILDER
+  // -------------------------------------------------------------
+  addMultiCityLeg() {
+    if (this.state.multiCityLegs.length >= 4) {
+      this.showToast('Maximum 4 legs allowed for Multi-City trips.', 'warning');
+      return;
+    }
+    const lastLeg = this.state.multiCityLegs[this.state.multiCityLegs.length - 1];
+    this.state.multiCityLegs.push({
+      from: lastLeg ? lastLeg.to : '',
+      fromCode: lastLeg ? lastLeg.toCode : '',
+      fromCity: lastLeg ? lastLeg.toCity : '',
+      to: '',
+      toCode: '',
+      toCity: '',
+      date: ''
+    });
+    this.renderMultiCityLegs();
+  },
+
+  removeMultiCityLeg(index) {
+    if (this.state.multiCityLegs.length <= 2) {
+      this.showToast('Multi-City trips require at least 2 legs.', 'warning');
+      return;
+    }
+    this.state.multiCityLegs.splice(index, 1);
+    this.renderMultiCityLegs();
+  },
+
+  renderMultiCityLegs() {
+    const listEl = document.getElementById('multiCityLegsList');
+    if (!listEl) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    listEl.innerHTML = this.state.multiCityLegs.map((leg, idx) => {
+      const legNum = idx + 1;
+      const removeBtnHtml = idx >= 2 ? `
+        <button type="button" class="btn-remove-leg" onclick="app.removeMultiCityLeg(${idx})" title="Remove this leg">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      ` : '<div style="width: 44px;"></div>';
+
+      return `
+        <div class="multicity-leg-row" data-leg-index="${idx}">
+          <span class="multicity-leg-badge">Flight ${legNum}</span>
+
+          <!-- Origin -->
+          <div class="form-group-airport">
+            <label class="input-label">FROM</label>
+            <div class="input-airport-wrapper">
+              <span class="airport-icon">🛫</span>
+              <input type="text" id="mcOriginInput_${idx}" class="airport-input" placeholder="Departure City..." value="${leg.from || ''}" autocomplete="off">
+            </div>
+            <div class="airport-dropdown-list" id="mcOriginDropdown_${idx}"></div>
+          </div>
+
+          <!-- Swap -->
+          <button type="button" class="btn-swap" onclick="app.swapMultiCityLegAirports(${idx})" title="Swap Airports">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+          </button>
+
+          <!-- Destination -->
+          <div class="form-group-airport">
+            <label class="input-label">TO</label>
+            <div class="input-airport-wrapper">
+              <span class="airport-icon">🛬</span>
+              <input type="text" id="mcDestInput_${idx}" class="airport-input" placeholder="Arrival City..." value="${leg.to || ''}" autocomplete="off">
+            </div>
+            <div class="airport-dropdown-list" id="mcDestDropdown_${idx}"></div>
+          </div>
+
+          <!-- Travel Date -->
+          <div class="form-group-field">
+            <label class="input-label">DATE</label>
+            <div class="input-field-wrapper">
+              <input type="date" id="mcDateInput_${idx}" class="date-input" min="${todayStr}" value="${leg.date || ''}" onchange="app.onMultiCityDateChange(${idx})">
+            </div>
+          </div>
+
+          <!-- Remove Action -->
+          ${removeBtnHtml}
+        </div>
+      `;
+    }).join('');
+
+    this.setupMultiCityAutocomplete();
+  },
+
+  swapMultiCityLegAirports(index) {
+    const orig = document.getElementById(`mcOriginInput_${index}`);
+    const dest = document.getElementById(`mcDestInput_${index}`);
+    if (!orig || !dest) return;
+
+    const tempVal = orig.value;
+    const tempCity = orig.dataset.city || '';
+    const tempCode = orig.dataset.code || '';
+    const tempCountry = orig.dataset.country || '';
+
+    orig.value = dest.value;
+    orig.dataset.city = dest.dataset.city || '';
+    orig.dataset.code = dest.dataset.code || '';
+    orig.dataset.country = dest.dataset.country || '';
+
+    dest.value = tempVal;
+    dest.dataset.city = tempCity;
+    dest.dataset.code = tempCode;
+    dest.dataset.country = tempCountry;
+
+    if (this.state.multiCityLegs[index]) {
+      this.state.multiCityLegs[index].from = orig.value;
+      this.state.multiCityLegs[index].fromCode = orig.dataset.code;
+      this.state.multiCityLegs[index].fromCity = orig.dataset.city;
+      this.state.multiCityLegs[index].to = dest.value;
+      this.state.multiCityLegs[index].toCode = dest.dataset.code;
+      this.state.multiCityLegs[index].toCity = dest.dataset.city;
+    }
+  },
+
+  onMultiCityDateChange(index) {
+    const curDate = document.getElementById(`mcDateInput_${index}`).value;
+    if (this.state.multiCityLegs[index]) {
+      this.state.multiCityLegs[index].date = curDate;
+    }
+    for (let i = index + 1; i < this.state.multiCityLegs.length; i++) {
+      const nextDateInput = document.getElementById(`mcDateInput_${i}`);
+      if (nextDateInput) {
+        nextDateInput.min = curDate;
+        if (nextDateInput.value && nextDateInput.value < curDate) {
+          nextDateInput.value = curDate;
+          this.state.multiCityLegs[i].date = curDate;
+        }
+      }
+    }
+  },
+
+  setupMultiCityAutocomplete() {
+    this.state.multiCityLegs.forEach((leg, idx) => {
+      this.bindAirportAutocomplete(`mcOriginInput_${idx}`, `mcOriginDropdown_${idx}`, (city, code) => {
+        if (this.state.multiCityLegs[idx]) {
+          this.state.multiCityLegs[idx].from = `${city} (${code})`;
+          this.state.multiCityLegs[idx].fromCode = code;
+          this.state.multiCityLegs[idx].fromCity = city;
+        }
+      });
+      this.bindAirportAutocomplete(`mcDestInput_${idx}`, `mcDestDropdown_${idx}`, (city, code) => {
+        if (this.state.multiCityLegs[idx]) {
+          this.state.multiCityLegs[idx].to = `${city} (${code})`;
+          this.state.multiCityLegs[idx].toCode = code;
+          this.state.multiCityLegs[idx].toCity = city;
+        }
+      });
+    });
   },
 
   clearHomeSearch() {
@@ -1134,8 +1459,17 @@ const app = {
     if (inputEl.dataset && inputEl.dataset.city && (val.includes(inputEl.dataset.city) || !val)) {
       return inputEl.dataset.city.trim();
     }
-    // Clean trailing (IATA) or (ICAO) codes like "Cox's Bazar (CXB)" -> "Cox's Bazar"
     return val.replace(/\s*\([A-Za-z0-9]{2,4}\)$/, '').trim();
+  },
+
+  extractAirportCode(inputEl) {
+    if (!inputEl) return '';
+    if (inputEl.dataset && inputEl.dataset.code) return inputEl.dataset.code.trim();
+    const val = (inputEl.value || '').trim();
+    const m = val.match(/\(([A-Za-z0-9]{3,4})\)$/);
+    if (m) return m[1].toUpperCase();
+    if (val.length === 3 && /^[A-Za-z]{3}$/.test(val)) return val.toUpperCase();
+    return val;
   },
 
   quickFilterSearch(originCity, destCity) {
@@ -1152,39 +1486,247 @@ const app = {
     this.executeHomeSearch();
   },
 
+  // -------------------------------------------------------------
+  // SEARCH EXECUTION & DYNAMIC URL ROUTING
+  // -------------------------------------------------------------
   executeHomeSearch() {
-    const orig = document.getElementById('homeOriginInput');
-    const dest = document.getElementById('homeDestInput');
-    const depDateInput = document.getElementById('homeDepDate');
-    const depDate = depDateInput ? depDateInput.value : '';
-    const classSel = document.getElementById('homeCabinClass');
-    const cabinClass = classSel ? classSel.value : 'all';
-    const passSel = document.getElementById('homePassengers');
-    const passengers = passSel ? passSel.value : '1';
+    const tripType = this.state.currentTripType || 'oneway';
+    const passengers = this.state.passengers || { adults: 1, children: 0, infants: 0 };
+    const cabin = this.state.cabinClass || 'Economy';
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    const depCity = this.extractCityName(orig);
-    const arrCity = this.extractCityName(dest);
-
-    // Validation: prevent identical origin and destination
-    if (depCity && arrCity && depCity.toLowerCase() === arrCity.toLowerCase()) {
-      this.showToast('Origin and destination cannot be identical. Please select another airport.', 'warning');
+    // Validate Passenger Count
+    if (!passengers.adults || passengers.adults < 1) {
+      this.showToast('At least one adult passenger (12+ years) must be selected.', 'warning');
       return;
     }
 
-    this.state.searchParams.depCity = depCity;
-    this.state.searchParams.arrCity = arrCity;
+    if (tripType === 'multicity') {
+      const legs = this.state.multiCityLegs;
+      if (!legs || legs.length < 2) {
+        this.showToast('Please configure at least 2 legs for your multi-city trip.', 'warning');
+        return;
+      }
+
+      for (let i = 0; i < legs.length; i++) {
+        const origEl = document.getElementById(`mcOriginInput_${i}`);
+        const destEl = document.getElementById(`mcDestInput_${i}`);
+        const dateEl = document.getElementById(`mcDateInput_${i}`);
+
+        const fromCity = this.extractCityName(origEl) || (legs[i].fromCity || '');
+        const toCity = this.extractCityName(destEl) || (legs[i].toCity || '');
+        const fromCode = this.extractAirportCode(origEl) || (legs[i].fromCode || '');
+        const toCode = this.extractAirportCode(destEl) || (legs[i].toCode || '');
+        const legDate = dateEl ? dateEl.value : (legs[i].date || '');
+
+        if (!fromCode && !fromCity) {
+          this.showToast(`Please enter departure airport for Flight ${i + 1}.`, 'warning');
+          return;
+        }
+        if (!toCode && !toCity) {
+          this.showToast(`Please enter destination airport for Flight ${i + 1}.`, 'warning');
+          return;
+        }
+        if ((fromCode && toCode && fromCode.toUpperCase() === toCode.toUpperCase()) ||
+            (fromCity && toCity && fromCity.toLowerCase() === toCity.toLowerCase())) {
+          this.showToast(`Flight ${i + 1}: Departure and destination cannot be the same airport.`, 'warning');
+          return;
+        }
+        if (!legDate) {
+          this.showToast(`Please select a travel date for Flight ${i + 1}.`, 'warning');
+          return;
+        }
+        if (legDate < todayStr) {
+          this.showToast(`Flight ${i + 1}: Travel date cannot be in the past.`, 'warning');
+          return;
+        }
+        if (i > 0) {
+          const prevDateEl = document.getElementById(`mcDateInput_${i - 1}`);
+          const prevDate = prevDateEl ? prevDateEl.value : legs[i - 1].date;
+          if (prevDate && legDate < prevDate) {
+            this.showToast(`Flight ${i + 1} date cannot be earlier than Flight ${i} date.`, 'warning');
+            return;
+          }
+        }
+
+        legs[i].from = `${fromCity} (${fromCode})`;
+        legs[i].fromCode = fromCode;
+        legs[i].fromCity = fromCity;
+        legs[i].to = `${toCity} (${toCode})`;
+        legs[i].toCode = toCode;
+        legs[i].toCity = toCity;
+        legs[i].date = legDate;
+      }
+
+      // Build Multi-City URL
+      const params = new URLSearchParams();
+      params.append('trip_type', 'multi_city');
+      legs.forEach((l, idx) => {
+        params.append(`from${idx + 1}`, l.fromCode || l.fromCity);
+        params.append(`to${idx + 1}`, l.toCode || l.toCity);
+        params.append(`departure${idx + 1}`, l.date);
+      });
+      params.append('adults', passengers.adults);
+      params.append('children', passengers.children);
+      params.append('infants', passengers.infants);
+      params.append('cabin', cabin);
+
+      const targetUrl = `/flight/list?${params.toString()}`;
+      window.history.pushState({}, '', targetUrl);
+
+      this.state.searchParams.depCity = legs[0].fromCity || legs[0].fromCode;
+      this.state.searchParams.arrCity = legs[0].toCity || legs[0].toCode;
+      this.state.searchParams.depDateAfter = legs[0].date;
+      this.state.searchParams.cabinClass = cabin.toLowerCase();
+      this.state.searchParams.passengers = passengers.adults + passengers.children;
+      this.state.searchParams.page = 1;
+
+      this.navigate('search');
+      return;
+    }
+
+    // One Way / Round Trip
+    const orig = document.getElementById('homeOriginInput');
+    const dest = document.getElementById('homeDestInput');
+    const depDateInput = document.getElementById('homeDepDate');
+    const retDateInput = document.getElementById('homeReturnDate');
+
+    const depCity = this.extractCityName(orig);
+    const arrCity = this.extractCityName(dest);
+    const depCode = this.extractAirportCode(orig);
+    const arrCode = this.extractAirportCode(dest);
+    const depDate = depDateInput ? depDateInput.value : '';
+    const retDate = retDateInput ? retDateInput.value : '';
+
+    if (!depCity && !depCode) {
+      this.showToast('Please select a departure airport.', 'warning');
+      return;
+    }
+    if (!arrCity && !arrCode) {
+      this.showToast('Please select a destination airport.', 'warning');
+      return;
+    }
+    if ((depCode && arrCode && depCode.toUpperCase() === arrCode.toUpperCase()) ||
+        (depCity && arrCity && depCity.toLowerCase() === arrCity.toLowerCase())) {
+      this.showToast('Origin and destination cannot be identical.', 'warning');
+      return;
+    }
+    if (!depDate) {
+      this.showToast('Please select a departure date.', 'warning');
+      return;
+    }
+    if (depDate < todayStr) {
+      this.showToast('Departure date cannot be in the past.', 'warning');
+      return;
+    }
+    if (tripType === 'roundtrip') {
+      if (!retDate) {
+        this.showToast('Please select a return date for your round trip.', 'warning');
+        return;
+      }
+      if (retDate < depDate) {
+        this.showToast('Return date cannot be earlier than departure date.', 'warning');
+        return;
+      }
+    }
+
+    // Build Clean URL
+    const tripTypeParam = tripType === 'roundtrip' ? 'round_trip' : 'one_way';
+    const cleanFrom = depCode || depCity;
+    const cleanTo = arrCode || arrCity;
+
+    const params = new URLSearchParams();
+    params.append('trip_type', tripTypeParam);
+    params.append('from', cleanFrom);
+    params.append('to', cleanTo);
+    params.append('departure', depDate);
+    if (tripType === 'roundtrip') {
+      params.append('return', retDate);
+    }
+    params.append('adults', passengers.adults);
+    params.append('children', passengers.children);
+    params.append('infants', passengers.infants);
+    params.append('cabin', cabin);
+
+    const targetUrl = `/flight/list?${params.toString()}`;
+    window.history.pushState({}, '', targetUrl);
+
+    this.state.searchParams.depCity = depCity || depCode;
+    this.state.searchParams.arrCity = arrCity || arrCode;
     this.state.searchParams.depDateAfter = depDate || '';
-    this.state.searchParams.cabinClass = cabinClass;
-    this.state.searchParams.passengers = passengers;
+    if (tripType === 'roundtrip') {
+      this.state.searchParams.depDateBefore = retDate || '';
+    }
+    this.state.searchParams.cabinClass = cabin.toLowerCase();
+    this.state.searchParams.passengers = passengers.adults + passengers.children;
     this.state.searchParams.page = 1;
 
     // Sync to search page filter controls
     const filterDateEl = document.getElementById('filterDateAfter');
-    if (filterDateEl && depDate) {
-      filterDateEl.value = depDate;
-    }
+    if (filterDateEl && depDate) filterDateEl.value = depDate;
+    const filterDateBeforeEl = document.getElementById('filterDateBefore');
+    if (filterDateBeforeEl && retDate) filterDateBeforeEl.value = retDate;
 
     this.navigate('search');
+  },
+
+  handleUrlSearchRoute() {
+    const path = window.location.pathname.replace('/', '').toLowerCase();
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!path.startsWith('flight/list') && !path.startsWith('flight/search') && !urlParams.has('trip_type') && !urlParams.has('from')) {
+      return;
+    }
+
+    const tripType = urlParams.get('trip_type') || 'one_way';
+    const fromVal = urlParams.get('from') || urlParams.get('from1') || '';
+    const toVal = urlParams.get('to') || urlParams.get('to1') || '';
+    const depDate = urlParams.get('departure') || urlParams.get('departure1') || '';
+    const retDate = urlParams.get('return') || '';
+    const adults = parseInt(urlParams.get('adults') || '1', 10);
+    const children = parseInt(urlParams.get('children') || '0', 10);
+    const infants = parseInt(urlParams.get('infants') || '0', 10);
+    const cabin = urlParams.get('cabin') || 'Economy';
+
+    if (tripType === 'round_trip') {
+      this.setTripType('roundtrip');
+    } else if (tripType === 'multi_city') {
+      this.setTripType('multicity');
+    } else {
+      this.setTripType('oneway');
+    }
+
+    this.state.passengers = {
+      adults: isNaN(adults) || adults < 1 ? 1 : adults,
+      children: isNaN(children) || children < 0 ? 0 : children,
+      infants: isNaN(infants) || infants < 0 ? 0 : infants
+    };
+    this.selectCabinClass(cabin);
+
+    const origInput = document.getElementById('homeOriginInput');
+    const destInput = document.getElementById('homeDestInput');
+    const depDateInput = document.getElementById('homeDepDate');
+    const retDateInput = document.getElementById('homeReturnDate');
+
+    if (origInput && fromVal) {
+      origInput.value = fromVal;
+      origInput.dataset.code = fromVal;
+      origInput.dataset.city = fromVal;
+    }
+    if (destInput && toVal) {
+      destInput.value = toVal;
+      destInput.dataset.code = toVal;
+      destInput.dataset.city = toVal;
+    }
+    if (depDateInput && depDate) depDateInput.value = depDate;
+    if (retDateInput && retDate) retDateInput.value = retDate;
+
+    this.state.searchParams.depCity = fromVal;
+    this.state.searchParams.arrCity = toVal;
+    this.state.searchParams.depDateAfter = depDate;
+    if (retDate) this.state.searchParams.depDateBefore = retDate;
+    this.state.searchParams.cabinClass = cabin.toLowerCase();
+    this.state.searchParams.passengers = this.state.passengers.adults + this.state.passengers.children;
+    this.state.searchParams.page = 1;
   },
 
   // -------------------------------------------------------------
@@ -1364,7 +1906,12 @@ const app = {
       badge.innerText = `${data.total} Flights Found`;
       const hint = document.getElementById('resultsFilterHint');
       if (hint) {
-        if (p.depCity || p.arrCity) {
+        if (this.state.currentTripType === 'multicity' && this.state.multiCityLegs && this.state.multiCityLegs.length > 0) {
+          const legsSummary = this.state.multiCityLegs.map((l, i) => `Flight ${i + 1}: ${l.fromCity || l.fromCode} ➔ ${l.toCity || l.toCode}`).join(' | ');
+          hint.innerHTML = `Multi-City: <strong>${legsSummary}</strong> <button class="btn-clear-route-pill" onclick="app.clearSearchRoute()" title="Clear route filter">✕ Clear</button>`;
+        } else if (this.state.currentTripType === 'roundtrip' && (p.depCity || p.arrCity)) {
+          hint.innerHTML = `Round Trip: <strong>${p.depCity || 'Any'}</strong> ⇄ <strong>${p.arrCity || 'Any'}</strong> (Depart: ${p.depDateAfter || 'Any'} | Return: ${p.depDateBefore || 'Any'}) <button class="btn-clear-route-pill" onclick="app.clearSearchRoute()" title="Clear route filter">✕ Clear</button>`;
+        } else if (p.depCity || p.arrCity) {
           hint.innerHTML = `Route: <strong>${p.depCity || 'Any'}</strong> ➔ <strong>${p.arrCity || 'Any'}</strong> <button class="btn-clear-route-pill" onclick="app.clearSearchRoute()" title="Clear route filter">✕ Clear</button>`;
         } else {
           hint.innerText = 'Showing scheduled flights worldwide';
