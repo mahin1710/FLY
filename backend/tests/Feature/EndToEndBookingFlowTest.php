@@ -93,7 +93,7 @@ class EndToEndBookingFlowTest extends TestCase
                 'passengers' => [
                     [
                         'type'            => 'adult',
-                        'title'           => 'MR',
+                        'title'           => 'Mr',
                         'first_name'      => 'Mahin',
                         'last_name'       => 'Rahman',
                         'date_of_birth'   => '1995-06-15',
@@ -116,38 +116,26 @@ class EndToEndBookingFlowTest extends TestCase
 
         // 6. Payment Initialization
         $paymentInit = $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/v1/payments/initialize', [
+            ->postJson('/api/v1/payments/intent', [
                 'booking_ulid' => $bookingUlid,
-                'gateway'      => 'simulated',
             ]);
 
-        $paymentInit->assertStatus(200)
+        $paymentInit->assertStatus(201)
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
                 'data' => [
-                    'transaction_ref',
+                    'gateway_transaction_id',
                     'amount',
                     'currency',
                     'redirect_url',
                 ],
             ]);
 
-        $transactionRef = $paymentInit->json('data.transaction_ref');
+        $transactionId = $paymentInit->json('data.gateway_transaction_id');
+        $amount = (string) $paymentInit->json('data.amount');
+        $currency = (string) $paymentInit->json('data.currency');
 
-        // 7. Payment Webhook Callback (simulating successful gateway confirmation)
-        $webhookResponse = $this->postJson('/api/v1/payments/webhook', [
-            'tran_id'  => $transactionRef,
-            'val_id'   => 'VAL-E2E-' . Str::random(8),
-            'amount'   => (string) $paymentInit->json('data.amount'),
-            'currency' => $paymentInit->json('data.currency'),
-            'status'   => 'VALID',
-        ]);
-
-        $webhookResponse->assertStatus(200)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', 'captured');
-
-        // 8. Booking Confirmation Orchestration
+        // 7. Booking Confirmation Orchestration (Reprice -> Reservation -> Payment Capture -> Ticketing)
         $confirmResponse = $this->withHeader('Authorization', "Bearer {$token}")
             ->postJson("/api/v1/bookings/{$bookingUlid}/confirm", [
                 'payment' => [
@@ -155,15 +143,35 @@ class EndToEndBookingFlowTest extends TestCase
                     'gateway'                   => 'simulated',
                     'source'                    => 'server_webhook',
                     'verified_server_signature' => true,
-                    'gateway_transaction_id'    => $transactionRef,
+                    'gateway_transaction_id'    => $transactionId,
+                    'cardholder_name'           => 'Mahin Rahman',
                 ],
             ]);
+
+        dump($confirmResponse->json());
 
         $confirmResponse->assertStatus(200)
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.booking_status', 'confirmed')
             ->assertJsonPath('data.payment_status', 'captured')
             ->assertJsonPath('data.ticket_status', 'ticketed');
+
+        // 8. Payment Webhook Callback (Idempotent Webhook Delivery)
+        $secretKey = config('services.payment.simulated.secret_key', 'simulated_payment_secret_key_12345');
+        $verifySign = hash_hmac('sha256', "{$transactionId}:{$amount}:{$currency}", $secretKey);
+
+        $webhookResponse = $this->postJson('/api/v1/payments/ipn', [
+            'tran_id'        => $transactionId,
+            'val_id'         => 'VAL-E2E-' . Str::random(8),
+            'amount'         => $amount,
+            'currency'       => $currency,
+            'status'         => 'VALID',
+            'card_brand'     => 'VISA',
+            'card_last_four' => '4242',
+            'verify_sign'    => $verifySign,
+        ]);
+
+        $webhookResponse->assertStatus(200);
 
         // 9. Query Booking Status Endpoint
         $statusResponse = $this->withHeader('Authorization', "Bearer {$token}")
@@ -174,10 +182,12 @@ class EndToEndBookingFlowTest extends TestCase
             ->assertJsonPath('data.payment_status', 'captured')
             ->assertJsonPath('data.ticket_status', 'ticketed');
 
-        // 10. Generate Branded Customer Confirmation PDF Document
-        $pdfResponse = $this->withHeader('Authorization', "Bearer {$token}")
-            ->get("/api/v1/bookings/{$bookingUlid}/ticket-pdf");
+        // 10. Generate Branded Customer Confirmation PDF Document & Secure Download
+        $booking = Booking::where('ulid', $bookingUlid)->firstOrFail();
+        $docService = app(\App\Services\Documents\DocumentService::class);
+        $signedUrl = $docService->getSecureDownloadUrl($booking);
 
+        $pdfResponse = $this->get($signedUrl);
         $pdfResponse->assertStatus(200)
             ->assertHeader('Content-Type', 'application/pdf');
     }

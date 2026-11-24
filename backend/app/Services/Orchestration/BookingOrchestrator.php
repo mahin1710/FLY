@@ -230,10 +230,12 @@ class BookingOrchestrator
             $booking->ticketing_deadline_at = $reservation->ticketingRequiredBy ? \Carbon\Carbon::parse($reservation->ticketingRequiredBy) : null;
             $booking->save();
 
-            $this->stateMachine->transitionBookingStatus($booking, 'pending_payment', [
-                'pnr'                  => $reservation->pnr,
-                'provider_booking_ref' => $reservation->providerBookingRef,
-            ]);
+            if ($booking->booking_status !== 'pending_payment') {
+                $this->stateMachine->transitionBookingStatus($booking, 'pending_payment', [
+                    'pnr'                  => $reservation->pnr,
+                    'provider_booking_ref' => $reservation->providerBookingRef,
+                ]);
+            }
 
             $this->markStepCompleted($step, [
                 'pnr'                  => $reservation->pnr,
@@ -302,20 +304,32 @@ class BookingOrchestrator
             $paymentUlid = (string) Str::ulid();
             $transactionId = $paymentData['gateway_transaction_id'] ?? 'TXN-' . strtoupper(Str::random(10));
 
-            Payment::create([
-                'ulid'                   => $paymentUlid,
-                'booking_id'             => $booking->id,
-                'user_id'                => $booking->user_id,
-                'payment_method'         => $paymentData['method'] ?? 'card',
-                'gateway_provider'       => $paymentData['gateway'] ?? 'simulated',
-                'gateway_transaction_id' => $transactionId,
-                'currency'               => $booking->currency,
-                'amount'                 => $booking->total_amount,
-                'status'                 => 'captured',
-                'idempotency_key'        => 'PAY-' . $booking->ulid,
-                'authorized_at'          => now(),
-                'captured_at'            => now(),
-            ]);
+            $payment = Payment::where('booking_id', $booking->id)
+                ->where('gateway_transaction_id', $transactionId)
+                ->first();
+
+            if ($payment) {
+                $payment->update([
+                    'status'        => 'captured',
+                    'authorized_at' => $payment->authorized_at ?? now(),
+                    'captured_at'   => now(),
+                ]);
+            } else {
+                Payment::create([
+                    'ulid'                   => $paymentUlid,
+                    'booking_id'             => $booking->id,
+                    'user_id'                => $booking->user_id,
+                    'payment_method'         => $paymentData['method'] ?? 'card',
+                    'gateway_provider'       => $paymentData['gateway'] ?? 'simulated',
+                    'gateway_transaction_id' => $transactionId,
+                    'currency'               => $booking->currency,
+                    'amount'                 => $booking->total_amount,
+                    'status'                 => 'captured',
+                    'idempotency_key'        => 'PAY-' . $booking->ulid,
+                    'authorized_at'          => now(),
+                    'captured_at'            => now(),
+                ]);
+            }
 
             $this->stateMachine->transitionPaymentStatus($booking, 'captured', [
                 'verified_server_signature' => true,
