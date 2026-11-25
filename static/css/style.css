@@ -422,16 +422,18 @@ input, select, textarea {
 }
 
 .header-container {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   height: 72px;
   max-width: 1360px;
   margin: 0 auto;
   padding: 0 24px;
+  gap: 20px;
 }
 
 .brand-wrapper {
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -537,33 +539,48 @@ input, select, textarea {
   letter-spacing: 0.02em;
 }
 
-/* Nav Links */
+/* Nav Links — Perfectly Centered & Aligned */
 .nav-links {
+  justify-self: center;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 4px;
 }
 
 .nav-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1;
   transition: all var(--transition-fast);
   position: relative;
   border: 1px solid transparent;
   cursor: pointer;
   background: transparent;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.nav-btn span {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(0.5px);
 }
 
 .nav-icon {
   width: 17px;
   height: 17px;
   transition: transform var(--transition-fast);
+  display: block;
+  flex-shrink: 0;
 }
 
 .nav-btn:hover {
@@ -576,9 +593,16 @@ input, select, textarea {
 }
 
 .nav-btn.active {
+  color: var(--accent-primary);
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.2);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .nav-btn.active {
   color: var(--accent-gold);
-  background: var(--bg-surface-hover);
-  border-color: var(--border-gold);
+  background: rgba(197, 164, 109, 0.12);
+  border-color: rgba(197, 164, 109, 0.3);
 }
 
 .badge {
@@ -597,6 +621,7 @@ input, select, textarea {
 
 /* Header Actions */
 .header-actions {
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -905,16 +930,15 @@ input, select, textarea {
   color: #F8FAFC;
 }
 
-/* Search Card Top Bar */
+/* Search Card Top Bar — Pixel-Perfect Header & Category Tabs */
 .search-card-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #EEF2F6;
-  padding-bottom: 14px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-  gap: 12px;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  gap: 16px;
 }
 
 [data-theme="dark"] .search-card-topbar {
@@ -922,35 +946,68 @@ input, select, textarea {
 }
 
 .service-category-tabs {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
 }
 
 .cat-tab-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  height: 42px;
+  padding: 0 18px;
   border-radius: var(--radius-pill);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #475569;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
   transition: all var(--transition-fast);
+  line-height: 1;
+  white-space: nowrap;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.cat-tab-btn svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  display: block;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.cat-tab-btn span {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(0.5px);
 }
 
 .cat-tab-btn:hover {
   color: #0F172A;
   background: #F1F5F9;
+  border-color: #E2E8F0;
+}
+
+.cat-tab-btn:hover svg {
+  transform: translateY(-1px);
 }
 
 .cat-tab-btn.active {
-  color: #0284C7;
-  background: #E0F2FE;
+  color: #0F172A;
+  background: #E2E8F0;
   font-weight: 700;
+  border-color: #CBD5E1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.cat-tab-btn.active svg {
+  color: #0284C7;
 }
 
 [data-theme="dark"] .cat-tab-btn {
@@ -960,20 +1017,30 @@ input, select, textarea {
 [data-theme="dark"] .cat-tab-btn:hover {
   color: #FFFFFF;
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 [data-theme="dark"] .cat-tab-btn.active {
-  color: #38BDF8;
-  background: rgba(56, 189, 248, 0.16);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
-/* Trip Type Segmented Pills */
+[data-theme="dark"] .cat-tab-btn.active svg {
+  color: #38BDF8;
+}
+
+/* Trip Type Segmented Pills — Centered & Height Matched to 42px */
 .trip-type-segmented-pill {
   display: inline-flex;
+  align-items: center;
+  height: 42px;
   background: #F1F5F9;
-  padding: 4px;
+  padding: 3px;
   border-radius: var(--radius-pill);
   gap: 2px;
+  box-sizing: border-box;
+  margin: 0;
 }
 
 [data-theme="dark"] .trip-type-segmented-pill {
@@ -981,15 +1048,22 @@ input, select, textarea {
 }
 
 .trip-pill {
-  padding: 6px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 16px;
   border-radius: var(--radius-pill);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: #475569;
   background: transparent;
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
+  line-height: 1;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .trip-pill:hover {
@@ -1517,16 +1591,31 @@ input, select, textarea {
   }
   .search-card-topbar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .service-category-tabs {
+    display: flex;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+  }
+  .service-category-tabs::-webkit-scrollbar {
+    display: none;
   }
   .trip-type-segmented-pill {
     width: 100%;
+    display: flex;
     justify-content: space-between;
   }
   .trip-pill {
     flex: 1;
     text-align: center;
     padding: 6px 10px;
+    font-size: 0.8rem;
   }
 }
 
