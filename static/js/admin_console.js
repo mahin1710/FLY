@@ -290,10 +290,44 @@
         ${p.included_checked_kg} kg checked, ${p.cabin_kg} kg cabin, BDT ${p.extra_per_kg_fee}/kg extra
       </div>`).join('');
     const promos = (res.promoCodes || []).map(c =>
-      `<div style="padding:10px;border:1px solid var(--border-subtle);border-radius:8px;">
-        <strong>${esc(c.code)}</strong> — ${esc(c.discount_type)} ${c.discount_value} (min fare BDT ${c.min_fare})
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--border-subtle);border-radius:8px;gap:8px;">
+        <div><strong>${esc(c.code)}</strong> — ${esc(c.discount_type)} ${c.discount_value} (min BDT ${c.min_fare}, used ${c.used_count}/${c.usage_limit})</div>
+        <button type="button" class="fly-btn fly-btn-outline adm-toggle-promo" data-pid="${c.id}" data-act="${c.is_active ? 0 : 1}" style="padding:4px 10px;font-size:0.78rem;">${c.is_active ? 'Disable' : 'Enable'}</button>
       </div>`).join('');
     ov.innerHTML = `<h3 style="margin:0;font-size:0.95rem;">Baggage Policies</h3>${pols}<h3 style="margin:8px 0 0;font-size:0.95rem;">Promo Codes</h3>${promos}`;
+    ov.querySelectorAll('.adm-toggle-promo').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await window.FlyApi.put('/api/admin/promos/' + btn.getAttribute('data-pid'), {
+            isActive: btn.getAttribute('data-act') === '1'
+          });
+          showAlert('Promo status updated.', false);
+          loadSettings();
+        } catch (err) {
+          showAlert(err.message, true);
+        }
+      });
+    });
+  }
+
+  const prForm = document.getElementById('admPromoForm');
+  if (prForm) {
+    prForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        await window.FlyApi.post('/api/admin/promos', {
+          code: document.getElementById('prCode').value.trim(),
+          discountType: document.getElementById('prType').value,
+          discountValue: Number(document.getElementById('prVal').value),
+          minFare: Number(document.getElementById('prMinFare').value)
+        });
+        prForm.reset();
+        showAlert('Promo code created.', false);
+        loadSettings();
+      } catch (err) {
+        showAlert(err.message, true);
+      }
+    });
   }
 
   const bpForm = document.getElementById('admBaggageForm');

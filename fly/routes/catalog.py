@@ -470,32 +470,38 @@ def api_flight_seats_stream(flight_id):
 
 @catalog_bp.route("/api/flights/fare-breakdown", methods=["GET", "POST"])
 def api_fare_breakdown():
-    if request.method == "POST":
-        data = request.get_json() or {}
-        flight_ids = data.get("flightIds") or ([data["flightId"]] if data.get("flightId") else [1])
-        cabin = data.get("cabinClass") or "Economy"
-        adults = int(data.get("adults") or 1)
-        children = int(data.get("children") or 0)
-        infants = int(data.get("infants") or 0)
-        luggage_count = int(data.get("luggageCount") or 0)
-        luggage_weight = float(data.get("luggageWeight") or 0.0)
-        meal_fee = float(data.get("mealFee") or 0.0)
-        insurance = bool(data.get("insurance", False))
-        seat_upgrade_fee = float(data.get("seatUpgradeFee") or 0.0)
-        promo_code = data.get("promoCode")
-    else:
-        f_str = request.args.get("flightIds") or request.args.get("flightId") or "1"
-        flight_ids = [int(x.strip()) for x in f_str.split(",") if x.strip().isdigit()]
-        cabin = request.args.get("cabinClass") or "Economy"
-        adults = int(request.args.get("adults") or 1)
-        children = int(request.args.get("children") or 0)
-        infants = int(request.args.get("infants") or 0)
-        luggage_count = int(request.args.get("luggageCount") or 0)
-        luggage_weight = float(request.args.get("luggageWeight") or 0.0)
-        meal_fee = float(request.args.get("mealFee") or 0.0)
-        insurance = request.args.get("insurance", "false").lower() == "true"
-        seat_upgrade_fee = float(request.args.get("seatUpgradeFee") or 0.0)
-        promo_code = request.args.get("promoCode")
+    try:
+        if request.method == "POST":
+            data = request.get_json() or {}
+            flight_ids = data.get("flightIds") or ([data["flightId"]] if data.get("flightId") else [1])
+            cabin = data.get("cabinClass") or "Economy"
+            adults = max(1, int(data.get("adults") or 1))
+            children = max(0, int(data.get("children") or 0))
+            infants = max(0, int(data.get("infants") or 0))
+            luggage_count = max(0, int(data.get("luggageCount") or 0))
+            luggage_weight = max(0.0, float(data.get("luggageWeight") or 0.0))
+            meal_fee = max(0.0, float(data.get("mealFee") or 0.0))
+            insurance = bool(data.get("insurance", False))
+            seat_upgrade_fee = max(0.0, float(data.get("seatUpgradeFee") or 0.0))
+            promo_code = data.get("promoCode")
+        else:
+            f_str = request.args.get("flightIds") or request.args.get("flightId") or "1"
+            flight_ids = [int(x.strip()) for x in f_str.split(",") if x.strip().isdigit()]
+            cabin = request.args.get("cabinClass") or "Economy"
+            adults = max(1, int(request.args.get("adults") or 1))
+            children = max(0, int(request.args.get("children") or 0))
+            infants = max(0, int(request.args.get("infants") or 0))
+            luggage_count = max(0, int(request.args.get("luggageCount") or 0))
+            luggage_weight = max(0.0, float(request.args.get("luggageWeight") or 0.0))
+            meal_fee = max(0.0, float(request.args.get("mealFee") or 0.0))
+            insurance = request.args.get("insurance", "false").lower() == "true"
+            seat_upgrade_fee = max(0.0, float(request.args.get("seatUpgradeFee") or 0.0))
+            promo_code = request.args.get("promoCode")
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid numeric parameter for fare calculation."}), 400
+
+    if infants > adults:
+        return jsonify({"error": "Each infant must be accompanied by an adult passenger."}), 400
 
     breakdown = database.calculate_fare_breakdown(
         flight_ids=flight_ids,

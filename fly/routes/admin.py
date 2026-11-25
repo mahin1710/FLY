@@ -163,16 +163,27 @@ def api_airline_flights():
     arr_dt = (data.get("arrDateTime") or "").strip().replace("T", " ")
     flight_num = (data.get("flightNumber") or "").strip().upper()
     aircraft = (data.get("aircraftModel") or "Boeing 737-800").strip()
-    econ = float(data.get("economyPrice") or 0)
-    bus = float(data.get("businessPrice") or round(econ * 2.1))
-    first = float(data.get("firstPrice") or round(econ * 3.2))
+    try:
+        econ = float(data.get("economyPrice") or 0)
+        bus = float(data.get("businessPrice") or round(econ * 2.1))
+        first = float(data.get("firstPrice") or round(econ * 3.2))
+    except (ValueError, TypeError):
+        conn.close()
+        return jsonify({"error": "Invalid numeric fare amount."}), 400
 
     if not dep_iata or not arr_iata or dep_iata == arr_iata:
         conn.close()
         return jsonify({"error": "Distinct departure and arrival IATA codes are required."}), 400
-    if not dep_dt or not arr_dt or econ <= 0:
+    if not dep_dt or not arr_dt or econ <= 0 or bus < 0 or first < 0:
         conn.close()
         return jsonify({"error": "Valid departure/arrival times and positive economy price required."}), 400
+    dep_parsed = database.parse_dt_utc(dep_dt)
+    arr_parsed = database.parse_dt_utc(arr_dt)
+    if not dep_parsed or not arr_parsed or arr_parsed <= dep_parsed:
+        conn.close()
+        return jsonify({"error": "Arrival timestamp must be strictly after departure timestamp."}), 400
+    dep_dt = dep_parsed.strftime("%Y-%m-%d %H:%M")
+    arr_dt = arr_parsed.strftime("%Y-%m-%d %H:%M")
 
     dep_ap = cursor.execute("SELECT id FROM airports WHERE UPPER(IATA) = ?", (dep_iata,)).fetchone()
     arr_ap = cursor.execute("SELECT id FROM airports WHERE UPPER(IATA) = ?", (arr_iata,)).fetchone()
@@ -183,6 +194,18 @@ def api_airline_flights():
     al_row = cursor.execute("SELECT IATA FROM airLines WHERE id = ?", (int(target_airline),)).fetchone()
     if not flight_num and al_row:
         flight_num = f"{al_row['IATA']}-{int(datetime.utcnow().timestamp()) % 900 + 100}"
+
+    conflict = cursor.execute(
+        """
+        SELECT id FROM flights
+        WHERE id_airline = ? AND UPPER(COALESCE(flight_number, '')) = UPPER(?)
+          AND dep_datetime = ? AND COALESCE(is_active, 1) = 1
+        """,
+        (int(target_airline), flight_num, dep_dt),
+    ).fetchone()
+    if conflict:
+        conn.close()
+        return jsonify({"error": f"Schedule conflict: Flight {flight_num} already departs at {dep_dt}.", "code": "SCHEDULE_CONFLICT"}), 409
 
     cursor.execute(
         """
@@ -255,6 +278,27 @@ def api_airline_flight_mutate(flight_id):
     data = request.get_json() or {}
     updates = []
     params = []
+    new_dep = (str(data.get("depDateTime") or flight["dep_datetime"]).strip().replace("T", " "))
+    new_arr = (str(data.get("arrDateTime") or flight["arr_datetime"]).strip().replace("T", " "))
+    dep_p = database.parse_dt_utc(new_dep)
+    arr_p = database.parse_dt_utc(new_arr)
+    if ("depDateTime" in data or "arrDateTime" in data) and (not dep_p or not arr_p or arr_p <= dep_p):
+        conn.close()
+        return jsonify({"error": "Arrival timestamp must be strictly after departure timestamp."}), 400
+
+    confirmed_cnt = cursor.execute(
+        "SELECT COUNT(*) FROM reservations WHERE id_flight = ? AND status = 'CONFIRMED'",
+        (flight_id,),
+    ).fetchone()[0]
+    new_status = str(data.get("status") or "").upper()
+    if confirmed_cnt > 0 and not data.get("force"):
+        if new_status == "CANCELLED" or ("depDateTime" in data and new_dep != flight["dep_datetime"]):
+            conn.close()
+            return jsonify({
+                "error": f"Flight has {confirmed_cnt} confirmed seat reservation(s). Confirm explicit disruption force override or process refunds first.",
+                "code": "CONFIRMED_BOOKINGS_EXIST",
+            }), 409
+
     for body_k, col in [
         ("status", "status"),
         ("depDateTime", "dep_datetime"),
@@ -266,7 +310,17 @@ def api_airline_flight_mutate(flight_id):
     ]:
         if body_k in data and data[body_k] is not None and str(data[body_k]).strip() != "":
             val = data[body_k]
-            if body_k == "status":
+            if body_k == "depDateTime":
+                val = dep_p.strftime("%Y-%m-%d %H:%M")
+            elif body_k == "arrDateTime":
+                val = arr_p.strftime("%Y-%m-%d %H:%M")
+            elif body_k == "economyPrice" and float(val) <= 0:
+                conn.close()
+                return jsonify({"error": "Economy price must be greater than zero."}), 400
+            elif body_k in ("businessPrice", "firstPrice") and float(val) < 0:
+                conn.close()
+                return jsonify({"error": "Fare prices cannot be negative."}), 400
+            elif body_k == "status":
                 val = str(val).upper()
                 if val not in ("SCHEDULED", "ON_TIME", "DELAYED", "CANCELLED", "COMPLETED"):
                     conn.close()
@@ -542,3 +596,70 @@ def api_admin_settings():
     conn.commit()
     conn.close()
     return jsonify({"success": True, "message": "Baggage policy updated."})
+
+
+@admin_bp.route("/api/admin/promos", methods=["POST"])
+@admin_bp.route("/api/admin/promos/<int:promo_id>", methods=["PUT"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_promos(promo_id=None):
+    user = get_current_user()
+    airline_scope, err = _resolve_airline_scope(user)
+    if err:
+        return err
+
+    conn = database.get_db()
+    cursor = conn.cursor()
+    data = request.get_json() or {}
+
+    if request.method == "PUT" and promo_id:
+        row = cursor.execute("SELECT * FROM promo_codes WHERE id = ?", (promo_id,)).fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": "Promo code not found."}), 404
+        if airline_scope and row["id_airline"] != airline_scope:
+            conn.close()
+            return jsonify({"error": "Forbidden: Cannot modify another airline's promo code."}), 403
+
+        is_active = int(bool(data.get("isActive", not row["is_active"])))
+        usage_limit = max(1, int(data.get("usageLimit") or row["usage_limit"] or 1000))
+        cursor.execute("UPDATE promo_codes SET is_active = ?, usage_limit = ? WHERE id = ?", (is_active, usage_limit, promo_id))
+        database.log_audit_event(cursor, event_type="ADMIN_PROMO_UPDATED", result="SUCCESS", actor_id=user["id"], actor_role=user["role"], airline_id=row["id_airline"], details=f"Promo {row['code']} active={is_active}")
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "isActive": is_active})
+
+    code = (data.get("code") or "").strip().upper()
+    dtype = (data.get("discountType") or "PERCENT").strip().upper()
+    try:
+        dval = float(data.get("discountValue") or 0)
+        min_fare = max(0.0, float(data.get("minFare") or 0))
+        max_disc = float(data.get("maxDiscount") or dval) if data.get("maxDiscount") is not None else None
+        usage_limit = max(1, int(data.get("usageLimit") or 1000))
+    except (ValueError, TypeError):
+        conn.close()
+        return jsonify({"error": "Invalid numeric fields for promo code."}), 400
+
+    if not code or len(code) < 3 or dtype not in ("PERCENT", "FIXED") or dval <= 0:
+        conn.close()
+        return jsonify({"error": "Valid promo code (min 3 chars), discount type, and positive discount value required."}), 400
+    if dtype == "PERCENT" and dval > 90:
+        conn.close()
+        return jsonify({"error": "Percent promo cannot exceed 90%."}), 400
+
+    target_aid = airline_scope
+    try:
+        cursor.execute(
+            """
+            INSERT INTO promo_codes (code, discount_type, discount_value, min_fare, max_discount, usage_limit, id_airline, expires_at, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            """,
+            (code, dtype, dval, min_fare, max_disc, usage_limit, target_aid, data.get("expiresAt") or "2027-12-31 23:59:59"),
+        )
+        new_id = cursor.lastrowid
+        database.log_audit_event(cursor, event_type="ADMIN_PROMO_CREATED", result="SUCCESS", actor_id=user["id"], actor_role=user["role"], airline_id=target_aid, details=f"Created promo {code} ({dtype} {dval})")
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "id": new_id, "code": code}), 201
+    except Exception:
+        conn.close()
+        return jsonify({"error": f"Promo code '{code}' already exists."}), 409

@@ -136,13 +136,21 @@ def api_hold_seats():
         except (ValueError, TypeError):
             continue
 
+    try:
+        nbr_luggages = max(0, int(data.get("nbrLuggages") or data.get("nbr_luggages") or 0))
+        weight = max(0.0, float(data.get("weight") or 0.0))
+        meal_fee = max(0.0, float(data.get("mealFee") or 0.0))
+        seat_upgrade_fee = max(0.0, float(data.get("seatUpgradeFee") or 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid baggage or add-on numeric values."}), 400
+
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
     success, msg, code, hold_info = database.hold_seats_atomic(
         flight_id=int(flight_id),
         seat_ids=int_seat_ids,
         account_id=user["id"],
-        nbr_luggages=int(data.get("nbrLuggages") or data.get("nbr_luggages") or 0),
-        weight=float(data.get("weight") or 0.0),
+        nbr_luggages=nbr_luggages,
+        weight=weight,
         passenger_data=data.get("passengerData") or data.get("passengers") or [],
         return_flight_id=data.get("returnFlightId"),
         return_seat_ids=ret_seat_ids,
@@ -150,9 +158,9 @@ def api_hold_seats():
         cabin_class=data.get("cabinClass") or "Economy",
         trip_type=data.get("tripType") or "one_way",
         expected_fare=data.get("expectedFare") or data.get("totalAmount"),
-        meal_fee=float(data.get("mealFee") or 0.0),
+        meal_fee=meal_fee,
         insurance=bool(data.get("insurance", False)),
-        seat_upgrade_fee=float(data.get("seatUpgradeFee") or 0.0),
+        seat_upgrade_fee=seat_upgrade_fee,
         promo_code=data.get("promoCode"),
         extras_data=data.get("extrasData"),
         contact_email=data.get("contactEmail"),
@@ -354,12 +362,12 @@ def api_update_booking_details(booking_ref):
             "promoCode": promo_code.upper() if promo_code and discount_amt > 0 else None,
             "fareBreakdown": fare_breakdown,
         })
-    except Exception as e:
+    except Exception:
         try:
             cursor.execute("ROLLBACK;")
         except Exception:
             pass
-        return jsonify({"error": f"Failed to update checkout details: {e}"}), 500
+        return jsonify({"error": "Failed to update checkout details due to a server error."}), 500
     finally:
         conn.close()
 
@@ -476,12 +484,12 @@ def api_cancel_booking():
             "refundAmount": refund_amt,
             "refundStatus": refund_stat if booking["status"] == "CONFIRMED" else "HOLD_RELEASED",
         })
-    except Exception as e:
+    except Exception:
         try:
             cursor.execute("ROLLBACK;")
         except Exception:
             pass
-        return jsonify({"error": f"Cancellation failed: {e}"}), 500
+        return jsonify({"error": "Cancellation failed due to a server error."}), 500
     finally:
         conn.close()
 

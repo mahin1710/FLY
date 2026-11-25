@@ -164,12 +164,12 @@ def api_register():
 
         acc_row = conn.execute("SELECT * FROM accounts WHERE id = ?", (acc_id,)).fetchone()
         return _issue_session_response(acc_row, display_name, 201)
-    except Exception as e:
+    except Exception:
         try:
             cursor.execute("ROLLBACK;")
         except Exception:
             pass
-        return jsonify({"error": f"Registration failed: {e}"}), 500
+        return jsonify({"error": "Registration failed due to a server error. Please try again."}), 500
     finally:
         conn.close()
 

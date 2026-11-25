@@ -1117,6 +1117,9 @@ def hold_seats_atomic(
                     adults_count += 1
         if adults_count == 0:
             adults_count = max(1, len(sorted_seats))
+        if infants_count > adults_count:
+            cursor.execute("ROLLBACK;")
+            return False, "Each infant must be accompanied by an adult passenger.", "INVALID_PASSENGERS", None
 
         all_fids = [int(flight_id)]
         if return_flight_id:
@@ -1236,6 +1239,7 @@ def hold_seats_atomic(
         hold_info = {
             "bookingReference": booking_ref,
             "flightId": flight_id,
+            "seatIds": sorted_seats,
             "returnFlightId": return_flight_id,
             "tripType": trip_type,
             "cabinClass": cabin_class,
@@ -1524,7 +1528,10 @@ def confirm_payment_atomic(
         )
 
         if booking["promo_code"]:
-            cursor.execute("UPDATE promo_codes SET used_count = used_count + 1 WHERE UPPER(code) = ?", (booking["promo_code"].upper(),))
+            cursor.execute(
+                "UPDATE promo_codes SET used_count = used_count + 1 WHERE UPPER(code) = ? AND used_count < usage_limit AND is_active = 1",
+                (booking["promo_code"].upper(),),
+            )
 
         # Build ticket record
         seats = cursor.execute(
@@ -1605,18 +1612,18 @@ def confirm_payment_atomic(
             "ticket": ticket,
         }
 
-    except sqlite3.IntegrityError as ie:
+    except sqlite3.IntegrityError:
         try:
             cursor.execute("ROLLBACK;")
         except Exception:
             pass
-        return False, f"Payment conflict: {ie}", "CONFLICT", None
-    except Exception as e:
+        return False, "Payment could not be completed due to a seat reservation conflict.", "CONFLICT", None
+    except Exception:
         try:
             cursor.execute("ROLLBACK;")
         except Exception:
             pass
-        return False, f"Payment confirmation error: {str(e)}", "SERVER_ERROR", None
+        return False, "Payment confirmation failed due to an unexpected server error.", "SERVER_ERROR", None
     finally:
         conn.close()
 

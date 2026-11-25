@@ -140,6 +140,88 @@ class SecurityAndIsolationTests(unittest.TestCase):
         finally:
             http_req("POST", "/api/bookings/cancel", {"bookingReference": ref2, "reason": "Test cleanup"}, token=self.tok_m0)
 
+    def test_08_sql_injection_and_malformed_input_safety(self):
+        import urllib.parse
+        sqli = urllib.parse.quote("' OR 1=1 --")
+        st1, body1 = http_req("GET", f"/api/flights?from={sqli}&to=CXB")
+        self.assertEqual(st1, 200)
+        self.assertEqual(len(body1.get("flights", [])), 0)
+
+        st2, body2 = http_req("GET", "/api/flights/fare-breakdown?flightId=1&adults=notanint")
+        self.assertEqual(st2, 400)
+        self.assertNotIn("Traceback", str(body2))
+
+    def test_09_flight_schedule_validation_and_conflict(self):
+        # Arrival <= Departure rejected
+        st_bad, _ = http_req("POST", "/api/airline/flights", {
+            "flightNumber": f"BG-BAD-{uuid.uuid4().hex[:4]}",
+            "depIATA": "DAC", "arrIATA": "CXB",
+            "depDateTime": "2027-06-15 12:00:00", "arrDateTime": "2027-06-15 11:00:00",
+            "economyPrice": 4500
+        }, token=self.tok_bg)
+        self.assertEqual(st_bad, 400)
+
+        # Valid flight creation succeeds, exact duplicate schedule conflicts (409)
+        fnum = f"BG-T-{uuid.uuid4().hex[:4]}".upper()
+        st_ok, created = http_req("POST", "/api/airline/flights", {
+            "flightNumber": fnum,
+            "depIATA": "DAC", "arrIATA": "CXB",
+            "depDateTime": "2027-06-20 10:00:00", "arrDateTime": "2027-06-20 11:05:00",
+            "economyPrice": 4800
+        }, token=self.tok_bg)
+        self.assertEqual(st_ok, 201)
+        fid = created["flightId"]
+        try:
+            st_dup, _ = http_req("POST", "/api/airline/flights", {
+                "flightNumber": fnum,
+                "depIATA": "DAC", "arrIATA": "CXB",
+                "depDateTime": "2027-06-20 10:00:00", "arrDateTime": "2027-06-20 11:05:00",
+                "economyPrice": 4800
+            }, token=self.tok_bg)
+            self.assertEqual(st_dup, 409)
+        finally:
+            http_req("DELETE", f"/api/airline/flights/{fid}", token=self.tok_bg)
+
+    def test_10_confirmed_booking_flight_protection(self):
+        # Find or create flight under Biman (839) and confirm a booking on it
+        fnum = f"BG-PROT-{uuid.uuid4().hex[:4]}".upper()
+        st_c, created = http_req("POST", "/api/airline/flights", {
+            "flightNumber": fnum, "depIATA": "DAC", "arrIATA": "CGP",
+            "depDateTime": "2027-07-10 09:00:00", "arrDateTime": "2027-07-10 09:55:00",
+            "economyPrice": 4100
+        }, token=self.tok_bg)
+        self.assertEqual(st_c, 201)
+        fid = created["flightId"]
+        st_h, hold = http_req("POST", "/api/bookings/hold", {"flightId": fid, "seatIds": [self.free_seats[3]]}, token=self.tok_m0)
+        self.assertEqual(st_h, 201)
+        ref = hold["bookingReference"]
+        try:
+            st_p, _ = http_req("POST", "/api/bookings/confirm", {"bookingReference": ref, "scenario": "SIMULATE_SUCCESS", "idempotencyKey": uuid.uuid4().hex}, token=self.tok_m0)
+            self.assertEqual(st_p, 200)
+            st_cancel_fl, body_fl = http_req("PUT", f"/api/airline/flights/{fid}", {"status": "CANCELLED"}, token=self.tok_bg)
+            self.assertEqual(st_cancel_fl, 409)
+            self.assertEqual(body_fl.get("code"), "CONFIRMED_BOOKINGS_EXIST")
+        finally:
+            http_req("POST", "/api/bookings/cancel", {"bookingReference": ref}, token=self.tok_m0)
+            http_req("DELETE", f"/api/airline/flights/{fid}", token=self.tok_bg)
+
+    def test_11_admin_promo_management_and_airline_isolation(self):
+        code = f"BGQA{uuid.uuid4().hex[:4]}".upper()
+        st_cr, cr = http_req("POST", "/api/admin/promos", {
+            "code": code, "discountType": "PERCENT", "discountValue": 12, "minFare": 3000
+        }, token=self.tok_bg)
+        self.assertEqual(st_cr, 201)
+        pid = cr["id"]
+        # US-Bangla admin cannot toggle Biman promo (403)
+        st_cross, _ = http_req("PUT", f"/api/admin/promos/{pid}", {"isActive": False}, token=self.tok_bs)
+        self.assertEqual(st_cross, 403)
+        st_own, _ = http_req("PUT", f"/api/admin/promos/{pid}", {"isActive": False}, token=self.tok_bg)
+        self.assertEqual(st_own, 200)
+
+    def test_12_infant_requires_accompanying_adult(self):
+        st, _ = http_req("GET", "/api/flights/fare-breakdown?flightId=1&adults=1&infants=2")
+        self.assertEqual(st, 400)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
