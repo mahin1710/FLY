@@ -321,9 +321,23 @@ textarea {
 .track-dot,
 .user-avatar,
 .btn-favorite-card,
-.status-icon-box {
+.status-icon-box,
+.stepper-bubble {
   aspect-ratio: 1;
   flex-shrink: 0;
+}
+
+/* Screen Reader Only Accessibility Utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -8184,13 +8198,18 @@ select:focus-visible {
   width: 100%;
 }
 
+.booking-stepper-nav .container {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .booking-stepper-list {
   display: flex;
   align-items: center;
   justify-content: space-between;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 4px;
   position: relative;
   width: 100%;
 }
@@ -8212,20 +8231,32 @@ select:focus-visible {
   gap: 10px;
   z-index: 2;
   background: var(--bg-app);
-  padding: 0 4px;
+  padding: 0 6px 0 0;
 }
 
 .stepper-bubble {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
+  line-height: 1;
+  box-sizing: border-box;
   transition: all var(--transition-fast);
   flex-shrink: 0;
+  position: relative;
+}
+
+.stepper-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .stepper-label {
@@ -8238,6 +8269,7 @@ select:focus-visible {
 .stepper-check-icon {
   width: 16px;
   height: 16px;
+  display: block;
 }
 
 /* Stepper States */
