@@ -1,99 +1,180 @@
 {% extends "base.html" %}
-{% import "components/breadcrumb.html" as bc %}
-{% import "components/page_heading.html" as ph %}
-{% import "components/form_field.html" as ff %}
-{% import "components/demo_notice.html" as dn %}
+{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/page_heading.html" import render_page_heading %}
 
-{% block title %}Sign In & Account Security — FLY{% endblock %}
-{% block meta_description %}Sign in to your FLY passenger or airline administration account.{% endblock %}
+{% block title %}{% if auth_mode == 'register' %}Create Account — FLY{% elif auth_mode == 'profile' %}My Profile — FLY{% else %}Sign In — FLY{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
-{{ bc.render_breadcrumb([
-  {'label': 'Home', 'url': '/'},
-  {'label': 'Account', 'url': None}
-]) }}
+  {% if auth_mode == 'profile' %}
+    {{ render_breadcrumbs([
+      {'label': 'Home', 'url': '/'},
+      {'label': 'My Bookings', 'url': '/my-bookings'},
+      {'label': 'Profile & Travelers', 'url': None}
+    ]) }}
+  {% else %}
+    {{ render_breadcrumbs([
+      {'label': 'Home', 'url': '/'},
+      {'label': 'Create Account' if auth_mode == 'register' else 'Sign In', 'url': None}
+    ]) }}
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="page-container container" style="max-width: 640px;">
-  {{ dn.render_demo_notice('Server-side Scrypt Authentication & Session Management') }}
+<div class="fly-container fly-page-section" data-auth-mode="{{ auth_mode or 'login' }}">
+  <div id="authGuestContainer" {% if auth_mode == 'profile' %}class="is-hidden"{% endif %}>
+    {{ render_page_heading(
+      'FLY Account Access',
+      'Sign in or register to manage your flights, boarding passes, and saved passengers.'
+    ) }}
 
-  {{ ph.render_page_heading(
-    title='Account Access',
-    subtitle='Sign in to access your booked itineraries, saved travelers, and airline administration dashboards',
-    eyebrow='Passenger and staff portal',
-    badge='Encrypted Sessions'
-  ) }}
+    <div style="max-width: 520px; margin: 24px auto;">
+      <div class="fly-card" style="padding: 28px;">
+        <div role="tablist" aria-label="Authentication mode" style="display: flex; gap: 8px; margin-bottom: 22px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+          <button type="button" id="tabLoginBtn" class="fly-btn fly-btn-primary" style="flex: 1;" role="tab" aria-selected="true">Sign In</button>
+          <button type="button" id="tabRegisterBtn" class="fly-btn fly-btn-outline" style="flex: 1;" role="tab" aria-selected="false">Create Account</button>
+        </div>
 
-  <div class="card" style="padding: 32px; margin-bottom: 24px;">
-    <!-- 1-Click Demo Accounts Quick-Fill -->
-    <div style="background: var(--bg-surface-elevated); padding: 16px; border-radius: var(--radius-md); margin-bottom: 24px; border: 1px solid var(--border-subtle);">
-      <span style="font-size: 0.78rem; font-weight: 600; color: var(--accent-primary);">Sample accounts:</span>
-      <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-        <button type="button" class="btn-secondary-sm" onclick="document.getElementById('authUsername').value='Mahin0'; document.getElementById('authPassword').value='Mahin0';">
-          Passenger (Mahin0)
-        </button>
-        <button type="button" class="btn-secondary-sm" onclick="document.getElementById('authUsername').value='Mahin1'; document.getElementById('authPassword').value='Mahin1';">
-          Passenger (Mahin1)
-        </button>
-        <button type="button" class="btn-secondary-sm" onclick="document.getElementById('authUsername').value='AirlineAdmin'; document.getElementById('authPassword').value='AirlineAdmin';">
-          Airline Admin
-        </button>
+        <div id="authFeedback" class="fly-alert is-hidden" role="alert" style="margin-bottom: 16px;"></div>
+
+        <!-- Login Form (no demo credentials displayed per security policy) -->
+        <form id="loginForm" novalidate>
+          <div class="fly-field" style="margin-bottom: 14px;">
+            <label for="loginUsername" class="fly-label">Username or Email</label>
+            <input type="text" id="loginUsername" name="username" class="fly-input" autocomplete="username" placeholder="Enter your username" required>
+          </div>
+          <div class="fly-field" style="margin-bottom: 18px;">
+            <label for="loginPassword" class="fly-label">Password</label>
+            <input type="password" id="loginPassword" name="password" class="fly-input" autocomplete="current-password" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" id="loginSubmitBtn" class="fly-btn fly-btn-primary" style="width: 100%; height: 46px;">Sign In</button>
+        </form>
+
+        <!-- Registration Form -->
+        <form id="registerForm" class="is-hidden" novalidate>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div class="fly-field">
+              <label for="regFirstName" class="fly-label">First Name</label>
+              <input type="text" id="regFirstName" name="firstName" class="fly-input" autocomplete="given-name" required>
+            </div>
+            <div class="fly-field">
+              <label for="regLastName" class="fly-label">Last Name</label>
+              <input type="text" id="regLastName" name="lastName" class="fly-input" autocomplete="family-name" required>
+            </div>
+          </div>
+          <div class="fly-field" style="margin-bottom: 14px;">
+            <label for="regUsername" class="fly-label">Username</label>
+            <input type="text" id="regUsername" name="username" class="fly-input" autocomplete="username" placeholder="Letters, numbers, underscores (min 3 chars)" required>
+          </div>
+          <div class="fly-field" style="margin-bottom: 14px;">
+            <label for="regEmail" class="fly-label">Email Address</label>
+            <input type="email" id="regEmail" name="email" class="fly-input" autocomplete="email" placeholder="name@example.com" required>
+          </div>
+          <div class="fly-field" style="margin-bottom: 14px;">
+            <label for="regLocation" class="fly-label">City / Country</label>
+            <input type="text" id="regLocation" name="location" class="fly-input" placeholder="e.g. Dhaka, Bangladesh">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+            <div class="fly-field">
+              <label for="regPassword" class="fly-label">Password (min 8 chars)</label>
+              <input type="password" id="regPassword" name="password" class="fly-input" autocomplete="new-password" required>
+            </div>
+            <div class="fly-field">
+              <label for="regPasswordConfirm" class="fly-label">Confirm Password</label>
+              <input type="password" id="regPasswordConfirm" name="confirmPassword" class="fly-input" autocomplete="new-password" required>
+            </div>
+          </div>
+          <button type="submit" id="registerSubmitBtn" class="fly-btn fly-btn-primary" style="width: 100%; height: 46px;">Create Passenger Account</button>
+        </form>
       </div>
     </div>
-
-    <form onsubmit="handleAuthSubmit(event)">
-      <div style="margin-bottom: 16px;">
-        {{ ff.render_text_field('authUsername', 'username', 'Username or Email', value='Mahin0', placeholder='Enter username...', required=True) }}
-      </div>
-      <div style="margin-bottom: 24px;">
-        {{ ff.render_text_field('authPassword', 'password', 'Password', type='password', value='Mahin0', placeholder='Enter password...', required=True) }}
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <label style="font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer;">
-          <input type="checkbox" name="remember" checked>
-          <span>Remember session for 7 days</span>
-        </label>
-        <a href="/support" style="font-size: 0.85rem; color: var(--accent-primary);">Forgot password?</a>
-      </div>
-
-      <button type="submit" class="btn-primary w-100" style="text-align: center;">
-        Sign In to FLY
-      </button>
-    </form>
   </div>
 
-  <div style="text-align: center; font-size: 0.9rem; color: var(--text-secondary);">
-    <span>Don't have an account? </span>
-    <a href="/register" style="color: var(--accent-primary); font-weight: 700;">Create Passenger Account</a>
+  <!-- Authenticated Profile & Saved Travelers -->
+  <div id="profileContainer" {% if auth_mode != 'profile' %}class="is-hidden"{% endif %}>
+    {{ render_page_heading(
+      'Passenger Profile & Saved Travelers',
+      'Keep your contact details, password, and frequent flyer documents ready for faster checkout.'
+    ) }}
+
+    <div id="profileFeedback" class="fly-alert is-hidden" role="alert" style="margin: 16px 0;"></div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 20px;">
+      <section class="fly-card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 1.15rem;">Account Details</h2>
+          <span id="profileRoleBadge" class="fly-badge">PASSENGER</span>
+        </div>
+        <form id="profileForm" novalidate>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="fly-field">
+              <label for="profFirstName" class="fly-label">First Name</label>
+              <input type="text" id="profFirstName" class="fly-input">
+            </div>
+            <div class="fly-field">
+              <label for="profLastName" class="fly-label">Last Name</label>
+              <input type="text" id="profLastName" class="fly-input">
+            </div>
+          </div>
+          <div class="fly-field" style="margin-bottom: 12px;">
+            <label for="profDisplayName" class="fly-label">Display Name</label>
+            <input type="text" id="profDisplayName" class="fly-input">
+          </div>
+          <div class="fly-field" style="margin-bottom: 12px;">
+            <label for="profEmail" class="fly-label">Email Address</label>
+            <input type="email" id="profEmail" class="fly-input">
+          </div>
+          <div class="fly-field" style="margin-bottom: 16px;">
+            <label for="profLocation" class="fly-label">City / Country</label>
+            <input type="text" id="profLocation" class="fly-input">
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 16px 0;">
+          <h3 style="margin: 0 0 10px; font-size: 0.95rem;">Change Password (Optional)</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="fly-field">
+              <label for="profCurrentPassword" class="fly-label">Current Password</label>
+              <input type="password" id="profCurrentPassword" class="fly-input" autocomplete="current-password">
+            </div>
+            <div class="fly-field">
+              <label for="profNewPassword" class="fly-label">New Password</label>
+              <input type="password" id="profNewPassword" class="fly-input" autocomplete="new-password">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="submit" class="fly-btn fly-btn-primary">Save Changes</button>
+            <button type="button" id="profileLogoutBtn" class="fly-btn fly-btn-outline">Sign Out</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="fly-card" style="padding: 24px;">
+        <h2 style="margin: 0 0 8px; font-size: 1.15rem;">Saved Travelers</h2>
+        <p style="margin: 0 0 16px; color: var(--text-muted); font-size: 0.875rem;">Quick-select frequent co-travelers during checkout.</p>
+
+        <div id="savedTravelersList" style="display: grid; gap: 10px; margin-bottom: 18px;"></div>
+
+        <form id="addTravelerForm" style="border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+          <h3 style="margin: 0 0 10px; font-size: 0.95rem;">Add Traveler</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="travFirstName" class="fly-input" placeholder="First Name" required>
+            <input type="text" id="travLastName" class="fly-input" placeholder="Last Name" required>
+            <input type="text" id="travPassport" class="fly-input" placeholder="Passport / NID No.">
+            <input type="text" id="travNationality" class="fly-input" placeholder="Nationality" value="BD">
+            <input type="date" id="travDob" class="fly-input" aria-label="Date of birth">
+            <select id="travDocType" class="fly-select" aria-label="Document type">
+              <option value="passport">Passport</option>
+              <option value="nid">National ID</option>
+            </select>
+          </div>
+          <button type="submit" class="fly-btn fly-btn-outline">Save Traveler</button>
+        </form>
+      </section>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-async function handleAuthSubmit(e) {
-  e.preventDefault();
-  const u = document.getElementById('authUsername').value.trim();
-  const p = document.getElementById('authPassword').value.trim();
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: u, password: p })
-    });
-    const data = await res.json();
-    if (res.ok && data.token) {
-      localStorage.setItem('fly_token', data.token);
-      localStorage.setItem('fly_user', JSON.stringify(data.user));
-      window.location.href = '/my-bookings';
-    } else {
-      alert(data.error || 'Invalid credentials');
-    }
-  } catch (err) {
-    alert('Could not contact authentication service.');
-  }
-}
-</script>
+<script src="/js/auth_portal.js"></script>
 {% endblock %}

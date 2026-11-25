@@ -5,33 +5,20 @@
 {% import "components/demo_notice.html" as dn %}
 {% import "components/empty_state.html" as es %}
 
-{% block title %}Available Flight Offers (Demo Data) — FLY{% endblock %}
-{% block meta_description %}Compare and select available demo flights across Bangladesh and international routes with transparent pricing and real-time filters on FLY.{% endblock %}
+{% block title %}Available Flights — FLY{% endblock %}
+{% block meta_description %}Compare and select live scheduled flights across Bangladesh and international routes with transparent pricing and real-time filters on FLY.{% endblock %}
 
 {% block content %}
 <div class="page-container container">
   <!-- Booking Flow Progress Stepper (Step 1: Search Active) -->
   {{ st.render_booking_stepper(current_step='search', completed_steps=[]) }}
 
-  <!-- Prominent Demo Data Disclaimer Banner -->
-  <aside class="demo-integration-notice" role="note" aria-label="Demo environment notice">
-    <div class="demo-notice-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-    </div>
-    <div class="demo-notice-content">
-      <strong class="demo-notice-tag">Simulated Flight Inventory</strong>
-      <p class="demo-notice-text">
-        Sample flight offers and schedules displayed below are <strong>typed demo fixtures only</strong>. This is a UI/integration boundary stage and does not represent live airline inventory or confirmed reservations. No live payment will be processed.
-      </p>
-    </div>
-  </aside>
-
   <!-- Page Heading -->
   {{ ph.render_page_heading(
-    title='Available Flight Offers',
-    subtitle='Explore verified schedule fixtures, transparent fare families, and baggage allowances',
-    eyebrow='Simulated schedule',
-    badge='Simulated Inventory'
+    title='Available Flights',
+    subtitle='Explore live scheduled departures, transparent fares, seat availability, and baggage allowances',
+    eyebrow='Live Flight Search',
+    badge='Real-Time Inventory'
   ) }}
 
   <!-- Top Search Summary Bar (with Route, Dates, Cabin & Edit Search Action) -->
@@ -41,7 +28,6 @@
         <span class="summary-route-city" id="summaryRouteFrom">Dhaka (DAC)</span>
         <span class="summary-plane-icon" aria-hidden="true">➔</span>
         <span class="summary-route-city" id="summaryRouteTo">Cox's Bazar (CXB)</span>
-        <span class="demo-tag-pill">Simulated schedule</span>
       </div>
       <div class="summary-pills-row">
         <span class="summary-pill" id="summaryTripTypePill">Round Trip</span>
@@ -211,7 +197,7 @@
         </div>
 
         <div class="results-count-badge" id="resultsCountText">
-          Showing available demo offers
+          Loading scheduled flights...
         </div>
       </div>
 
@@ -228,7 +214,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/js/flight_models.js"></script>
-<script src="/js/flight_fixtures.js"></script>
 <script src="/js/flight_results_controller.js"></script>
 {% endblock %}

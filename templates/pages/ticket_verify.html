@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumbs %}
+
+{% block title %}Verify E-Ticket — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumbs([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'Ticket Verification', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="verifyApp" data-token="{{ token }}">
+  <div class="fly-card" style="max-width: 640px; margin: 24px auto; padding: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px;">
+      <h1 style="margin: 0; font-size: 1.35rem;">E-Ticket Verification</h1>
+      <span id="vBadge" class="fly-badge">Checking...</span>
+    </div>
+    <div id="vBody" style="display: grid; gap: 10px; font-size: 0.94rem;">
+      <p style="color: var(--text-muted);">Validating boarding pass signature...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function () {
+  const token = document.getElementById('verifyApp').getAttribute('data-token');
+  const badge = document.getElementById('vBadge');
+  const body = document.getElementById('vBody');
+  const esc = s => window.FlyApi.escapeHtml(s);
+
+  try {
+    const res = await window.FlyApi.get('/api/tickets/verify/' + encodeURIComponent(token));
+    const isOk = String(res.status || '').toUpperCase() === 'CONFIRMED' || String(res.status || '').toUpperCase() === 'ISSUED';
+    badge.textContent = isOk ? 'VERIFIED VALID' : esc(res.status || 'CHECK');
+    badge.className = 'fly-badge ' + (isOk ? 'fly-badge-success' : 'fly-badge-danger');
+    body.innerHTML = `
+      <div><strong>Airline:</strong> ${esc(res.airlineName)} (${esc(res.airlineIATA)})</div>
+      <div><strong>Flight:</strong> ${esc(res.flight_number)} &bull; ${esc(res.depCity)} (${esc(res.depIATA)}) ➔ ${esc(res.arrCity)} (${esc(res.arrIATA)})</div>
+      <div><strong>Departure:</strong> ${esc(res.dep_datetime)}</div>
+      <div><strong>PNR / Ticket:</strong> ${esc(res.pnr_code)} / ${esc(res.ticket_number)}</div>
+      <div><strong>Cabin &amp; Seats:</strong> ${esc(res.cabin_class)} (${esc(res.seat_codes)})</div>
+      <div><strong>Baggage:</strong> ${esc(res.baggage_allowance)}</div>
+    `;
+  } catch (err) {
+    badge.textContent = 'INVALID';
+    badge.className = 'fly-badge fly-badge-danger';
+    body.innerHTML = `<p style="color:#dc2626;margin:0;">${esc(err.message || 'Verification reference could not be matched.')}</p>`;
+  }
+})();
+</script>
+{% endblock %}

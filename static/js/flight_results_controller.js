@@ -1,333 +1,347 @@
 /**
- * FLY AVIATION - FLIGHT SEARCH RESULTS CONTROLLER
- * Author: mahin1710
- *
- * Implements:
- *  1. Search summary with Edit Search (returns to widget with selections preserved)
- *  2. Real-time deterministic sorting: Recommended (Best), Cheapest, Fastest
- *  3. Real-time multi-dimensional filtering:
- *     - Stops (All, Direct/Non-stop, 1 stop, 2+ stops)
- *     - Airlines (Multi-select)
- *     - Departure time window (Morning, Afternoon, Evening)
- *     - Arrival time window (Morning, Afternoon, Evening)
- *     - Max flight duration
- *     - Max ticket price
- *     - Included checked baggage
- *     - Refundable only
- *  4. Flight card with full metadata, connecting itineraries accordion, and overnight indicator
- *  5. Prominent "Demo data – not bookable" disclaimers on every card and header
- *  6. Empty, loading, provider-timeout, and expired-offer states
- *  7. Mobile responsive filter drawer toggle
+ * FLY — Live Flight Search Results & Filter Controller
+ * Queries GET /api/flights from the backend database (no static demo fixtures).
  */
-
 (function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define(['./flight_models', './flight_fixtures'], factory);
-  } else if (typeof module === 'object' && module.exports) {
-    const Models = require('./flight_models');
-    const Fixtures = require('./flight_fixtures');
-    module.exports = factory(Models, Fixtures);
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
   } else {
-    root.FlightResultsController = factory(root.FlightModels, root.FlightFixtures);
+    root.FlightResultsController = factory();
   }
-}(typeof self !== 'undefined' ? self : this, function (Models, Fixtures) {
+}(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const { FlightSorter, formatMoney, formatMinutesToHoursMinutes } = Models;
-  const { DEMO_OFFERS, queryDemoOffers } = Fixtures;
+  function formatMoney(val) {
+    return 'BDT ' + Math.round(Number(val || 0)).toLocaleString('en-US');
+  }
+
+  function formatDuration(mins) {
+    const m = Math.max(0, Math.round(Number(mins || 0)));
+    if (!m) return 'Direct';
+    const h = Math.floor(m / 60);
+    const rem = m % 60;
+    return h > 0 ? (rem > 0 ? `${h}h ${rem}m` : `${h}h`) : `${rem}m`;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function parseAirportCodeOrCity(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    const match = s.match(/\(([A-Za-z]{3})\)/);
+    if (match) return match[1].toUpperCase();
+    return s;
+  }
+
+  function parseIsoDateTime(dtStr) {
+    if (!dtStr) return { time: '--:--', date: '' };
+    const clean = String(dtStr).replace(' ', 'T');
+    const parts = clean.split('T');
+    const datePart = parts[0] || '';
+    const timePart = (parts[1] || '00:00').slice(0, 5);
+    return { time: timePart, date: datePart };
+  }
+
+  function matchesTimeSlot(dtStr, slot) {
+    if (!slot || slot === 'all') return true;
+    const { time } = parseIsoDateTime(dtStr);
+    const hour = parseInt((time.split(':')[0] || '12'), 10);
+    if (slot === 'morning') return hour >= 0 && hour < 12;
+    if (slot === 'afternoon') return hour >= 12 && hour < 18;
+    if (slot === 'evening') return hour >= 18 && hour <= 23;
+    return true;
+  }
 
   const FlightResultsController = {
+    allFlights: [],
+    filteredFlights: [],
+    currentSort: 'recommended',
+    isLoading: false,
+    isFilterDrawerOpen: false,
     searchParams: {
-      tripType: 'roundtrip',
-      from: 'DAC',
-      fromCity: 'Dhaka',
-      to: 'CXB',
-      toCity: "Cox's Bazar",
+      from: '',
+      to: '',
       departure: '',
       return: '',
+      tripType: 'oneway',
+      cabin: 'Economy',
       adults: 1,
       children: 0,
-      infants: 0,
-      cabin: 'Economy',
-      simulatedState: 'normal' // 'normal', 'loading', 'timeout', 'expired'
+      infants: 0
     },
-
-    allOffers: [],
-    filteredOffers: [],
-
     filters: {
-      stops: 'all', // 'all', 'direct', '1stop', '2plus'
+      stops: 'all',
       selectedAirlines: new Set(),
-      depTime: 'all', // 'all', 'morning', 'afternoon', 'evening'
+      depTime: 'all',
       arrTime: 'all',
-      maxDuration: 1440,
-      maxPrice: 200000,
+      maxPrice: 500000,
+      maxDuration: 2880,
       checkedBaggageOnly: false,
       refundableOnly: false
     },
 
-    currentSort: 'recommended', // 'recommended', 'cheapest', 'fastest'
-    isFilterDrawerOpen: false,
-
-    // -----------------------------------------------------------
-    // INITIALIZATION
-    // -----------------------------------------------------------
-    init() {
+    async init() {
       this.parseUrlParams();
-      this.loadOffers();
-      this.renderSearchSummary();
-      this.populateFilterOptions();
+      this.renderSummaryHeader();
       this.bindEvents();
-      this.applyFiltersAndSort();
+      await this.fetchFlights();
     },
 
-    // -----------------------------------------------------------
-    // URL QUERY PARSING
-    // -----------------------------------------------------------
     parseUrlParams() {
-      if (typeof window === 'undefined' || !window.location) return;
-
       const params = new URLSearchParams(window.location.search);
-      const s = this.searchParams;
-
-      s.tripType = params.get('trip_type') || 'roundtrip';
-      s.from = params.get('from') || 'DAC';
-      s.fromCity = params.get('fromCity') || 'Dhaka';
-      s.to = params.get('to') || 'CXB';
-      s.toCity = params.get('toCity') || "Cox's Bazar";
-      s.departure = params.get('departure') || '';
-      s.return = params.get('return') || '';
-      s.adults = parseInt(params.get('adults'), 10) || 1;
-      s.children = parseInt(params.get('children'), 10) || 0;
-      s.infants = parseInt(params.get('infants'), 10) || 0;
-      s.cabin = params.get('cabin') || 'Economy';
-      s.simulatedState = params.get('simulated_state') || 'normal';
+      this.searchParams.from = params.get('from') || '';
+      this.searchParams.to = params.get('to') || '';
+      this.searchParams.departure = params.get('departure') || '';
+      this.searchParams.return = params.get('return') || '';
+      this.searchParams.tripType = params.get('tripType') || 'oneway';
+      this.searchParams.cabin = params.get('cabin') || params.get('cabinClass') || 'Economy';
+      this.searchParams.adults = Math.max(1, parseInt(params.get('adults') || params.get('pax') || '1', 10) || 1);
+      this.searchParams.children = Math.max(0, parseInt(params.get('children') || '0', 10) || 0);
+      this.searchParams.infants = Math.max(0, parseInt(params.get('infants') || '0', 10) || 0);
     },
 
-    // -----------------------------------------------------------
-    // LOAD FIXTURES
-    // -----------------------------------------------------------
-    loadOffers() {
-      if (this.searchParams.simulatedState === 'expired') {
-        this.allOffers = DEMO_OFFERS.filter(o => o.isExpired);
-        return;
+    getTotalPax() {
+      return this.searchParams.adults + this.searchParams.children;
+    },
+
+    renderSummaryHeader() {
+      const s = this.searchParams;
+      const paxCount = this.getTotalPax();
+      const fromText = s.from || 'All Origins';
+      const toText = s.to || 'All Destinations';
+      const fromEl = document.getElementById('summaryRouteFrom');
+      const toEl = document.getElementById('summaryRouteTo');
+      const tripEl = document.getElementById('summaryTripTypePill');
+      const depEl = document.getElementById('summaryDepPill');
+      const paxEl = document.getElementById('summaryPaxPill');
+      const cabinEl = document.getElementById('summaryCabinPill');
+
+      if (fromEl) fromEl.textContent = fromText;
+      if (toEl) toEl.textContent = toText;
+      if (tripEl) tripEl.textContent = s.tripType === 'roundtrip' ? 'Round Trip' : 'One Way';
+      if (depEl) depEl.textContent = s.departure ? ('Departure: ' + s.departure) : 'Flexible Dates';
+      if (paxEl) paxEl.textContent = paxCount + (paxCount === 1 ? ' Passenger' : ' Passengers');
+      if (cabinEl) cabinEl.textContent = s.cabin;
+    },
+
+    async fetchFlights() {
+      const listEl = document.getElementById('flightOffersList');
+      const countEl = document.getElementById('resultsCountText');
+      if (listEl) {
+        listEl.setAttribute('aria-busy', 'true');
+        listEl.innerHTML = '<div class="fly-card" style="padding:28px;text-align:center;">Searching live schedules...</div>';
       }
+      if (countEl) countEl.textContent = 'Searching live schedules...';
 
-      // Query matching demo fixtures
-      const matches = queryDemoOffers({
-        from: this.searchParams.from,
-        to: this.searchParams.to
-      });
+      const qs = new URLSearchParams();
+      const fromQ = parseAirportCodeOrCity(this.searchParams.from);
+      const toQ = parseAirportCodeOrCity(this.searchParams.to);
+      if (fromQ) qs.set('from', fromQ);
+      if (toQ) qs.set('to', toQ);
+      if (this.searchParams.departure) qs.set('departure', this.searchParams.departure);
+      if (this.searchParams.cabin) qs.set('cabinClass', this.searchParams.cabin);
+      qs.set('pax', String(this.getTotalPax()));
+      qs.set('limit', '100');
 
-      this.allOffers = matches;
+      try {
+        const res = await fetch('/api/flights?' + qs.toString(), { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Could not load flight schedules (' + res.status + ')');
+        const data = await res.json();
+        const flights = Array.isArray(data.flights) ? data.flights : [];
+        this.allFlights = flights.map(f => this.normalizeFlight(f));
+        this.populateFilterOptions();
+        this.applyFiltersAndSort();
+      } catch (err) {
+        if (listEl) {
+          listEl.innerHTML = `
+            <div class="fly-card" style="padding:28px;text-align:center;">
+              <h3 style="margin-top:0;">Unable to load flights</h3>
+              <p style="color:var(--text-muted);">${escapeHtml(err.message || 'Network error')}</p>
+              <button type="button" class="fly-btn fly-btn-primary" id="btnRetrySearch">Retry Search</button>
+            </div>`;
+          const retryBtn = document.getElementById('btnRetrySearch');
+          if (retryBtn) retryBtn.addEventListener('click', () => this.fetchFlights());
+        }
+        if (countEl) countEl.textContent = 'Search unavailable';
+      } finally {
+        if (listEl) listEl.setAttribute('aria-busy', 'false');
+      }
     },
 
-    // -----------------------------------------------------------
-    // RENDER SEARCH SUMMARY & "EDIT SEARCH" LINK
-    // -----------------------------------------------------------
-    renderSearchSummary() {
-      const summaryCard = document.getElementById('searchSummaryCard');
-      if (!summaryCard) return;
+    normalizeFlight(raw) {
+      const cabin = String(this.searchParams.cabin || 'Economy').toLowerCase();
+      let unitFare = Number(raw.economy_price || 0);
+      if (cabin.includes('business') && raw.business_price) unitFare = Number(raw.business_price);
+      else if (cabin.includes('first') && raw.first_price) unitFare = Number(raw.first_price);
+      const taxPerPax = Math.round(unitFare * 0.12);
+      const dep = parseIsoDateTime(raw.dep_datetime);
+      const arr = parseIsoDateTime(raw.arr_datetime);
+      const durationMins = Number(raw.durationMinutes || raw.duration_minutes || 75);
+      const stopsCount = Number(raw.stopsCount != null ? raw.stopsCount : (raw.stops_count || 0));
+      const availableSeats = Number(raw.availableSeats != null ? raw.availableSeats : (raw.available_seats || 0));
+      const totalSeats = Number(raw.totalSeats != null ? raw.totalSeats : (raw.total_seats || 0));
+      const baggageKg = Number(raw.checkedBaggageKg || (raw.baggagePolicy && raw.baggagePolicy.checked_kg) || (raw.depCountry === raw.arrCountry ? 23 : 40));
+      const carryOnKg = Number((raw.baggagePolicy && raw.baggagePolicy.carry_on_kg) || 7);
 
-      const s = this.searchParams;
-      const totalPax = s.adults + s.children + s.infants;
-      const paxDesc = `${totalPax} Traveler${totalPax > 1 ? 's' : ''} (${s.adults}A${s.children ? `, ${s.children}C` : ''}${s.infants ? `, ${s.infants}I` : ''})`;
-
-      // Build Edit Search return URL with exact state preservation
-      const editParams = new URLSearchParams();
-      editParams.set('trip_type', s.tripType);
-      editParams.set('from', s.from);
-      editParams.set('fromCity', s.fromCity);
-      editParams.set('to', s.to);
-      editParams.set('toCity', s.toCity);
-      if (s.departure) editParams.set('departure', s.departure);
-      if (s.return && s.tripType === 'roundtrip') editParams.set('return', s.return);
-      editParams.set('adults', s.adults);
-      editParams.set('children', s.children);
-      editParams.set('infants', s.infants);
-      editParams.set('cabin', s.cabin);
-      const editSearchUrl = `/?${editParams.toString()}`;
-
-      summaryCard.innerHTML = `
-        <div class="summary-left-col">
-          <div class="summary-route-header">
-            <span class="summary-route-city" id="summaryRouteFrom">${s.fromCity} (${s.from})</span>
-            <span class="summary-plane-icon" aria-hidden="true">➔</span>
-            <span class="summary-route-city" id="summaryRouteTo">${s.toCity} (${s.to})</span>
-            <span class="demo-tag-pill" title="This flight results page displays demo data only">Simulated schedule</span>
-          </div>
-          <div class="summary-pills-row">
-            <span class="summary-pill" id="summaryTripTypePill">${s.tripType === 'roundtrip' ? 'Round Trip' : (s.tripType === 'oneway' ? 'One Way' : 'Multi-City')}</span>
-            <span class="summary-pill" id="summaryDepPill">Departure: ${s.departure || 'Flexible Date'}</span>
-            ${s.tripType === 'roundtrip' && s.return ? `<span class="summary-pill" id="summaryRetPill">Return: ${s.return}</span>` : ''}
-            <span class="summary-pill" id="summaryPaxPill">${paxDesc}</span>
-            <span class="summary-pill" id="summaryCabinPill">${s.cabin}</span>
-          </div>
-        </div>
-        <div class="summary-actions-col">
-          <a href="${editSearchUrl}" class="btn-secondary-sm edit-search-btn" id="btnEditSearch" title="Return to flight search form with your selections intact">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span>Edit Search</span>
-          </a>
-        </div>
-      `;
+      return {
+        raw: raw,
+        id: raw.id,
+        flightNumber: raw.flightNumber || raw.flight_number || ('FL-' + raw.id),
+        airlineName: raw.airlineName || 'FLY Partner Airline',
+        airlineIATA: raw.airlineIATA || 'FL',
+        airlineId: raw.airlineId || raw.airline_id,
+        aircraft: raw.aircraft || raw.aircraft_model || 'Modern Jet',
+        depIATA: raw.depIATA || '',
+        depCity: raw.depCity || '',
+        depAirport: raw.depAirportName || raw.depCity || '',
+        depTime: dep.time,
+        depDate: dep.date,
+        depIso: raw.dep_datetime || '',
+        arrIATA: raw.arrIATA || '',
+        arrCity: raw.arrCity || '',
+        arrAirport: raw.arrAirportName || raw.arrCity || '',
+        arrTime: arr.time,
+        arrDate: arr.date,
+        arrIso: raw.arr_datetime || '',
+        durationMinutes: durationMins,
+        durationText: raw.durationFormatted || formatDuration(durationMins),
+        stopsCount: stopsCount,
+        stopsText: stopsCount === 0 ? 'Non-stop' : (stopsCount + ' Stop' + (stopsCount > 1 ? 's' : '')),
+        unitFare: unitFare,
+        taxPerPax: taxPerPax,
+        totalPerPax: unitFare + taxPerPax,
+        availableSeats: availableSeats,
+        totalSeats: totalSeats,
+        baggageKg: baggageKg,
+        carryOnKg: carryOnKg,
+        baggageSummary: raw.baggageAllowance || (baggageKg + 'kg Checked + ' + carryOnKg + 'kg Cabin'),
+        refundPolicy: raw.refundPolicy || raw.refundability || 'Refundable with fee',
+        isRefundable: !String(raw.refundPolicy || raw.refundability || '').toLowerCase().includes('non'),
+        flightStatus: raw.flightStatus || raw.status || 'SCHEDULED'
+      };
     },
 
-    // -----------------------------------------------------------
-    // POPULATE DYNAMIC FILTER OPTIONS FROM FIXTURES
-    // -----------------------------------------------------------
     populateFilterOptions() {
-      // 1. Airline filter checkboxes
       const airlinesListEl = document.getElementById('filterAirlinesList');
-      if (airlinesListEl && this.allOffers.length > 0) {
-        const airlineCounts = {};
-        this.allOffers.forEach(o => {
-          const name = o.getCarrierName();
-          airlineCounts[name] = (airlineCounts[name] || 0) + 1;
+      if (airlinesListEl) {
+        const counts = {};
+        this.allFlights.forEach(f => {
+          counts[f.airlineName] = (counts[f.airlineName] || 0) + 1;
         });
-
-        airlinesListEl.innerHTML = Object.entries(airlineCounts).map(([name, count]) => `
+        airlinesListEl.innerHTML = Object.entries(counts).map(([name, count]) => `
           <label class="filter-checkbox-item">
-            <input type="checkbox" class="filter-airline-checkbox" value="${name}">
+            <input type="checkbox" class="filter-airline-checkbox" value="${escapeHtml(name)}">
             <span class="custom-checkbox"></span>
-            <span class="filter-label-text">${name}</span>
+            <span class="filter-label-text">${escapeHtml(name)}</span>
             <span class="filter-count-badge">${count}</span>
           </label>
-        `).join('');
+        `).join('') || '<div style="color:var(--text-muted);font-size:0.85rem;">No airlines available</div>';
       }
 
-      // 2. Set min/max bounds for price slider
       const priceSlider = document.getElementById('priceRangeSlider');
       const priceMaxValText = document.getElementById('priceRangeMaxText');
-      if (priceSlider && this.allOffers.length > 0) {
-        const prices = this.allOffers.map(o => o.priceBreakdown.totalAmount);
-        const maxP = Math.max(...prices);
-        priceSlider.max = Math.ceil(maxP * 1.1);
+      if (priceSlider && this.allFlights.length) {
+        const maxP = Math.max(...this.allFlights.map(f => f.totalPerPax));
+        priceSlider.min = 1000;
+        priceSlider.max = Math.max(10000, Math.ceil(maxP * 1.15 / 500) * 500);
         priceSlider.value = priceSlider.max;
         this.filters.maxPrice = Number(priceSlider.value);
         if (priceMaxValText) priceMaxValText.textContent = formatMoney(priceSlider.value);
       }
 
-      // 3. Set min/max bounds for duration slider
       const durationSlider = document.getElementById('durationRangeSlider');
       const durationMaxValText = document.getElementById('durationRangeMaxText');
-      if (durationSlider && this.allOffers.length > 0) {
-        const durations = this.allOffers.map(o => o.getTotalDurationMinutes());
-        const maxD = Math.max(...durations);
-        durationSlider.max = Math.ceil(maxD * 1.15);
+      if (durationSlider && this.allFlights.length) {
+        const maxD = Math.max(...this.allFlights.map(f => f.durationMinutes), 120);
+        durationSlider.min = 30;
+        durationSlider.max = Math.ceil(maxD * 1.25 / 15) * 15;
         durationSlider.value = durationSlider.max;
         this.filters.maxDuration = Number(durationSlider.value);
-        if (durationMaxValText) durationMaxValText.textContent = formatMinutesToHoursMinutes(durationSlider.value);
+        if (durationMaxValText) durationMaxValText.textContent = formatDuration(durationSlider.value);
       }
     },
 
-    // -----------------------------------------------------------
-    // BIND EVENT LISTENERS
-    // -----------------------------------------------------------
     bindEvents() {
-      // Sort buttons
-      const sortBtns = document.querySelectorAll('.sort-tab-btn');
-      sortBtns.forEach(btn => {
+      document.querySelectorAll('.sort-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          sortBtns.forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.sort-tab-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.currentSort = btn.getAttribute('data-sort') || 'recommended';
           this.applyFiltersAndSort();
         });
       });
 
-      // Stops filter radio buttons
-      const stopsInputs = document.querySelectorAll('input[name="filterStops"]');
-      stopsInputs.forEach(input => {
+      document.querySelectorAll('input[name="filterStops"]').forEach(input => {
         input.addEventListener('change', () => {
           this.filters.stops = input.value;
           this.applyFiltersAndSort();
         });
       });
 
-      // Airline filter checkboxes
       const airlinesListEl = document.getElementById('filterAirlinesList');
       if (airlinesListEl) {
-        airlinesListEl.addEventListener('change', (e) => {
+        airlinesListEl.addEventListener('change', e => {
           if (e.target && e.target.classList.contains('filter-airline-checkbox')) {
-            const val = e.target.value;
-            if (e.target.checked) {
-              this.filters.selectedAirlines.add(val);
-            } else {
-              this.filters.selectedAirlines.delete(val);
-            }
+            if (e.target.checked) this.filters.selectedAirlines.add(e.target.value);
+            else this.filters.selectedAirlines.delete(e.target.value);
             this.applyFiltersAndSort();
           }
         });
       }
 
-      // Time slot buttons
-      const depTimeBtns = document.querySelectorAll('.dep-time-slot-btn');
-      depTimeBtns.forEach(btn => {
+      document.querySelectorAll('.dep-time-slot-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          depTimeBtns.forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.dep-time-slot-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.filters.depTime = btn.getAttribute('data-slot') || 'all';
           this.applyFiltersAndSort();
         });
       });
 
-      const arrTimeBtns = document.querySelectorAll('.arr-time-slot-btn');
-      arrTimeBtns.forEach(btn => {
+      document.querySelectorAll('.arr-time-slot-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          arrTimeBtns.forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.arr-time-slot-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           this.filters.arrTime = btn.getAttribute('data-slot') || 'all';
           this.applyFiltersAndSort();
         });
       });
 
-      // Price slider
       const priceSlider = document.getElementById('priceRangeSlider');
-      const priceMaxValText = document.getElementById('priceRangeMaxText');
       if (priceSlider) {
         priceSlider.addEventListener('input', () => {
           this.filters.maxPrice = Number(priceSlider.value);
-          if (priceMaxValText) priceMaxValText.textContent = formatMoney(priceSlider.value);
+          const el = document.getElementById('priceRangeMaxText');
+          if (el) el.textContent = formatMoney(priceSlider.value);
           this.applyFiltersAndSort();
         });
       }
 
-      // Duration slider
       const durationSlider = document.getElementById('durationRangeSlider');
-      const durationMaxValText = document.getElementById('durationRangeMaxText');
       if (durationSlider) {
         durationSlider.addEventListener('input', () => {
           this.filters.maxDuration = Number(durationSlider.value);
-          if (durationMaxValText) durationMaxValText.textContent = formatMinutesToHoursMinutes(Number(durationSlider.value));
+          const el = document.getElementById('durationRangeMaxText');
+          if (el) el.textContent = formatDuration(durationSlider.value);
           this.applyFiltersAndSort();
         });
       }
 
-      // Baggage & Refundable checkboxes
-      const baggageCheck = document.getElementById('filterBaggageIncluded');
-      if (baggageCheck) {
-        baggageCheck.addEventListener('change', () => {
-          this.filters.checkedBaggageOnly = baggageCheck.checked;
-          this.applyFiltersAndSort();
-        });
-      }
+      const bagEl = document.getElementById('filterBaggageIncluded');
+      if (bagEl) bagEl.addEventListener('change', () => { this.filters.checkedBaggageOnly = bagEl.checked; this.applyFiltersAndSort(); });
+      const refEl = document.getElementById('filterRefundableOnly');
+      if (refEl) refEl.addEventListener('change', () => { this.filters.refundableOnly = refEl.checked; this.applyFiltersAndSort(); });
 
-      const refundableCheck = document.getElementById('filterRefundableOnly');
-      if (refundableCheck) {
-        refundableCheck.addEventListener('change', () => {
-          this.filters.refundableOnly = refundableCheck.checked;
-          this.applyFiltersAndSort();
-        });
-      }
-
-      // Reset filters button
       const resetBtn = document.getElementById('btnResetFilters');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => this.resetFilters());
-      }
+      if (resetBtn) resetBtn.addEventListener('click', () => this.resetFilters());
 
-      // Mobile filter drawer toggle
       const mobileToggleBtn = document.getElementById('btnToggleMobileFilters');
       const filtersSidebar = document.getElementById('filtersSidebar');
       if (mobileToggleBtn && filtersSidebar) {
@@ -339,341 +353,173 @@
       }
     },
 
-    // -----------------------------------------------------------
-    // TIME SLOT MATCHING HELPER
-    // -----------------------------------------------------------
-    matchesTimeSlot(isoString, slot) {
-      if (!slot || slot === 'all') return true;
-      try {
-        const parts = isoString.split('T');
-        if (parts.length > 1) {
-          const hour = parseInt(parts[1].slice(0, 2), 10);
-          if (slot === 'morning') return hour >= 0 && hour < 12;
-          if (slot === 'afternoon') return hour >= 12 && hour < 18;
-          if (slot === 'evening') return hour >= 18 && hour < 24;
-        }
-      } catch (_) { }
-      return true;
-    },
-
-    // -----------------------------------------------------------
-    // APPLY FILTERS & DETERMINISTIC SORTING
-    // -----------------------------------------------------------
     applyFiltersAndSort() {
-      // Handle simulated timeout state
-      if (this.searchParams.simulatedState === 'timeout') {
-        this.renderTimeoutState();
-        return;
-      }
-
-      // Handle simulated expired state
-      if (this.searchParams.simulatedState === 'expired') {
-        this.renderExpiredState();
-        return;
-      }
-
       const f = this.filters;
-      let results = [...this.allOffers];
+      let list = this.allFlights.slice();
 
-      // 1. Stops Filter
-      if (f.stops === 'direct') {
-        results = results.filter(o => o.isDirect());
-      } else if (f.stops === '1stop') {
-        results = results.filter(o => o.getStopsCount() === 1);
-      } else if (f.stops === '2plus') {
-        results = results.filter(o => o.getStopsCount() >= 2);
-      }
+      if (f.stops === 'direct') list = list.filter(x => x.stopsCount === 0);
+      else if (f.stops === '1stop') list = list.filter(x => x.stopsCount === 1);
+      else if (f.stops === '2plus') list = list.filter(x => x.stopsCount >= 2);
 
-      // 2. Airlines Filter
       if (f.selectedAirlines.size > 0) {
-        results = results.filter(o => f.selectedAirlines.has(o.getCarrierName()));
+        list = list.filter(x => f.selectedAirlines.has(x.airlineName));
+      }
+      if (f.depTime !== 'all') list = list.filter(x => matchesTimeSlot(x.depIso, f.depTime));
+      if (f.arrTime !== 'all') list = list.filter(x => matchesTimeSlot(x.arrIso, f.arrTime));
+      list = list.filter(x => x.durationMinutes <= f.maxDuration);
+      list = list.filter(x => x.totalPerPax <= f.maxPrice);
+      if (f.checkedBaggageOnly) list = list.filter(x => x.baggageKg > 0);
+      if (f.refundableOnly) list = list.filter(x => x.isRefundable);
+
+      if (this.currentSort === 'cheapest') {
+        list.sort((a, b) => a.totalPerPax - b.totalPerPax || a.durationMinutes - b.durationMinutes);
+      } else if (this.currentSort === 'fastest') {
+        list.sort((a, b) => a.durationMinutes - b.durationMinutes || a.totalPerPax - b.totalPerPax);
+      } else {
+        list.sort((a, b) => (a.stopsCount - b.stopsCount) || (a.totalPerPax + a.durationMinutes * 15) - (b.totalPerPax + b.durationMinutes * 15));
       }
 
-      // 3. Departure Time Filter
-      if (f.depTime !== 'all') {
-        results = results.filter(o => this.matchesTimeSlot(o.getDepartureTime(), f.depTime));
-      }
-
-      // 4. Arrival Time Filter
-      if (f.arrTime !== 'all') {
-        results = results.filter(o => this.matchesTimeSlot(o.getArrivalTime(), f.arrTime));
-      }
-
-      // 5. Max Duration Filter
-      results = results.filter(o => o.getTotalDurationMinutes() <= f.maxDuration);
-
-      // 6. Max Price Filter
-      results = results.filter(o => o.priceBreakdown.totalAmount <= f.maxPrice);
-
-      // 7. Checked Baggage Included Filter
-      if (f.checkedBaggageOnly) {
-        results = results.filter(o => o.baggage.hasCheckedBaggage());
-      }
-
-      // 8. Refundable Only Filter
-      if (f.refundableOnly) {
-        results = results.filter(o => o.fareConditions.isRefundable());
-      }
-
-      // Sort results deterministically
-      results = FlightSorter.sort(results, this.currentSort);
-
-      this.filteredOffers = results;
+      this.filteredFlights = list;
       this.renderResults();
     },
 
-    // -----------------------------------------------------------
-    // RENDER RESULTS LIST OR EMPTY STATE
-    // -----------------------------------------------------------
     renderResults() {
       const container = document.getElementById('flightOffersList');
       const countEl = document.getElementById('resultsCountText');
-      const stateCardContainer = document.getElementById('searchStateContainer');
-
-      if (stateCardContainer) stateCardContainer.style.display = 'none';
-
       if (countEl) {
-        countEl.textContent = `Showing ${this.filteredOffers.length} of ${this.allOffers.length} available demo flight offers`;
+        countEl.textContent = `Showing ${this.filteredFlights.length} of ${this.allFlights.length} scheduled flights`;
       }
-
       if (!container) return;
 
-      if (this.filteredOffers.length === 0) {
+      if (!this.filteredFlights.length) {
         container.innerHTML = `
           <div class="empty-state-card" id="emptyStateBox" role="region" aria-label="No matching flights">
-            <div class="empty-state-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <h3 class="empty-state-title">No flights match your filters</h3>
+            <p class="empty-state-desc">Try widening your price range, departure window, or resetting all active filters.</p>
+            <div class="empty-state-action" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+              <button type="button" class="btn-primary" onclick="FlightResultsController.resetFilters()">Reset All Filters</button>
+              <a href="/" class="btn-secondary-sm">Modify Search</a>
             </div>
-            <h3 class="empty-state-title">No flights match the current criteria</h3>
-            <p class="empty-state-desc">
-              No flights matched your active filters for stops, airline, price, or departure windows.
-              Clear filters to view all scheduled options.
-            </p>
-            <div class="empty-state-action">
-              <button type="button" class="btn-primary" id="btnEmptyResetFilters" onclick="FlightResultsController.resetFilters()">
-                <span>Reset all filters</span>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              </button>
-            </div>
-          </div>
-        `;
+          </div>`;
         return;
       }
 
-      container.innerHTML = this.filteredOffers.map((offer, idx) => this.renderOfferCard(offer, idx)).join('');
-    },
+      const paxCount = this.getTotalPax();
+      const seatQs = new URLSearchParams({
+        pax: String(paxCount),
+        cabin: this.searchParams.cabin,
+        tripType: this.searchParams.tripType
+      });
+      if (this.searchParams.return) seatQs.set('return', this.searchParams.return);
 
-    // -----------------------------------------------------------
-    // FLIGHT CARD HTML BUILDER
-    // -----------------------------------------------------------
-    renderOfferCard(offer, index) {
-      const stops = offer.getStopsCount();
-      const stopsText = stops === 0 ? 'Non-stop' : `${stops} Stop${stops > 1 ? 's' : ''}`;
-      const operatingNote = offer.getOperatingCarrierNote();
-      const isOvernight = offer.isOvernight();
-      const isConnecting = !offer.isDirect();
+      container.innerHTML = this.filteredFlights.map(f => {
+        const soldOut = f.availableSeats < paxCount;
+        const lowSeats = f.availableSeats > 0 && f.availableSeats <= 8;
+        const seatUrl = `/flights/${f.id}/seats?${seatQs.toString()}`;
+        return `
+          <article class="flight-card" data-flight-id="${f.id}" id="flightCard_${f.id}">
+            <div class="flight-card-header">
+              <div class="airline-brand-group">
+                <div class="airline-logo-box" aria-hidden="true">${escapeHtml(f.airlineIATA)}</div>
+                <div>
+                  <h4 class="airline-title">${escapeHtml(f.airlineName)}</h4>
+                  <div class="flight-metadata-sub">
+                    <span class="flight-num-tag">${escapeHtml(f.flightNumber)}</span>
+                    <span class="meta-dot">&bull;</span>
+                    <span class="aircraft-tag">${escapeHtml(f.aircraft)}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flight-badges-group">
+                <span class="dest-badge ${f.stopsCount === 0 ? 'is-direct' : 'is-connecting'}">${escapeHtml(f.stopsText)}</span>
+                <span class="dest-fare-pill ${f.isRefundable ? 'is-refundable' : 'is-nonref'}">${escapeHtml(f.refundPolicy)}</span>
+                <span class="fly-badge ${soldOut ? 'fly-badge-danger' : (lowSeats ? 'fly-badge-warning' : 'fly-badge-success')}">
+                  ${soldOut ? 'Insufficient seats' : (f.availableSeats + ' seats left')}
+                </span>
+              </div>
+            </div>
 
-      return `
-        <article class="flight-card" data-offer-id="${offer.id}" id="offerCard_${offer.id}" aria-label="Flight offer from ${offer.getCarrierName()}">
-          <!-- Card Header -->
-          <div class="flight-card-header">
-            <div class="airline-brand-group">
-              <div class="airline-logo-box" aria-hidden="true">${offer.getCarrierLogo()}</div>
-              <div>
-                <h4 class="airline-title">${offer.getCarrierName()}</h4>
-                <div class="flight-metadata-sub">
-                  <span class="flight-num-tag">${offer.getFlightNumberSummary()}</span>
-                  <span class="meta-dot">&bull;</span>
-                  <span class="aircraft-tag">${offer.getAircraftSummary()}</span>
-                  ${operatingNote ? `<span class="operating-carrier-tag">(${operatingNote})</span>` : ''}
+            <div class="flight-card-body">
+              <div class="flight-time-point dep-point">
+                <div class="point-time">${escapeHtml(f.depTime)}</div>
+                <div class="point-city">${escapeHtml(f.depCity)} (${escapeHtml(f.depIATA)})</div>
+                <div class="point-sub">${escapeHtml(f.depAirport)}</div>
+                <div class="point-date">${escapeHtml(f.depDate)}</div>
+              </div>
+              <div class="flight-duration-col">
+                <div class="duration-text">${escapeHtml(f.durationText)}</div>
+                <div class="flight-track-line ${f.stopsCount > 0 ? 'has-stops' : ''}">
+                  <span class="track-dot start-dot"></span>
+                  <span class="track-line"></span>
+                  ${f.stopsCount > 0 ? '<span class="track-dot stop-dot"></span>' : ''}
+                  <span class="track-dot end-dot"></span>
+                </div>
+                <div class="stops-text">${escapeHtml(f.stopsText)}</div>
+              </div>
+              <div class="flight-time-point arr-point">
+                <div class="point-time">${escapeHtml(f.arrTime)}</div>
+                <div class="point-city">${escapeHtml(f.arrCity)} (${escapeHtml(f.arrIATA)})</div>
+                <div class="point-sub">${escapeHtml(f.arrAirport)}</div>
+                <div class="point-date">${escapeHtml(f.arrDate)}</div>
+              </div>
+            </div>
+
+            <div class="connecting-accordion-wrapper">
+              <button type="button" class="btn-toggle-segments" onclick="FlightResultsController.toggleSegmentDetails('${f.id}')" aria-expanded="false" id="btnToggleSegments_${f.id}">
+                <span>Flight Details, Baggage &amp; Fare Breakdown</span>
+                <span class="accordion-chevron" aria-hidden="true">&#9662;</span>
+              </button>
+              <div class="connecting-segments-container" id="segmentsContainer_${f.id}" style="display:none;">
+                <div class="segment-timeline-item">
+                  <div class="seg-item-header">
+                    <strong>${escapeHtml(f.airlineName)} &bull; ${escapeHtml(f.flightNumber)} (${escapeHtml(f.aircraft)})</strong>
+                    <span class="seg-aircraft">${escapeHtml(this.searchParams.cabin)} Class</span>
+                  </div>
+                  <div class="seg-item-times" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:8px;">
+                    <div><strong>Base Fare:</strong> ${formatMoney(f.unitFare)} / pax</div>
+                    <div><strong>Est. Airport Tax (12%):</strong> ${formatMoney(f.taxPerPax)} / pax</div>
+                    <div><strong>Baggage:</strong> ${escapeHtml(f.baggageSummary)}</div>
+                    <div><strong>Seat Inventory:</strong> ${f.availableSeats} / ${f.totalSeats} open</div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="flight-badges-group">
-              <span class="dest-badge ${stops === 0 ? 'is-direct' : 'is-connecting'}">${stopsText}</span>
-              <span class="dest-fare-pill ${offer.fareConditions.isRefundable() ? 'is-refundable' : 'is-nonref'}">
-                ${offer.fareConditions.getBadgeLabel()}
-              </span>
-              <span class="demo-card-tag" title="Demonstration fixture - not a live reservation">Simulated schedule</span>
-            </div>
-          </div>
-
-          <!-- Card Body: Times, Route & Duration Track -->
-          <div class="flight-card-body">
-            <!-- Departure Point -->
-            <div class="flight-time-point dep-point">
-              <div class="point-time">${offer.getDepartureTimeString()}</div>
-              <div class="point-city">${offer.getOrigin().city} (${offer.getOrigin().code})</div>
-              <div class="point-sub">${offer.getOrigin().airport}</div>
-              <div class="point-date">${offer.getDepartureDateString()}</div>
-            </div>
-
-            <!-- Duration & Layover Track Line -->
-            <div class="flight-duration-col">
-              <div class="duration-text">${offer.getFormattedDuration()}</div>
-              <div class="flight-track-line ${isConnecting ? 'has-stops' : ''}">
-                <span class="track-dot start-dot"></span>
-                <span class="track-line"></span>
-                ${isConnecting ? '<span class="track-dot stop-dot" title="Layover stop"></span>' : ''}
-                <span class="track-dot end-dot"></span>
+            <div class="flight-card-footer">
+              <div class="footer-amenities-group">
+                <div class="baggage-pill">${escapeHtml(f.baggageSummary)}</div>
+                <div class="fare-family-pill">${escapeHtml(this.searchParams.cabin)}</div>
               </div>
-              <div class="stops-text ${isConnecting ? 'text-layover' : ''}">${offer.getLayoverSummary()}</div>
-              ${isOvernight ? `<span class="badge-overnight" title="Arrives on next calendar day">+1 Day</span>` : ''}
-            </div>
-
-            <!-- Arrival Point -->
-            <div class="flight-time-point arr-point">
-              <div class="point-time">
-                ${offer.getArrivalTimeString()}
-                ${isOvernight ? `<span class="overnight-sup">+1d</span>` : ''}
-              </div>
-              <div class="point-city">${offer.getDestination().city} (${offer.getDestination().code})</div>
-              <div class="point-sub">${offer.getDestination().airport}</div>
-              <div class="point-date">${offer.getArrivalDateString()}</div>
-            </div>
-          </div>
-
-          <!-- Connecting Itinerary Accordion (If 1+ stops) -->
-          ${isConnecting ? `
-            <div class="connecting-accordion-wrapper">
-              <button type="button" class="btn-toggle-segments" onclick="FlightResultsController.toggleSegmentDetails('${offer.id}')" aria-expanded="false" id="btnToggleSegments_${offer.id}">
-                <span class="accordion-icon">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
-                </span>
-                <span>Flight Details &amp; Layover (${offer.segments.length} Segments)</span>
-                <span class="accordion-chevron" aria-hidden="true">▾</span>
-              </button>
-
-              <div class="connecting-segments-container" id="segmentsContainer_${offer.id}" style="display: none;">
-                ${offer.segments.map((seg, sIdx) => `
-                  <div class="segment-timeline-item">
-                    <div class="seg-item-header">
-                      <strong>Segment ${sIdx + 1}: ${seg.carrierName} (${seg.flightNumber})</strong>
-                      <span class="seg-aircraft">${seg.aircraft} &bull; ${seg.cabinClass}</span>
-                    </div>
-                    <div class="seg-item-times">
-                      <span><strong>${seg.getDepartureTimeString()}</strong> ${seg.origin.city} (${seg.origin.code}) — ${seg.origin.terminal}</span>
-                      <span class="seg-duration">${seg.getFormattedDuration()}</span>
-                      <span><strong>${seg.getArrivalTimeString()}</strong> ${seg.destination.city} (${seg.destination.code}) — ${seg.destination.terminal}</span>
-                    </div>
-                    ${seg.hasDifferentOperatingCarrier() ? `
-                      <div class="seg-operating-note">Note: Operated by <strong>${seg.operatingCarrier.name}</strong></div>
-                    ` : ''}
-                  </div>
-
-                  ${sIdx < offer.segments.length - 1 && seg.layoverAirport ? `
-                    <div class="layover-divider-strip">
-                      <span class="layover-icon">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      </span>
-                      <span>Layover in <strong>${seg.layoverAirport.city} (${seg.layoverAirport.code})</strong> &bull; ${formatMinutesToHoursMinutes(seg.layoverAfterMinutes)} transit &bull; Baggage checked through</span>
-                    </div>
-                  ` : ''}
-                `).join('')}
+              <div class="price-cta-group">
+                <div class="price-box">
+                  <span class="price-label">Estimated / passenger</span>
+                  <span class="price-val">${formatMoney(f.totalPerPax)}</span>
+                  <span class="price-sub-note">Includes 12% taxes &amp; fees</span>
+                </div>
+                ${soldOut
+                  ? `<button type="button" class="fly-btn fly-btn-outline" disabled>Sold Out</button>`
+                  : `<a href="${seatUrl}" class="btn-primary btn-select-offer" id="btnSelectFlight_${f.id}">
+                      <span>Select Seats</span>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </a>`
+                }
               </div>
             </div>
-          ` : ''}
-
-          <!-- Card Footer: Baggage, Policy & Price CTA -->
-          <div class="flight-card-footer">
-            <div class="footer-amenities-group">
-              <div class="baggage-pill" title="Included Baggage Allowance">
-                ${offer.baggage.formatSummary()}
-              </div>
-              <div class="fare-family-pill" title="Fare Brand Family">
-                ${offer.fareConditions.fareFamily}
-              </div>
-            </div>
-
-            <div class="price-cta-group">
-              <div class="price-box">
-                <span class="price-label">Total per passenger</span>
-                <span class="price-val">${offer.priceBreakdown.getFormattedTotal()}</span>
-                <span class="price-sub-note">Simulated fare &bull; Not bookable</span>
-              </div>
-              <a href="/flights/offer/${offer.id}" class="btn-primary btn-select-offer" id="btnSelectOffer_${offer.id}" title="View demo offer breakdown (does not create booking)">
-                <span>Select Offer</span>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </a>
-            </div>
-          </div>
-        </article>
-      `;
+          </article>
+        `;
+      }).join('');
     },
 
-    // -----------------------------------------------------------
-    // SEGMENT ACCORDION TOGGLE
-    // -----------------------------------------------------------
-    toggleSegmentDetails(offerId) {
-      const container = document.getElementById(`segmentsContainer_${offerId}`);
-      const btn = document.getElementById(`btnToggleSegments_${offerId}`);
+    toggleSegmentDetails(flightId) {
+      const container = document.getElementById(`segmentsContainer_${flightId}`);
+      const btn = document.getElementById(`btnToggleSegments_${flightId}`);
       if (!container || !btn) return;
-
       const isHidden = container.style.display === 'none';
       container.style.display = isHidden ? 'block' : 'none';
       btn.setAttribute('aria-expanded', String(isHidden));
       btn.classList.toggle('is-open', isHidden);
     },
 
-    // -----------------------------------------------------------
-    // SIMULATED STATES: TIMEOUT & EXPIRED
-    // -----------------------------------------------------------
-    renderTimeoutState() {
-      const container = document.getElementById('flightOffersList');
-      if (!container) return;
-
-      container.innerHTML = `
-        <div class="error-banner-card alert-error" id="timeoutStateBox" role="alert" style="padding: 24px;">
-          <div class="error-banner-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <div class="error-banner-body">
-            <strong class="error-banner-title" style="font-size: 1.1rem;">Provider response timed out</strong>
-            <p class="error-banner-message" style="margin: 8px 0 16px;">
-              The simulated flight schedule query timed out. You can retry the search or return to the search form.
-            </p>
-            <div style="display: flex; gap: 12px; align-items: center;">
-              <button type="button" class="btn-primary" onclick="FlightResultsController.clearSimulatedState()">
-                <span>Retry search</span>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              </button>
-              <a href="/" class="btn-secondary-sm">Return to search form</a>
-            </div>
-          </div>
-        </div>
-      `;
-    },
-
-    renderExpiredState() {
-      const container = document.getElementById('flightOffersList');
-      if (!container) return;
-
-      container.innerHTML = `
-        <div class="alert alert-warning" id="expiredStateBox" role="alert" style="padding: 24px; border-left: 4px solid var(--border-medium);">
-          <div style="margin-bottom: 8px;">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Offer expired</h3>
-          <p style="color: var(--text-secondary); margin-bottom: 16px;">
-            The flight offer you inspected has expired. Please refresh to load updated schedules and fares.
-          </p>
-          <button type="button" class="btn-primary" onclick="FlightResultsController.clearSimulatedState()">
-            <span>Refresh offers</span>
-          </button>
-        </div>
-      `;
-    },
-
-    clearSimulatedState() {
-      this.searchParams.simulatedState = 'normal';
-      this.loadOffers();
-      this.applyFiltersAndSort();
-    },
-
-    // -----------------------------------------------------------
-    // RESET ALL FILTERS
-    // -----------------------------------------------------------
     resetFilters() {
       this.filters.stops = 'all';
       this.filters.selectedAirlines.clear();
@@ -682,50 +528,34 @@
       this.filters.checkedBaggageOnly = false;
       this.filters.refundableOnly = false;
 
-      // Reset DOM inputs
       const allStops = document.querySelector('input[name="filterStops"][value="all"]');
       if (allStops) allStops.checked = true;
-
-      const airlineChecks = document.querySelectorAll('.filter-airline-checkbox');
-      airlineChecks.forEach(c => c.checked = false);
-
-      const depBtns = document.querySelectorAll('.dep-time-slot-btn');
-      depBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-slot') === 'all'));
-
-      const arrBtns = document.querySelectorAll('.arr-time-slot-btn');
-      arrBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-slot') === 'all'));
-
-      const baggageCheck = document.getElementById('filterBaggageIncluded');
-      if (baggageCheck) baggageCheck.checked = false;
-
-      const refundableCheck = document.getElementById('filterRefundableOnly');
-      if (refundableCheck) refundableCheck.checked = false;
+      document.querySelectorAll('.filter-airline-checkbox').forEach(c => { c.checked = false; });
+      document.querySelectorAll('.dep-time-slot-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-slot') === 'all'));
+      document.querySelectorAll('.arr-time-slot-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-slot') === 'all'));
+      const bag = document.getElementById('filterBaggageIncluded');
+      if (bag) bag.checked = false;
+      const ref = document.getElementById('filterRefundableOnly');
+      if (ref) ref.checked = false;
 
       const priceSlider = document.getElementById('priceRangeSlider');
       if (priceSlider && priceSlider.max) {
         priceSlider.value = priceSlider.max;
-        this.filters.maxPrice = Number(priceSlider.max) || 200000;
-        const text = document.getElementById('priceRangeMaxText');
-        if (text) text.textContent = formatMoney(this.filters.maxPrice);
-      } else {
-        this.filters.maxPrice = 200000;
+        this.filters.maxPrice = Number(priceSlider.max);
+        const t = document.getElementById('priceRangeMaxText');
+        if (t) t.textContent = formatMoney(priceSlider.max);
       }
-
       const durationSlider = document.getElementById('durationRangeSlider');
       if (durationSlider && durationSlider.max) {
         durationSlider.value = durationSlider.max;
-        this.filters.maxDuration = Number(durationSlider.max) || 1440;
-        const text = document.getElementById('durationRangeMaxText');
-        if (text) text.textContent = formatMinutesToHoursMinutes(this.filters.maxDuration);
-      } else {
-        this.filters.maxDuration = 1440;
+        this.filters.maxDuration = Number(durationSlider.max);
+        const t = document.getElementById('durationRangeMaxText');
+        if (t) t.textContent = formatDuration(durationSlider.max);
       }
-
       this.applyFiltersAndSort();
     }
   };
 
-  // Auto-init in browser if DOM ready
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => FlightResultsController.init());
@@ -733,6 +563,5 @@
       setTimeout(() => FlightResultsController.init(), 0);
     }
   }
-
   return FlightResultsController;
 }));

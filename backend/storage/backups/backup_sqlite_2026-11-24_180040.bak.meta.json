@@ -1,9 +1,0 @@
-{
-    "connection": "sqlite",
-    "timestamp": "2026-11-24_180040",
-    "file": "backup_sqlite_2026-11-24_180040.bak",
-    "size": 790528,
-    "sha256": "421baf03e152f44550355bf5a86daffdc122eee9956ef48704f32c4bbf2779d2",
-    "rehearsed_at": "2026-11-24T18:00:40+00:00",
-    "status": "VERIFIED_CLEAN"
-}

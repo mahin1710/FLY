@@ -1,89 +1,62 @@
 {% extends "base.html" %}
-{% import "components/breadcrumb.html" as bc %}
-{% import "components/page_heading.html" as ph %}
-{% import "components/empty_state.html" as es %}
-{% import "components/demo_notice.html" as dn %}
+{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/page_heading.html" import render_page_heading %}
 
 {% block title %}My Bookings — FLY{% endblock %}
-{% block meta_description %}Manage your upcoming flights, review reservation history, and confirm payments.{% endblock %}
 
 {% block breadcrumbs %}
-{{ bc.render_breadcrumb([
-  {'label': 'Home', 'url': '/'},
-  {'label': 'My Bookings', 'url': None}
-]) }}
+  {{ render_breadcrumbs([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'My Bookings', 'url': None}
+  ]) }}
 {% endblock %}
 
 {% block content %}
-<div class="page-container container">
-  {{ dn.render_demo_notice('Passenger Account Bookings Database') }}
-
-  {{ ph.render_page_heading(
-    title='My Bookings',
-    subtitle='Track your upcoming journeys, view confirmed digital tickets, and finalize pending holds',
-    eyebrow='PASSENGER RESERVATION PORTAL',
-    badge='Protected Account Area',
-    actions_html='<a href="/manage-booking" class="btn-secondary-sm">Find by PNR Code</a>'
+<div class="fly-container fly-page-section" id="myBookingsApp">
+  {{ render_page_heading(
+    'Passenger Booking Portal',
+    'Track upcoming flights, complete held seat checkouts, download e-tickets, or request cancellations.'
   ) }}
 
-  <!-- Active Bookings Container -->
-  <div class="flights-list-container" id="myBookingsListContainer">
-    <!-- Confirmed Booking Card 1 -->
-    <article class="flight-card">
-      <div class="flight-card-header">
-        <div class="airline-brand-group">
-          <div class="airline-logo-box">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-          </div>
-          <div>
-            <h4 class="airline-title">Biman Bangladesh Airlines</h4>
-            <span class="flight-num-tag">Reference: <strong>BK-DAC-7788</strong> &bull; Flight BG-433</span>
-          </div>
-        </div>
-        <span class="dest-fare-pill">CONFIRMED &bull; PAID</span>
-      </div>
+  <div id="myBookingsAlert" class="fly-alert is-hidden" role="alert" style="margin: 16px 0;"></div>
 
-      <div class="flight-card-body">
-        <div class="flight-time-point">
-          <div class="point-time">10:30 AM</div>
-          <div class="point-city">Dhaka (DAC)</div>
-          <div class="point-sub">Hazrat Shahjalal Intl</div>
-        </div>
-        <div class="flight-duration-col">
-          <div class="duration-text">55m</div>
-          <div class="flight-track-line">
-            <span class="track-dot"></span>
-            <span class="track-line"></span>
-            <span class="track-dot"></span>
-          </div>
-          <div class="stops-text">Seat: 12A</div>
-        </div>
-        <div class="flight-time-point">
-          <div class="point-time">11:25 AM</div>
-          <div class="point-city">Cox's Bazar (CXB)</div>
-          <div class="point-sub">Cox's Bazar Airport</div>
-        </div>
-      </div>
-
-      <div class="flight-card-footer">
-        <div style="font-size: 0.88rem; color: var(--text-secondary);">
-          Passenger: <strong>Mahin Rahman</strong> &bull; Total Paid: <strong>৳4,950</strong>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <a href="/booking/status/BK-DAC-7788" class="btn-primary btn-sm">View Boarding Pass</a>
-          <a href="/manage-booking?ref=BK-DAC-7788" class="btn-secondary-sm">Manage Trip</a>
-        </div>
-      </div>
-    </article>
-
-    <!-- Guest Notice Card if Unauthenticated -->
-    <div class="card" style="padding: 24px; margin-top: 24px; text-align: center;">
-      <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px;">Looking for a booking made as a guest?</h4>
-      <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 520px; margin: 0 auto 16px auto;">
-        You can look up any reservation using your Booking Reference / PNR and Last Name without signing in.
-      </p>
-      <a href="/manage-booking" class="btn-secondary">Lookup Booking by Reference</a>
+  <!-- Overview KPI Strip -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 18px 0;">
+    <div class="fly-card" style="padding: 16px;">
+      <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Confirmed Trips</div>
+      <div id="kpiConfirmed" style="font-size: 1.6rem; font-weight: 800; color: var(--accent-primary);">0</div>
+    </div>
+    <div class="fly-card" style="padding: 16px;">
+      <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Active Seat Locks</div>
+      <div id="kpiPending" style="font-size: 1.6rem; font-weight: 800; color: #d97706;">0</div>
+    </div>
+    <div class="fly-card" style="padding: 16px;">
+      <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Past / Completed</div>
+      <div id="kpiPast" style="font-size: 1.6rem; font-weight: 800;">0</div>
+    </div>
+    <div class="fly-card" style="padding: 16px;">
+      <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Cancelled / Refunded</div>
+      <div id="kpiCancelled" style="font-size: 1.6rem; font-weight: 800;">0</div>
     </div>
   </div>
+
+  <!-- Navigation Tabs -->
+  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px;" id="myBookingsTabs" role="tablist">
+    <button type="button" class="fly-btn fly-btn-primary" data-tab="all">All Trips</button>
+    <button type="button" class="fly-btn fly-btn-outline" data-tab="upcoming">Upcoming</button>
+    <button type="button" class="fly-btn fly-btn-outline" data-tab="pending">Held / Checkout</button>
+    <button type="button" class="fly-btn fly-btn-outline" data-tab="past">Past Flights</button>
+    <button type="button" class="fly-btn fly-btn-outline" data-tab="cancelled">Cancelled &amp; Refunds</button>
+    <a href="/manage-booking" class="fly-btn fly-btn-outline">PNR Lookup</a>
+    <a href="/profile" class="fly-btn fly-btn-outline">Saved Travelers &amp; Profile</a>
+  </div>
+
+  <div id="myBookingsList" style="display: grid; gap: 14px;">
+    <div class="fly-card" style="padding: 28px; text-align: center; color: var(--text-muted);">Loading your bookings...</div>
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/my_bookings.js"></script>
 {% endblock %}

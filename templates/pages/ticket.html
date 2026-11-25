@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumbs %}
+
+{% block title %}E-Ticket {{ pnr }} — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumbs([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'My Bookings', 'url': '/my-bookings'},
+    {'label': 'E-Ticket ' ~ pnr, 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="ticketApp" data-pnr="{{ pnr }}">
+  <div id="ticketAlert" class="fly-alert is-hidden" role="alert" style="margin-bottom: 16px;"></div>
+
+  <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;">
+    <div>
+      <h1 style="margin: 0; font-size: 1.5rem;">Official Airline E-Ticket</h1>
+      <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 0.9rem;">Present this boarding pass with valid photo ID at airport check-in.</p>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <button type="button" id="btnPrintTicket" class="fly-btn fly-btn-outline">Print E-Ticket</button>
+      <a id="btnDownloadPdf" href="/api/tickets/{{ pnr }}/pdf" class="fly-btn fly-btn-primary">Download PDF</a>
+      <a href="/my-bookings" class="fly-btn fly-btn-outline">My Bookings</a>
+    </div>
+  </div>
+
+  <article class="ticket-pass" id="ticketPassCard">
+    <div class="ticket-pass-header">
+      <div>
+        <div style="font-size: 0.75rem; opacity: 0.8; letter-spacing: 0.08em; text-transform: uppercase;" id="tAirlineName">FLY Airline</div>
+        <div style="font-size: 1.45rem; font-weight: 800; margin-top: 2px;" id="tRouteHeadline">Loading ticket...</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 0.72rem; opacity: 0.8; text-transform: uppercase;">PNR Code</div>
+        <div style="font-size: 1.55rem; font-weight: 800; font-family: var(--font-mono); letter-spacing: 0.08em;" id="tPnrCode">{{ pnr }}</div>
+      </div>
+    </div>
+
+    <div style="padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Passenger(s)</div>
+          <strong id="tPassengerName">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Ticket Number</div>
+          <strong id="tTicketNumber" style="font-family: var(--font-mono);">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Flight Number</div>
+          <strong id="tFlightNumber">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Status</div>
+          <span class="fly-badge fly-badge-success" id="tStatusBadge">--</span>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Departure</div>
+          <strong id="tDeparture">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Arrival</div>
+          <strong id="tArrival">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cabin &amp; Seat(s)</div>
+          <strong id="tSeats">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Baggage Allowance</div>
+          <strong id="tBaggage">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Booking Reference</div>
+          <strong id="tBookingRef" style="font-family: var(--font-mono);">--</strong>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Paid</div>
+          <strong id="tTotalPaid" style="color: var(--accent-primary);">--</strong>
+        </div>
+      </div>
+
+      <div style="text-align: center; padding: 14px; border: 1px solid var(--border-subtle); border-radius: 12px; background: #ffffff; color: #0f172a;">
+        <div id="tQrBox" style="width: 124px; height: 124px; display: flex; align-items: center; justify-content: center;">QR</div>
+        <a id="tVerifyLink" href="/ticket/verify/{{ pnr }}" style="display: block; margin-top: 8px; font-size: 0.75rem; color: #0284c7;">Verify Pass</a>
+      </div>
+    </div>
+  </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function () {
+  const root = document.getElementById('ticketApp');
+  const pnr = root.getAttribute('data-pnr');
+  const alertEl = document.getElementById('ticketAlert');
+
+  function showErr(msg) {
+    alertEl.textContent = msg;
+    alertEl.className = 'fly-alert fly-alert-danger';
+    alertEl.classList.remove('is-hidden');
+  }
+
+  document.getElementById('btnPrintTicket').addEventListener('click', () => window.print());
+
+  if (!window.FlyApi.getToken()) {
+    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+    return;
+  }
+
+  try {
+    const t = await window.FlyApi.get('/api/reservations/ticket/' + encodeURIComponent(pnr));
+    document.getElementById('tAirlineName').textContent = (t.airlineName || 'FLY Airline') + ' (' + (t.airlineIATA || 'FL') + ')';
+    document.getElementById('tRouteHeadline').textContent = `${t.depCity} (${t.depIATA}) ➔ ${t.arrCity} (${t.arrIATA})`;
+    document.getElementById('tPnrCode').textContent = t.pnrCode || pnr;
+    document.getElementById('tPassengerName').textContent = t.passengerName || 'Passenger';
+    document.getElementById('tTicketNumber').textContent = t.ticketNumber || 'Issued on confirmation';
+    document.getElementById('tFlightNumber').textContent = t.flightNumber || ('FL-' + t.flightId);
+    const st = document.getElementById('tStatusBadge');
+    st.textContent = t.status || 'CONFIRMED';
+    st.className = 'fly-badge ' + (t.status === 'CONFIRMED' ? 'fly-badge-success' : (t.status === 'CANCELLED' ? 'fly-badge-danger' : 'fly-badge-warning'));
+    document.getElementById('tDeparture').textContent = t.depDateTime || '--';
+    document.getElementById('tArrival').textContent = t.arrDateTime || '--';
+    document.getElementById('tSeats').textContent = `${t.seatClass || 'Economy'} • ${t.seatNumbers || '--'}`;
+    document.getElementById('tBaggage').textContent = t.baggageAllowance || '23 kg Checked';
+    document.getElementById('tBookingRef').textContent = t.bookingReference || '--';
+    document.getElementById('tTotalPaid').textContent = window.FlyApi.formatBDT(t.totalAmount || 0);
+
+    if (t.qrSvg) document.getElementById('tQrBox').innerHTML = t.qrSvg;
+    const vtok = t.verificationToken || t.pnrCode || t.bookingReference;
+    document.getElementById('tVerifyLink').href = '/ticket/verify/' + encodeURIComponent(vtok);
+    const pdfBtn = document.getElementById('btnDownloadPdf');
+    pdfBtn.href = `/api/tickets/${encodeURIComponent(t.pnrCode || t.bookingReference)}/pdf?vtoken=${encodeURIComponent(t.verificationToken || '')}`;
+  } catch (err) {
+    showErr(err.message || 'Could not load ticket details.');
+  }
+})();
+</script>
+{% endblock %}

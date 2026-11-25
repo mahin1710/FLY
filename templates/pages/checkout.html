@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/stepper.html" import render_booking_stepper %}
+
+{% block title %}Checkout &amp; Payment — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumbs([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'Flight Results', 'url': '/flights/search'},
+    {'label': 'Checkout & Payment', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="checkoutApp">
+  {{ render_booking_stepper(current_step='payment', completed_steps=['search', 'seats']) }}
+
+  <!-- Live Seat Lock Countdown Bar -->
+  <div class="fly-card" style="padding: 16px 22px; margin: 18px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;" id="lockTimerBar">
+    <div>
+      <span class="fly-badge fly-badge-warning" id="lockStatusBadge">Seat Lock Active</span>
+      <strong style="margin-left: 10px;" id="checkoutRefLabel">Booking Reference: --</strong>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;" id="checkoutFlightSummary">Loading held itinerary...</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="text-align: right;">
+        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted);">Hold Expires In</div>
+        <div style="font-size: 1.35rem; font-weight: 800; font-family: var(--font-mono); color: var(--accent-primary);" id="lockCountdownClock">--:--</div>
+      </div>
+      <button type="button" id="btnExtendLock" class="fly-btn fly-btn-outline">+2 Min Extend</button>
+    </div>
+  </div>
+
+  <div id="checkoutAlert" class="fly-alert is-hidden" role="alert" style="margin-bottom: 16px;"></div>
+
+  <div class="seat-map-layout" id="checkoutMainGrid">
+    <!-- Left Column: Passengers, Add-ons, Payment -->
+    <div style="display: grid; gap: 20px;">
+      <!-- Passenger Information -->
+      <section class="fly-card" style="padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h2 style="margin: 0; font-size: 1.12rem;">1. Passenger Details</h2>
+          <select id="savedTravelerPicker" class="fly-select" style="width: auto; min-width: 210px;" aria-label="Autofill from saved travelers">
+            <option value="">Autofill from Saved Travelers...</option>
+          </select>
+        </div>
+        <div id="passengersFormsList" style="display: grid; gap: 16px;"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+          <div class="fly-field">
+            <label for="contactEmail" class="fly-label">Booking Contact Email *</label>
+            <input type="email" id="contactEmail" class="fly-input" placeholder="e-ticket@example.com" required>
+          </div>
+          <div class="fly-field">
+            <label for="contactPhone" class="fly-label">Contact Mobile *</label>
+            <input type="tel" id="contactPhone" class="fly-input" placeholder="+880 17XX-XXXXXX" required>
+          </div>
+        </div>
+      </section>
+
+      <!-- Travel Add-ons -->
+      <section class="fly-card" style="padding: 22px;">
+        <h2 style="margin: 0 0 14px; font-size: 1.12rem;">2. Baggage, Meals &amp; Protection</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+          <div class="fly-field">
+            <label for="extraBaggageSelect" class="fly-label">Additional Checked Baggage</label>
+            <select id="extraBaggageSelect" class="fly-select">
+              <option value="0">Standard Included Allowance (0 kg extra)</option>
+              <option value="10">+10 kg Extra Baggage (+BDT 1,200)</option>
+              <option value="20">+20 kg Extra Baggage (+BDT 2,400)</option>
+            </select>
+          </div>
+          <div class="fly-field">
+            <label for="mealSelect" class="fly-label">In-Flight Meal Selection</label>
+            <select id="mealSelect" class="fly-select">
+              <option value="0">Standard Refreshment (BDT 0)</option>
+              <option value="650">Warm Heritage Platter (+BDT 650)</option>
+              <option value="950">Gourmet Executive Menu (+BDT 950)</option>
+            </select>
+          </div>
+        </div>
+        <label style="display: flex; align-items: center; gap: 10px; margin-top: 14px; cursor: pointer;">
+          <input type="checkbox" id="insuranceCheck">
+          <span><strong>Add Travel Protection (+BDT 450)</strong> — Covers trip delay and emergency medical assistance.</span>
+        </label>
+      </section>
+
+      <!-- Simulated Payment Gateway -->
+      <section class="fly-card" style="padding: 22px;">
+        <h2 style="margin: 0 0 14px; font-size: 1.12rem;">3. Payment Authorization</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div class="fly-field">
+            <label for="paymentMethodSelect" class="fly-label">Payment Method</label>
+            <select id="paymentMethodSelect" class="fly-select">
+              <option value="SIMULATED_CARD">Visa / Mastercard (Simulated)</option>
+              <option value="SIMULATED_MFS">bKash / Nagad Mobile Banking (Simulated)</option>
+              <option value="SIMULATED_BANK">Online Bank Transfer (Simulated)</option>
+            </select>
+          </div>
+          <div class="fly-field">
+            <label for="paymentScenarioSelect" class="fly-label">Gateway Outcome Mode</label>
+            <select id="paymentScenarioSelect" class="fly-select">
+              <option value="SIMULATE_SUCCESS">Authorize Payment (Success)</option>
+              <option value="SIMULATE_FAILURE">Simulate Card Decline (Failure)</option>
+              <option value="SIMULATE_TIMEOUT">Simulate Gateway Timeout</option>
+            </select>
+          </div>
+        </div>
+        <p style="margin: 0 0 16px; font-size: 0.82rem; color: var(--text-muted);">
+          Protected by database idempotency keys. Double submissions will never duplicate charges or tickets.
+        </p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="button" id="btnConfirmPay" class="fly-btn fly-btn-primary" style="flex: 1; min-width: 220px; height: 48px;">
+            Complete Payment &amp; Issue E-Ticket
+          </button>
+          <button type="button" id="btnReleaseHold" class="fly-btn fly-btn-outline">Cancel &amp; Release Seats</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Authoritative Fare & Promo -->
+    <aside class="fly-card" style="padding: 22px; position: sticky; top: 90px;">
+      <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Fare Breakdown</h2>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;" id="checkoutSeatsBadge">Seats: --</div>
+
+      <!-- Promo Code -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+        <input type="text" id="promoCodeInput" class="fly-input" placeholder="Promo code (e.g. FLY10)" aria-label="Promo code">
+        <button type="button" id="btnApplyPromo" class="fly-btn fly-btn-outline" style="white-space: nowrap;">Apply</button>
+      </div>
+      <div id="promoStatusMsg" style="font-size: 0.82rem; margin-bottom: 12px;"></div>
+
+      <div style="display: grid; gap: 8px; font-size: 0.9rem; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+        <div style="display: flex; justify-content: space-between;"><span>Base Fare</span><strong id="coBase">BDT 0</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span>Taxes &amp; Airport Fees</span><strong id="coTaxes">BDT 0</strong></div>
+        <div style="display: flex; justify-content: space-between;"><span>Add-Ons &amp; Seat Upgrades</span><strong id="coExtras">BDT 0</strong></div>
+        <div style="display: flex; justify-content: space-between; color: #059669;" id="coDiscountRow"><span>Promo Discount</span><strong id="coDiscount">-BDT 0</strong></div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.12rem; border-top: 1px solid var(--border-subtle); padding-top: 10px;">
+          <strong>Total Payable</strong>
+          <strong id="coTotal" style="color: var(--accent-primary);">BDT 0</strong>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/checkout_portal.js"></script>
+{% endblock %}

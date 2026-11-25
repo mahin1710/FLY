@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/page_heading.html" import render_page_heading %}
+{% from "components/stepper.html" import render_booking_stepper %}
+
+{% block title %}Select Seats — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumbs([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'Flight Results', 'url': '/flights/search'},
+    {'label': 'Seat Selection', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="seatMapApp" data-flight-id="{{ flight_id }}">
+  {{ render_booking_stepper(current_step='seats', completed_steps=['search']) }}
+
+  <div class="fly-card" style="padding: 18px 22px; margin: 18px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;" id="seatFlightBanner">
+    <div>
+      <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);" id="seatFlightAirline">Loading flight...</div>
+      <h1 style="margin: 4px 0; font-size: 1.35rem;" id="seatFlightRoute">Flight #{{ flight_id }}</h1>
+      <div style="font-size: 0.88rem; color: var(--text-secondary);" id="seatFlightMeta">Checking live aircraft cabin inventory...</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <span class="fly-badge fly-badge-success" id="seatSyncBadge">Live Inventory Sync</span>
+      <span class="fly-badge" id="seatAvailableBadge">-- Seats Open</span>
+    </div>
+  </div>
+
+  <div id="seatMapAlert" class="fly-alert is-hidden" role="alert" style="margin-bottom: 16px;"></div>
+
+  <div class="seat-map-layout">
+    <section class="fly-card" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: 1.1rem;">Aircraft Cabin Map</h2>
+        <span style="font-size: 0.84rem; color: var(--text-muted);" id="seatTargetHint">Select seat(s) to hold for 10 minutes</span>
+      </div>
+
+      <div class="seat-legend" role="note" aria-label="Seat status legend">
+        <span class="seat-legend-item"><span class="seat-swatch available"></span> Available</span>
+        <span class="seat-legend-item"><span class="seat-swatch selected"></span> Selected</span>
+        <span class="seat-legend-item"><span class="seat-swatch extra"></span> Extra Legroom / Exit</span>
+        <span class="seat-legend-item"><span class="seat-swatch locked"></span> Locked (Held)</span>
+        <span class="seat-legend-item"><span class="seat-swatch booked"></span> Booked</span>
+      </div>
+
+      <div class="cabin-fuselage" id="cabinGridContainer">
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">Loading interactive seat layout...</div>
+      </div>
+    </section>
+
+    <aside class="fly-card" style="padding: 22px; position: sticky; top: 90px;">
+      <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Reservation Summary</h2>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+        <div class="fly-field">
+          <label for="seatPaxSelect" class="fly-label">Passengers</label>
+          <select id="seatPaxSelect" class="fly-select">
+            <option value="1">1 Passenger</option>
+            <option value="2">2 Passengers</option>
+            <option value="3">3 Passengers</option>
+            <option value="4">4 Passengers</option>
+            <option value="5">5 Passengers</option>
+            <option value="6">6 Passengers</option>
+          </select>
+        </div>
+        <div class="fly-field">
+          <label for="seatCabinSelect" class="fly-label">Cabin Class</label>
+          <select id="seatCabinSelect" class="fly-select">
+            <option value="Economy">Economy</option>
+            <option value="Business">Business</option>
+            <option value="First">First</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="padding: 12px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 14px;">
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Selected Seats</div>
+        <div id="selectedSeatsList" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px;">
+          <span style="color: var(--text-muted); font-size: 0.88rem;">No seats selected yet</span>
+        </div>
+      </div>
+
+      <div style="display: grid; gap: 8px; font-size: 0.9rem; margin-bottom: 16px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Base Fare</span>
+          <strong id="fareBaseVal">BDT 0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Airport Taxes &amp; Fees</span>
+          <strong id="fareTaxVal">BDT 0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Extra Legroom / Seat Fee</span>
+          <strong id="fareSeatFeeVal">BDT 0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.05rem; border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+          <strong>Estimated Total</strong>
+          <strong id="fareTotalVal" style="color: var(--accent-primary);">BDT 0</strong>
+        </div>
+      </div>
+
+      <button type="button" id="btnHoldSeatsContinue" class="fly-btn fly-btn-primary" style="width: 100%; height: 46px;" disabled>
+        Lock Seats for 10 Min &amp; Continue
+      </button>
+
+      <p style="margin: 10px 0 0; font-size: 0.78rem; color: var(--text-muted); text-align: center;">
+        Atomic database seat lock prevents double booking while you complete passenger details and payment.
+      </p>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/seat_selection.js"></script>
+{% endblock %}
