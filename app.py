@@ -260,16 +260,43 @@ def api_login():
         }
     })
 
+@app.route('/logout', methods=['GET', 'POST'])
+def web_logout():
+    """Logs out user, invalidates session/token, clears cookies, and redirects to /login with no-cache headers."""
+    from flask import redirect, make_response, session
+    token = get_auth_token_from_request() or session.get('token')
+    if token:
+        try:
+            conn = database.get_db()
+            conn.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+    session.clear()
+    resp = make_response(redirect('/login'))
+    resp.set_cookie('auth_token', '', expires=0, max_age=0, path='/')
+    resp.set_cookie('session', '', expires=0, max_age=0, path='/')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
+
 @app.route('/api/auth/logout', methods=['POST'])
 def api_logout():
     """Logs out user by invalidating their session token."""
-    token = get_auth_token_from_request()
+    from flask import session
+    token = get_auth_token_from_request() or session.get('token')
     if token:
         conn = database.get_db()
         conn.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
         conn.commit()
         conn.close()
-    return jsonify({'success': True, 'message': 'Logged out successfully.'})
+    session.clear()
+    resp = jsonify({'success': True, 'message': 'Logged out successfully.'})
+    resp.set_cookie('auth_token', '', expires=0, max_age=0, path='/')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    return resp
 
 @app.route('/api/auth/me', methods=['GET'])
 def api_auth_me():

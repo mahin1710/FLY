@@ -1,9 +1,11 @@
 /**
  * FLY AVIATION - SHARED SITE SHELL JAVASCRIPT
  * Handles:
- * 1. Fully accessible mobile navigation drawer (keyboard trap, Escape key, aria-expanded)
- * 2. Theme switching (light / dark) persisted in localStorage
- * 3. Client auth state synchronization for navigation header and drawer
+ * 1. Immediate theme initialization and left-side toggle with status label
+ * 2. Left-side Account & Profile dropdown menu with full keyboard & outside-click accessibility
+ * 3. Mobile navigation drawer with focus trap & Escape key support
+ * 4. Auth state synchronization across header, account dropdown, and mobile drawer
+ * 5. Secure server-side and client-side logout flow
  */
 
 (function() {
@@ -17,18 +19,74 @@
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeLabel = document.getElementById('themeToggleLabel');
+
+    function updateLabel(theme) {
+      if (themeLabel) {
+        themeLabel.textContent = theme === 'dark' ? 'Dark' : 'Light';
+      }
+    }
+
+    updateLabel(savedTheme);
+
     if (themeToggleBtn) {
       themeToggleBtn.addEventListener('click', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
         const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', nextTheme);
         localStorage.setItem('fly_theme', nextTheme);
+        updateLabel(nextTheme);
       });
     }
   }
 
   // -------------------------------------------------------------
-  // 2. ACCESSIBLE MOBILE NAVIGATION DRAWER
+  // 2. LEFT-SIDE ACCOUNT DROPDOWN MENU
+  // -------------------------------------------------------------
+  function initHeaderAccountDropdown() {
+    const triggerBtn = document.getElementById('accountTriggerBtn');
+    const dropdown = document.getElementById('headerAccountDropdown');
+
+    if (!triggerBtn || !dropdown) return;
+
+    function openDropdown() {
+      dropdown.classList.add('is-open');
+      triggerBtn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeDropdown() {
+      dropdown.classList.remove('is-open');
+      triggerBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.classList.contains('is-open');
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        openDropdown();
+      }
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && !triggerBtn.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+
+    // Keyboard support: Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dropdown.classList.contains('is-open')) {
+        closeDropdown();
+        triggerBtn.focus();
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // 3. ACCESSIBLE MOBILE NAVIGATION DRAWER
   // -------------------------------------------------------------
   function initMobileDrawer() {
     const toggleBtn = document.getElementById('mobileMenuToggle');
@@ -122,7 +180,7 @@
   }
 
   // -------------------------------------------------------------
-  // 3. AUTH STATE SYNCHRONIZATION
+  // 4. AUTH STATE SYNCHRONIZATION
   // -------------------------------------------------------------
   function syncAuthState() {
     const token = localStorage.getItem('fly_token');
@@ -131,58 +189,78 @@
       user = JSON.parse(localStorage.getItem('fly_user') || 'null');
     } catch (_) {}
 
-    const authArea = document.getElementById('authArea');
+    const accountTriggerLabel = document.getElementById('accountTriggerLabel');
+    const dropdownUserName = document.getElementById('dropdownUserName');
+    const dropdownUserSub = document.getElementById('dropdownUserSub');
+    const dropdownAvatarBadge = document.getElementById('dropdownAvatarBadge');
+    const dropdownLoginLink = document.getElementById('dropdownLoginLink');
+    const dropdownLogoutBtn = document.getElementById('dropdownLogoutBtn');
+    const dropdownAuthDivider = document.getElementById('dropdownAuthDivider');
     const mobileNavAuth = document.getElementById('mobileNavAuth');
 
     if (token && user) {
       const displayName = user.displayName || user.username || 'Traveler';
-      const userHtml = `
-        <div class="user-menu-wrapper" style="position: relative;">
-          <button class="user-profile-pill" id="userMenuTrigger" type="button" aria-haspopup="true" aria-expanded="false" onclick="this.nextElementSibling.classList.toggle('show')">
-            <span style="display: inline-flex; align-items: center; color: var(--accent-primary);">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </span>
-            <div class="user-pill-info">
-              <span class="user-pill-name">${displayName}</span>
-              <span class="user-pill-role">${user.role || 'Passenger'}</span>
-            </div>
-            <span style="font-size: 0.75rem; margin-left: 4px;">▾</span>
-          </button>
-          <div class="user-dropdown-menu">
-            <a href="/my-bookings" class="dropdown-item">
-              <span>My Bookings</span>
-            </a>
-            <a href="/profile" class="dropdown-item">
-              <span>Profile & Settings</span>
-            </a>
-            <div class="dropdown-divider"></div>
-            <button type="button" class="dropdown-item danger" onclick="window.flyLogout()">
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
-      `;
+      const emailOrRole = user.email || (user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Member');
+      const initial = displayName.charAt(0).toUpperCase();
 
-      if (authArea) authArea.innerHTML = userHtml;
+      if (accountTriggerLabel) accountTriggerLabel.textContent = displayName.split(' ')[0];
+      if (dropdownUserName) dropdownUserName.textContent = displayName;
+      if (dropdownUserSub) dropdownUserSub.textContent = emailOrRole;
+      if (dropdownAvatarBadge) dropdownAvatarBadge.textContent = initial || '✈️';
+      if (dropdownLoginLink) dropdownLoginLink.style.display = 'none';
+      if (dropdownLogoutBtn) dropdownLogoutBtn.style.display = 'flex';
+      if (dropdownAuthDivider) dropdownAuthDivider.style.display = 'block';
 
       if (mobileNavAuth) {
         mobileNavAuth.innerHTML = `
           <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
             <div>
-              <strong style="display: block; font-size: 0.95rem;">${displayName}</strong>
-              <span style="font-size: 0.78rem; color: var(--text-muted);">${user.email || user.username}</span>
+              <strong style="display: block; font-size: 0.95rem; color: var(--text-main);">${displayName}</strong>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">${emailOrRole}</span>
             </div>
             <button type="button" class="btn-secondary-sm" onclick="window.flyLogout()">Sign Out</button>
+          </div>
+        `;
+      }
+    } else {
+      if (accountTriggerLabel) accountTriggerLabel.textContent = 'Account';
+      if (dropdownUserName) dropdownUserName.textContent = 'Guest Traveler';
+      if (dropdownUserSub) dropdownUserSub.textContent = 'Not signed in';
+      if (dropdownAvatarBadge) dropdownAvatarBadge.textContent = '✈️';
+      if (dropdownLoginLink) dropdownLoginLink.style.display = 'flex';
+      if (dropdownLogoutBtn) dropdownLogoutBtn.style.display = 'none';
+      if (dropdownAuthDivider) dropdownAuthDivider.style.display = 'none';
+
+      if (mobileNavAuth) {
+        mobileNavAuth.innerHTML = `
+          <div style="margin-bottom: 12px;">
+            <a href="/login" class="btn-primary" style="width: 100%; justify-content: center; text-decoration: none;">Sign In / Register</a>
           </div>
         `;
       }
     }
   }
 
-  window.flyLogout = function() {
-    localStorage.removeItem('fly_token');
-    localStorage.removeItem('fly_user');
-    window.location.href = '/login';
+  // -------------------------------------------------------------
+  // 5. SECURE LOGOUT HANDLER
+  // -------------------------------------------------------------
+  window.flyLogout = async function() {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
+      });
+    } catch (_) {}
+
+    try {
+      localStorage.removeItem('fly_token');
+      localStorage.removeItem('fly_user');
+      localStorage.removeItem('fly_active_hold');
+    } catch (_) {}
+
+    // Redirect to server-side logout which clears session cookies & headers
+    window.location.replace('/logout');
   };
 
   // Close open dropdowns when clicking outside
@@ -194,15 +272,16 @@
   });
 
   // DOMContentLoaded initialization
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initTheme();
-      initMobileDrawer();
-      syncAuthState();
-    });
-  } else {
+  function initShell() {
     initTheme();
+    initHeaderAccountDropdown();
     initMobileDrawer();
     syncAuthState();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initShell);
+  } else {
+    initShell();
   }
 })();
