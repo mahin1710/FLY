@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
 {% from "components/page_heading.html" import render_page_heading %}
 
 {% block title %}Manage Booking (PNR Lookup) — FLY{% endblock %}
 
 {% block breadcrumbs %}
-  {{ render_breadcrumbs([
+  {{ render_breadcrumb([
     {'label': 'Home', 'url': '/'},
     {'label': 'Manage Booking', 'url': None}
   ]) }}

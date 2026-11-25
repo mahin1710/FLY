@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
 {% from "components/page_heading.html" import render_page_heading %}
 
 {% block title %}{% if auth_mode == 'register' %}Create Account — FLY{% elif auth_mode == 'profile' %}My Profile — FLY{% else %}Sign In — FLY{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
   {% if auth_mode == 'profile' %}
-    {{ render_breadcrumbs([
+    {{ render_breadcrumb([
       {'label': 'Home', 'url': '/'},
       {'label': 'My Bookings', 'url': '/my-bookings'},
       {'label': 'Profile & Travelers', 'url': None}
     ]) }}
   {% else %}
-    {{ render_breadcrumbs([
+    {{ render_breadcrumb([
       {'label': 'Home', 'url': '/'},
       {'label': 'Create Account' if auth_mode == 'register' else 'Sign In', 'url': None}
     ]) }}

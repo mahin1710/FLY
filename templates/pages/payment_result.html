@@ -2,7 +2,6 @@
 {% import "components/breadcrumb.html" as bc %}
 {% import "components/page_heading.html" as ph %}
 {% import "components/stepper.html" as st %}
-{% import "components/demo_notice.html" as dn %}
 
 {% block title %}Payment Result Verification — FLY{% endblock %}
 {% block meta_description %}Customer payment outcome and server-side verification status.{% endblock %}
@@ -19,8 +18,6 @@
 <div class="page-container container" style="max-width: 860px;">
   <!-- Stepper: Step 5 Payment to Step 6 Confirmation -->
   {{ st.render_booking_stepper(current_step='confirmation' if result_status in ['success', 'captured'] else 'payment', completed_steps=['search', 'flight', 'travellers', 'review', 'payment'] if result_status in ['success', 'captured'] else ['search', 'flight', 'travellers', 'review']) }}
-
-  {{ dn.render_demo_notice('Payment Gateway Sandbox Verification Boundary') }}
 
   <!-- Crucial Security Notice: Return URL is UX Only -->
   <div class="alert alert-info" style="margin-bottom: 24px; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(59, 130, 246, 0.08); border: 2px solid #3b82f6; display: flex; align-items: flex-start; gap: 14px;">

@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% import "components/breadcrumb.html" as bc %}
 {% import "components/page_heading.html" as ph %}
-{% import "components/demo_notice.html" as dn %}
 
 {% block title %}Help & Support — 24/7 Passenger Assistance — FLY{% endblock %}
 {% block meta_description %}Contact FLY customer care, review baggage guidelines, check-in policies, and FAQs.{% endblock %}
@@ -15,8 +14,6 @@
 
 {% block content %}
 <div class="page-container container">
-  {{ dn.render_demo_notice('Passenger Help Desk & CAAB Air Travel Guidelines') }}
-
   {{ ph.render_page_heading(
     title='Customer Support & Travel Assistance',
     subtitle='Dedicated passenger support, airport policies, baggage rules, and cancellation information',

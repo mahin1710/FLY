@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
 {% from "components/page_heading.html" import render_page_heading %}
 {% from "components/stepper.html" import render_booking_stepper %}
 
 {% block title %}Select Seats — FLY{% endblock %}
 
 {% block breadcrumbs %}
-  {{ render_breadcrumbs([
+  {{ render_breadcrumb([
     {'label': 'Home', 'url': '/'},
     {'label': 'Flight Results', 'url': '/flights/search'},
     {'label': 'Seat Selection', 'url': None}
@@ -15,7 +15,7 @@
 
 {% block content %}
 <div class="fly-container fly-page-section" id="seatMapApp" data-flight-id="{{ flight_id }}">
-  {{ render_booking_stepper(current_step='seats', completed_steps=['search']) }}
+  {{ render_booking_stepper(current_step='flight', completed_steps=['search']) }}
 
   <div class="fly-card" style="padding: 18px 22px; margin: 18px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;" id="seatFlightBanner">
     <div>

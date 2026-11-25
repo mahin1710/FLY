@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% from "components/breadcrumb.html" import render_breadcrumbs %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
 {% from "components/stepper.html" import render_booking_stepper %}
 
 {% block title %}Checkout &amp; Payment — FLY{% endblock %}
 
 {% block breadcrumbs %}
-  {{ render_breadcrumbs([
+  {{ render_breadcrumb([
     {'label': 'Home', 'url': '/'},
     {'label': 'Flight Results', 'url': '/flights/search'},
     {'label': 'Checkout & Payment', 'url': None}
@@ -14,7 +14,7 @@
 
 {% block content %}
 <div class="fly-container fly-page-section" id="checkoutApp">
-  {{ render_booking_stepper(current_step='payment', completed_steps=['search', 'seats']) }}
+  {{ render_booking_stepper(current_step='payment', completed_steps=['search', 'flight', 'travellers', 'review']) }}
 
   <!-- Live Seat Lock Countdown Bar -->
   <div class="fly-card" style="padding: 16px 22px; margin: 18px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;" id="lockTimerBar">

@@ -28,7 +28,7 @@ def flight_seat_selection_page(flight_id):
 
 @pages_bp.route("/flights/offer/<offer_id>")
 def flight_offer_page(offer_id):
-    return render_template("pages/offer_details.html", offer_id=offer_id)
+    return redirect("/flights/search")
 
 
 @pages_bp.route("/checkout")

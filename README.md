@@ -1,80 +1,49 @@
-# FLY — Modern Flight Booking & Reservation Platform
+# FLY — Flight Booking & Ticket Management System
 
-[![Brand](https://img.shields.io/badge/Brand-FLY-blue.svg)]()
-[![Author](https://img.shields.io/badge/Author-mahin1710-blue.svg)](https://github.com/mahin1710)
-[![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.1.3-green.svg)](https://palletsprojects.com/p/flask/)
-[![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)](https://laravel.com/)
-[![Database](https://img.shields.io/badge/SQLite-WAL--Mode-yellow.svg)](https://sqlite.org/)
-[![Accessibility](https://img.shields.io/badge/WCAG-2.1%20AA-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-164%20Passing-brightgreen.svg)]()
+A full-stack airline reservation, atomic seat-locking, ticketing, and airline operations management platform.
 
-> **Official Brand:** **FLY** (`FLY Aviation & Travel`)  
-> **Maintainer & Author:** **mahin1710**  
-> **Repository:** [https://github.com/mahin1710/FLY.git](https://github.com/mahin1710/FLY.git)
+## Technology Stack
 
----
+- **Backend:** Python 3.12, Flask 3.1.3 (Modular Blueprints under `fly/`), Jinja2 3.1.6
+- **Frontend:** HTML5, CSS3 (Responsive Light/Dark Design System), Vanilla JavaScript (`static/js/api_client.js` & page controllers)
+- **Database:**
+  - **Active Local Runtime:** SQLite WAL (`database/flight_booking.db`) with `BEGIN IMMEDIATE` ACID transactions & partial unique reservation index (`idx_active_seat_reservation`)
+  - **Production Target Migration:** PostgreSQL DDL & seed scripts included (`database/migrations/001_postgres_schema.sql`, `database/seeds/seed_postgres.sql`)
 
-## ✈️ Overview
+## Key Features
 
-**FLY** is a professional, human-friendly flight booking platform built with modern responsive architecture, strict customer-to-customer data privacy, route-aware passenger document validation, and an atomic 15-minute conflict-free seat reservation engine.
+1. **Strict Double-Booking Prevention:** Database-level atomic multi-seat holds (`10-minute` TTL, 1 controlled `2-minute` extension, `30s` background auto-expiry worker).
+2. **Real-Time Cabin Seat Map:** Interactive `A B C | D E F` seat grid (`Available`, `Selected`, `Extra Legroom / Exit`, `Locked`, `Booked`) synchronized via SSE & 5-second polling.
+3. **Connected Checkout & Pricing Engine:** Authoritative server-side fare computation with configurable baggage allowances (`23 kg` domestic / `40 kg` international), add-ons, promo validation (`FLY10`, `DHAKA500`), and idempotent payment handling (`SIMULATE_SUCCESS`, `SIMULATE_FAILURE`, `SIMULATE_TIMEOUT`).
+4. **E-Tickets, QR Verification & Guest PNR Lookup:** 6-character PNR generation, embedded verification QR SVG, downloadable `%PDF-1.4` boarding pass, public `/ticket/verify/<token>`, and `/manage-booking` lookup.
+5. **Airline Operations Console (`/admin`):** Role-guarded dashboard enforcing strict airline tenant isolation (`AIRLINE_ADMIN` vs `SYSTEM_ADMIN`), schedule CRUD, refund queue moderation, live seat inventory viewer, and concurrency/audit logs.
 
-### Key Features
-- **Modern Flight Search:** Autocomplete across 5,928 airports, One-Way, Round-Trip, and Multi-City support, travel date bounds, dynamic airline filters, and interactive BDT price slider.
-- **Atomic 15-Minute Seat Hold:** Concurrency-safe seat reservation engine preventing double-bookings; real-time server-synchronized countdown timer with automatic seat release upon timeout.
-- **Route-Aware Travel Document Validation:** Enforces CAAB & IATA guidelines (NID/Birth Certificate/Passport for domestic Bangladesh routes; valid Passport with $\ge$ 6 months validity for international routes).
-- **Interactive Seat Map & Ancillaries:** Visual aircraft cabin layout with First Class, Business Class, and Economy sections, inflight meal choices, extra baggage, and travel insurance.
-- **Transparent Fare Breakdown:** Server-calculated itemized airfare, 15% VAT, airport embarkation fees, fuel surcharges, and baggage fees with zero hidden markups.
-- **Hosted Payment Checkout (Sandbox):** Fast-Path Instant Verification, bKash Mobile Wallet Simulator, and 3D-Secure 2.0 Card Simulator with zero raw card data storage.
-- **Protected Operations Console (Admin):** 12-module operational dashboard with 7 least-privilege RBAC profiles, KPI metrics, ticketing queues, payment reconciliation, and audit logs.
+## Running Locally
 
----
-
-## 🚀 Quick Start (Local Setup)
-
-### 1. 1-Click Launch (Windows)
-Double-click `start.bat` in the project root. The application will start immediately on `http://localhost:5000`.
-
-### 2. Manual Terminal Launch
 ```bash
-# 1. Install Python dependencies
-pip install -r requirements.txt
-
-# 2. Start Python Flask server
 python app.py
 ```
-Open your browser and navigate to: **`http://localhost:5000`**
 
----
+Open `http://127.0.0.1:5000` in your browser.
 
-## 🧪 Running Automated Test Suites
+## Environment Variables (`config.py`)
 
-### 1. UI Accessibility & Responsive Viewport Test Suite:
+- `FLY_SECRET_KEY` — Session / HMAC signing secret
+- `SEAT_LOCK_MINUTES` — Seat lock window (default `10`)
+- `SEAT_EXTENSION_MINUTES` — Controlled extension duration (default `2`)
+- `MAX_LOCK_EXTENSIONS` — Maximum extensions per hold (default `1`)
+- `LOCK_SWEEP_INTERVAL_SECONDS` — Background auto-expiry interval (default `30`)
+
+## Running Automated QA Tests
+
+Ensure the Flask app is running on `http://127.0.0.1:5000`, then execute:
+
 ```bash
-node tests/ui_accessibility_and_responsive.test.js
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
-*Result:* 9 / 9 Passed (WCAG 2.1 AA compliant, 390px to 1440px viewports verified).
 
-### 2. Backend Enterprise Test Suite (Laravel Engine):
-```bash
-cd backend
-php artisan test
-```
-*Result:* 164 / 164 Passed (979 assertions, 0 failures).
-
----
-
-## 📚 Master Documentation Index
-
-Complete project specifications are located in [`documentation/`](documentation/):
-
-- [`documentation/PROJECT_AUDIT.md`](documentation/PROJECT_AUDIT.md) — Comprehensive technical and architectural audit.
-- [`documentation/FEATURE_INVENTORY.md`](documentation/FEATURE_INVENTORY.md) — Complete 87-point interactive feature and control inventory.
-- [`documentation/FILE_INVENTORY.md`](documentation/FILE_INVENTORY.md) — Full file manifest and dependency analysis.
-- [`documentation/FILE_STRUCTURE.md`](documentation/FILE_STRUCTURE.md) — Annotated project directory tree.
-- [`documentation/CODEBASE_CLEANUP_REPORT.md`](documentation/CODEBASE_CLEANUP_REPORT.md) — Safe renaming and codebase cleanup audit report.
-- [`documentation/ENVIRONMENT_SETUP.md`](documentation/ENVIRONMENT_SETUP.md) — Detailed environment setup guide.
-- [`documentation/DEVELOPMENT_GUIDE.md`](documentation/DEVELOPMENT_GUIDE.md) — Coding standards, guidelines, and test instructions.
-- [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) — System architecture overview.
-- [`documentation/BASELINE_TEST_REPORT.md`](documentation/BASELINE_TEST_REPORT.md) — Full baseline test execution results.
-- [`documentation/IMPLEMENTATION_PLAN.md`](documentation/IMPLEMENTATION_PLAN.md) — Phased production engineering roadmap.
+Suites included under `tests/`:
+- `tests/concurrency/` — 20-thread simultaneous lock contention, multi-seat rollback, auto-expiry recovery
+- `tests/integration/` — RBAC, cross-airline isolation, IDOR protection, fare tamper rejection, idempotency
+- `tests/e2e/` — Full passenger journey through registration, booking, payment, PNR/QR/PDF & cancellation
+- `tests/ui/` — All 19 HTML route checks, asset `200 OK` checks, legacy removal & responsive CSS checks
