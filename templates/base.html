@@ -36,78 +36,18 @@
   <header class="app-header is-fixed" id="appHeader" role="banner">
     <div class="header-container">
       
-      <!-- 1. LEFT AREA: Account / Profile Controls, Logout & Dark Mode Toggle -->
+      <!-- 1. LEFT AREA: Brand Logo & Identity -->
       <div class="header-left-area" id="headerLeftArea">
-        <!-- Account / Profile Dropdown Menu -->
-        <div class="header-account-wrapper" id="headerAccountWrapper">
-          <button class="account-trigger-btn" 
-                  id="accountTriggerBtn" 
-                  type="button" 
-                  aria-haspopup="true" 
-                  aria-expanded="false" 
-                  aria-controls="headerAccountDropdown" 
-                  aria-label="User Account and Profile Menu">
-            <span class="account-avatar-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </span>
-            <span class="account-trigger-label" id="accountTriggerLabel">Account</span>
-            <svg class="account-chevron-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-
-          <!-- Dropdown Panel -->
-          <div class="header-account-dropdown" id="headerAccountDropdown" role="menu" aria-label="Account Options">
-            <div class="dropdown-user-header" id="dropdownUserHeader">
-              <div class="dropdown-avatar-badge" id="dropdownAvatarBadge">✈️</div>
-              <div class="dropdown-user-meta">
-                <div class="dropdown-user-name" id="dropdownUserName">Guest Traveler</div>
-                <div class="dropdown-user-sub" id="dropdownUserSub">Not signed in</div>
-              </div>
-            </div>
-
-            <div class="dropdown-divider"></div>
-
-            <div class="dropdown-menu-list">
-              <a href="/login" class="dropdown-item" id="dropdownLoginLink" role="menuitem">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
-                <span>Sign In / Register</span>
-              </a>
-              <a href="/profile" class="dropdown-item" id="dropdownProfileLink" role="menuitem">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span>My Account &amp; Profile</span>
-              </a>
-              <a href="/my-bookings" class="dropdown-item" id="dropdownBookingsLink" role="menuitem">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                <span>My Bookings</span>
-              </a>
-              <a href="/manage-booking" class="dropdown-item" id="dropdownManageLink" role="menuitem">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                <span>Manage Itinerary</span>
-              </a>
-
-              <div class="dropdown-divider" id="dropdownAuthDivider"></div>
-
-              <!-- Dedicated Logout Option on Left Side -->
-              <button type="button" class="dropdown-item dropdown-item-danger" id="dropdownLogoutBtn" role="menuitem" onclick="window.flyLogout()">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                <span>Logout</span>
-              </button>
-            </div>
+        <!-- Brand Logo -->
+        <a href="/" class="brand-wrapper" id="brandLogo" aria-label="FLY Homepage">
+          <div class="brand-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="brand-svg-icon" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
           </div>
-        </div>
-
-        <!-- Dark/Light Theme Switcher on Left Side -->
-        <button class="theme-toggle-btn" 
-                id="themeToggleBtn" 
-                type="button" 
-                title="Toggle Dark / Light Mode" 
-                aria-label="Toggle dark and light theme">
-          <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" x2="12" y1="1" y2="3"/><line x1="12" x2="12" y1="21" y2="23"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="1" x2="3" y1="12" y2="12"/><line x1="21" x2="23" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/></svg>
-          <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-          <span class="theme-toggle-label" id="themeToggleLabel">Theme</span>
-        </button>
-
-        <!-- Hidden container for legacy script compatibility -->
-        <div id="authArea" style="display: none;"></div>
+          <div class="brand-text">
+            <span class="brand-title">FLY</span>
+            <span class="brand-sub">Aviation &amp; Travel</span>
+          </div>
+        </a>
       </div>
 
       <!-- 2. CENTER AREA: Primary Navigation with Auto-Detected Active Page Indicator -->
@@ -150,23 +90,80 @@
         </a>
       </nav>
 
-      <!-- 3. RIGHT AREA: Branding Logo & Actions -->
+      <!-- 3. RIGHT AREA: Currency Pill, Theme Toggle, Account Menu & Mobile Toggle -->
       <div class="header-right-area" id="headerRightArea">
         <!-- Currency & Language Indicator -->
         <div class="header-locale-pill" title="Currency: BDT (৳) • Language: English">
           <span class="locale-text">BDT (৳) · EN</span>
         </div>
 
-        <!-- Brand Logo -->
-        <a href="/" class="brand-wrapper" id="brandLogo" aria-label="FLY Homepage">
-          <div class="brand-text">
-            <span class="brand-title">FLY</span>
-            <span class="brand-sub">Aviation &amp; Travel</span>
+        <!-- Dark/Light Theme Switcher on Right Side -->
+        <button class="theme-toggle-btn" 
+                id="themeToggleBtn" 
+                type="button" 
+                title="Toggle Dark / Light Mode" 
+                aria-label="Toggle dark and light theme">
+          <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" x2="12" y1="1" y2="3"/><line x1="12" x2="12" y1="21" y2="23"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="1" x2="3" y1="12" y2="12"/><line x1="21" x2="23" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/></svg>
+          <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <span class="theme-toggle-label" id="themeToggleLabel">Theme</span>
+        </button>
+
+        <!-- Account / Profile Dropdown Menu on Right Side -->
+        <div class="header-account-wrapper" id="headerAccountWrapper">
+          <button class="account-trigger-btn" 
+                  id="accountTriggerBtn" 
+                  type="button" 
+                  aria-haspopup="true" 
+                  aria-expanded="false" 
+                  aria-controls="headerAccountDropdown" 
+                  aria-label="User Account and Profile Menu">
+            <span class="account-avatar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="account-trigger-label" id="accountTriggerLabel">Account</span>
+            <svg class="account-chevron-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          <!-- Dropdown Panel (Right-Aligned) -->
+          <div class="header-account-dropdown" id="headerAccountDropdown" role="menu" aria-label="Account Options">
+            <div class="dropdown-user-header" id="dropdownUserHeader">
+              <div class="dropdown-avatar-badge" id="dropdownAvatarBadge">✈️</div>
+              <div class="dropdown-user-meta">
+                <div class="dropdown-user-name" id="dropdownUserName">Guest Traveler</div>
+                <div class="dropdown-user-sub" id="dropdownUserSub">Not signed in</div>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <div class="dropdown-menu-list">
+              <a href="/login" class="dropdown-item" id="dropdownLoginLink" role="menuitem">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                <span>Sign In / Register</span>
+              </a>
+              <a href="/profile" class="dropdown-item" id="dropdownProfileLink" role="menuitem">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>My Account &amp; Profile</span>
+              </a>
+              <a href="/my-bookings" class="dropdown-item" id="dropdownBookingsLink" role="menuitem">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                <span>My Bookings</span>
+              </a>
+              <a href="/manage-booking" class="dropdown-item" id="dropdownManageLink" role="menuitem">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Manage Itinerary</span>
+              </a>
+
+              <div class="dropdown-divider" id="dropdownAuthDivider"></div>
+
+              <!-- Dedicated Logout Option on Right Side -->
+              <button type="button" class="dropdown-item dropdown-item-danger" id="dropdownLogoutBtn" role="menuitem" onclick="window.flyLogout()">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
-          <div class="brand-logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="brand-svg-icon" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
-          </div>
-        </a>
+        </div>
 
         <!-- Accessible Mobile Menu Hamburger Toggle -->
         <button class="mobile-menu-toggle" 
@@ -181,7 +178,13 @@
             <line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
+
+        <!-- Hidden container for legacy script compatibility -->
+        <div id="authArea" style="display: none;"></div>
       </div>
+
+    </div>
+  </header>
 
     </div>
   </header>

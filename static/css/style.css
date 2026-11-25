@@ -511,14 +511,248 @@ textarea {
   gap: 16px;
 }
 
-/* 1. LEFT AREA: Account / Profile Controls, Logout & Dark Mode Toggle */
+/* 1. LEFT AREA: Brand Logo & Identity */
 .header-left-area {
   justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.brand-logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #0284C7 0%, #0D9488 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.brand-wrapper:hover .brand-logo-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+}
+
+.brand-svg-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.brand-title {
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 0.68rem;
+  color: var(--accent-primary);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+[data-theme="dark"] .brand-sub {
+  color: var(--accent-gold);
+}
+
+/* 2. CENTER AREA: Primary Navigation with Auto-Detected Route Indicator */
+.nav-links {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: all var(--transition-fast);
+}
+
+.nav-btn span {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(0.5px);
+}
+
+.nav-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+}
+
+/* Distinct Active Route Highlight & Bottom Accent Indicator */
+.nav-btn.active {
+  color: var(--accent-primary);
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.16);
+  font-weight: 700;
+}
+
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--accent-primary);
+}
+
+[data-theme="dark"] .nav-btn.active {
+  color: var(--accent-gold);
+  background: rgba(197, 164, 109, 0.14);
+  border-color: rgba(197, 164, 109, 0.28);
+}
+
+[data-theme="dark"] .nav-btn.active::after {
+  background: var(--accent-gold);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gold);
+  color: #101D2C;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+}
+
+/* 3. RIGHT AREA: Locale Pill, Theme Toggle, Account Menu & Actions */
+.header-right-area {
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+.header-locale-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.header-locale-pill:hover {
+  border-color: var(--border-medium);
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+}
+
+.locale-flag {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.locale-text {
+  letter-spacing: 0.02em;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.84rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+.theme-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.theme-toggle-label {
+  letter-spacing: 0.01em;
+}
+
+[data-theme="dark"] .sun-icon {
+  display: block;
+}
+
+[data-theme="dark"] .moon-icon {
+  display: none;
+}
+
+[data-theme="light"] .sun-icon {
+  display: none;
+}
+
+[data-theme="light"] .moon-icon {
+  display: block;
+}
+
+/* Header Account / Profile Controls */
 .header-account-wrapper {
   position: relative;
 }
@@ -580,12 +814,13 @@ textarea {
   transform: rotate(180deg);
 }
 
-/* Header Account Dropdown (Left-Aligned) */
+/* Header Account Dropdown (Right-Aligned) */
 .header-account-dropdown {
   display: none;
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
+  right: 0;
+  left: auto;
   width: 250px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -711,239 +946,6 @@ textarea {
 .header-account-dropdown .dropdown-item-danger:hover {
   background: rgba(239, 68, 68, 0.1);
   color: #DC2626;
-}
-
-/* Theme Toggle Button (Left Side) */
-.theme-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 14px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: 0.84rem;
-  font-weight: 600;
-  user-select: none;
-}
-
-.theme-toggle-btn:hover {
-  color: var(--text-main);
-  background: var(--bg-surface-hover);
-  border-color: var(--border-medium);
-}
-
-.theme-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.theme-toggle-label {
-  letter-spacing: 0.01em;
-}
-
-[data-theme="dark"] .sun-icon {
-  display: block;
-}
-
-[data-theme="dark"] .moon-icon {
-  display: none;
-}
-
-[data-theme="light"] .sun-icon {
-  display: none;
-}
-
-[data-theme="light"] .moon-icon {
-  display: block;
-}
-
-/* 2. CENTER AREA: Primary Navigation with Auto-Detected Route Indicator */
-.nav-links {
-  justify-self: center;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.nav-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 42px;
-  padding: 0 16px;
-  border-radius: var(--radius-pill);
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-  font-weight: 600;
-  line-height: 1;
-  text-decoration: none;
-  background: transparent;
-  border: 1px solid transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  box-sizing: border-box;
-  transition: all var(--transition-fast);
-}
-
-.nav-btn span {
-  display: inline-block;
-  line-height: 1;
-  transform: translateY(0.5px);
-}
-
-.nav-btn:hover {
-  color: var(--text-main);
-  background: var(--bg-surface-hover);
-}
-
-/* Distinct Active Route Highlight & Bottom Accent Indicator */
-.nav-btn.active {
-  color: var(--accent-primary);
-  background: rgba(2, 132, 199, 0.08);
-  border-color: rgba(2, 132, 199, 0.16);
-  font-weight: 700;
-}
-
-.nav-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 22px;
-  height: 2.5px;
-  border-radius: 2px;
-  background: var(--accent-primary);
-}
-
-[data-theme="dark"] .nav-btn.active {
-  color: var(--accent-gold);
-  background: rgba(197, 164, 109, 0.14);
-  border-color: rgba(197, 164, 109, 0.28);
-}
-
-[data-theme="dark"] .nav-btn.active::after {
-  background: var(--accent-gold);
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-gold);
-  color: #101D2C;
-  font-size: 0.72rem;
-  font-weight: 700;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: var(--radius-pill);
-}
-
-/* 3. RIGHT AREA: Brand Logo & Actions */
-.header-right-area {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-locale-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 14px;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  user-select: none;
-  transition: all var(--transition-fast);
-}
-
-.header-locale-pill:hover {
-  border-color: var(--border-medium);
-  color: var(--text-main);
-  background: var(--bg-surface-hover);
-}
-
-.locale-flag {
-  font-size: 1.05rem;
-  line-height: 1;
-}
-
-.locale-text {
-  letter-spacing: 0.02em;
-}
-
-.brand-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  cursor: pointer;
-  user-select: none;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  text-align: right;
-}
-
-.brand-title {
-  font-family: var(--font-heading);
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-main);
-  line-height: 1.1;
-}
-
-.brand-sub {
-  font-size: 0.68rem;
-  color: var(--accent-primary);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 1px;
-}
-
-[data-theme="dark"] .brand-sub {
-  color: var(--accent-gold);
-}
-
-.brand-logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #0284C7 0%, #0D9488 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  flex-shrink: 0;
-}
-
-.brand-wrapper:hover .brand-logo-icon {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
-}
-
-.brand-svg-icon {
-  width: 22px;
-  height: 22px;
 }
 
 .mobile-menu-toggle {
@@ -9513,6 +9515,10 @@ select:focus-visible {
   }
 
   .header-left-area {
+    gap: 8px;
+  }
+
+  .header-right-area {
     gap: 6px;
   }
 
