@@ -27,44 +27,30 @@
    LIGHT THEME (Default: Premium Warm Ivory & Deep Midnight Navy)
    -------------------------------------------------------------------------- */
 [data-theme="light"] {
-  --bg-app: #F8FAFC;
-  /* Calm Off-White / Light Slate */
-  --bg-surface: #FFFFFF;
-  /* Crisp White Card */
+  --bg-app: #F8FAFC;             /* Calm Off-White / Light Slate */
+  --bg-surface: #FFFFFF;         /* Crisp White Card */
   --bg-surface-elevated: #FFFFFF;
-  --bg-surface-hover: #F1F5F9;
-  /* Subtle soft slate */
-  --bg-secondary: #F1F5F9;
-  /* Soft Surface */
+  --bg-surface-hover: #F1F5F9;   /* Subtle soft slate */
+  --bg-secondary: #F1F5F9;       /* Soft Surface */
   --bg-input: #FFFFFF;
-  --bg-navy: #0F172A;
-  /* Deep Midnight Navy */
-  --bg-navy-dark: #1E293B;
-  /* Dark Navy */
+  --bg-navy: #0F172A;            /* Deep Midnight Navy */
+  --bg-navy-dark: #1E293B;       /* Dark Navy */
 
-  --border-subtle: #E2E8F0;
-  /* Subtle clean border */
+  --border-subtle: #E2E8F0;      /* Subtle clean border */
   --border-medium: #CBD5E1;
-  --border-focus: #0284C7;
-  /* Restrained Aviation Blue */
+  --border-focus: #0284C7;       /* Restrained Aviation Blue */
   --border-gold: rgba(197, 164, 109, 0.4);
 
-  --text-main: #0F172A;
-  /* Deep Navy Primary Text */
-  --text-secondary: #334155;
-  /* Readable elegant dark text */
-  --text-muted: #64748B;
-  /* Secondary Slate Text */
+  --text-main: #0F172A;          /* Deep Navy Primary Text */
+  --text-secondary: #334155;     /* Readable elegant dark text */
+  --text-muted: #64748B;         /* Secondary Slate Text */
   --text-inverse: #FFFFFF;
 
-  --accent-primary: #0284C7;
-  /* Restrained Aviation Blue */
+  --accent-primary: #0284C7;     /* Restrained Aviation Blue */
   --accent-primary-hover: #0369A1;
-  --accent-teal: #0D9488;
-  /* Calm Teal Accent */
+  --accent-teal: #0D9488;        /* Calm Teal Accent */
   --accent-teal-subtle: #F0FDFA;
-  --accent-gold: #C5A46D;
-  /* Champagne Gold for Badges/Classes */
+  --accent-gold: #C5A46D;        /* Champagne Gold for Badges/Classes */
   --accent-gold-hover: #B49258;
   --accent-gold-soft: #D9C39A;
   --accent-gold-light: rgba(197, 164, 109, 0.12);
@@ -77,26 +63,20 @@
   --badge-gold-bg: rgba(197, 164, 109, 0.16);
   --badge-gold-text: #8C6D37;
 
-  --color-first-class: #A37E3E;
-  /* Champagne Gold */
+  --color-first-class: #A37E3E;  /* Champagne Gold */
   --color-first-bg: rgba(197, 164, 109, 0.14);
-  --color-business: #0F172A;
-  /* Dark Navy */
+  --color-business: #0F172A;    /* Dark Navy */
   --color-business-bg: rgba(15, 23, 42, 0.08);
-  --color-economy: #475569;
-  /* Slate */
+  --color-economy: #475569;     /* Slate */
   --color-economy-bg: rgba(71, 85, 105, 0.08);
 
   --seat-available: #F8FAFC;
   --seat-available-border: #CBD5E1;
-  --seat-taken: #0F172A;
-  /* Deep Midnight Navy */
+  --seat-taken: #0F172A;         /* Deep Midnight Navy */
   --seat-taken-border: #1E293B;
-  --seat-selected: #0284C7;
-  /* Restrained Blue */
+  --seat-selected: #0284C7;      /* Restrained Blue */
   --seat-selected-glow: transparent;
-  --seat-held: #D97706;
-  /* Amber */
+  --seat-held: #D97706;          /* Amber */
   --seat-held-border: #B45309;
 
   --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
@@ -113,10 +93,8 @@
    DARK THEME (Sophisticated Midnight Luxury)
    -------------------------------------------------------------------------- */
 [data-theme="dark"] {
-  --bg-app: #101D2C;
-  /* Deep Midnight Navy */
-  --bg-surface: #17283B;
-  /* Dark Navy */
+  --bg-app: #101D2C;             /* Deep Midnight Navy */
+  --bg-surface: #17283B;         /* Dark Navy */
   --bg-surface-elevated: #1D3147;
   --bg-surface-hover: #233A53;
   --bg-secondary: #17283B;
@@ -126,19 +104,15 @@
 
   --border-subtle: rgba(255, 255, 255, 0.1);
   --border-medium: rgba(255, 255, 255, 0.16);
-  --border-focus: #C5A46D;
-  /* Champagne Gold */
+  --border-focus: #C5A46D;       /* Champagne Gold */
   --border-gold: rgba(197, 164, 109, 0.45);
 
-  --text-main: #F8F6F1;
-  /* Warm Ivory */
-  --text-secondary: #C8D1DB;
-  /* Soft Grey-Ivory */
+  --text-main: #F8F6F1;          /* Warm Ivory */
+  --text-secondary: #C8D1DB;     /* Soft Grey-Ivory */
   --text-muted: #8493A2;
   --text-inverse: #101D2C;
 
-  --accent-primary: #C5A46D;
-  /* Champagne Gold in dark mode */
+  --accent-primary: #C5A46D;     /* Champagne Gold in dark mode */
   --accent-primary-hover: #D9C39A;
   --accent-gold: #C5A46D;
   --accent-gold-hover: #D9C39A;
@@ -169,10 +143,10 @@
   --seat-held: #E09F3E;
   --seat-held-border: #C88424;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.35);
-  --shadow-gold: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 24px rgba(0,0,0,0.35);
+  --shadow-gold: 0 2px 8px rgba(0,0,0,0.25);
 
   --ticket-bg: #17283B;
   --ticket-border: rgba(255, 255, 255, 0.12);
@@ -182,9 +156,7 @@
 /* --------------------------------------------------------------------------
    GLOBAL BASE & RESET
    -------------------------------------------------------------------------- */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -213,14 +185,7 @@ body {
 }
 
 /* Universal Media & Image Containment */
-img,
-svg,
-video,
-canvas,
-audio,
-iframe,
-embed,
-object {
+img, svg, video, canvas, audio, iframe, embed, object {
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -230,27 +195,12 @@ svg {
 }
 
 /* Universal Text Containment Rules */
-p,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-span,
-label,
-td,
-th {
+p, h1, h2, h3, h4, h5, h6, span, label, td, th {
   overflow-wrap: break-word;
   word-wrap: break-word;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -271,9 +221,7 @@ button {
   box-sizing: border-box;
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
   font-family: inherit;
   font-size: 0.95rem;
   box-sizing: border-box;
@@ -308,14 +256,7 @@ textarea {
 }
 
 /* Circular & Rounded Controls Shape Integrity */
-.btn-circle,
-.btn-swap,
-.btn-swap-sm,
-.airline-logo-box,
-.track-dot,
-.user-avatar,
-.btn-favorite-card,
-.status-icon-box {
+.btn-circle, .btn-swap, .btn-swap-sm, .airline-logo-box, .track-dot, .user-avatar, .btn-favorite-card, .status-icon-box {
   aspect-ratio: 1;
   flex-shrink: 0;
 }
@@ -335,9 +276,7 @@ textarea {
   font-weight: 700;
 }
 
-.w-100 {
-  width: 100%;
-}
+.w-100 { width: 100%; }
 
 /* Buttons */
 .btn-primary {
@@ -686,21 +625,10 @@ textarea {
   height: 20px;
 }
 
-[data-theme="dark"] .sun-icon {
-  display: block;
-}
-
-[data-theme="dark"] .moon-icon {
-  display: none;
-}
-
-[data-theme="light"] .sun-icon {
-  display: none;
-}
-
-[data-theme="light"] .moon-icon {
-  display: block;
-}
+[data-theme="dark"] .sun-icon { display: block; }
+[data-theme="dark"] .moon-icon { display: none; }
+[data-theme="light"] .sun-icon { display: none; }
+[data-theme="light"] .moon-icon { display: block; }
 
 .demo-pill-btn {
   display: flex;
@@ -731,20 +659,9 @@ textarea {
 }
 
 @keyframes pulse {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-
-  50% {
-    transform: scale(1.3);
-    opacity: 1;
-  }
-
-  100% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
 }
 
 /* User Profile Pill in Header */
@@ -1635,8 +1552,7 @@ textarea {
   text-transform: uppercase;
 }
 
-.input-airport-wrapper,
-.input-field-wrapper {
+.input-airport-wrapper, .input-field-wrapper {
   position: relative;
   display: flex;
   align-items: center;
@@ -1648,14 +1564,12 @@ textarea {
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.input-airport-wrapper:focus-within,
-.input-field-wrapper:focus-within {
+.input-airport-wrapper:focus-within, .input-field-wrapper:focus-within {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 
-[data-theme="dark"] .input-airport-wrapper:focus-within,
-[data-theme="dark"] .input-field-wrapper:focus-within {
+[data-theme="dark"] .input-airport-wrapper:focus-within, [data-theme="dark"] .input-field-wrapper:focus-within {
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 3px rgba(197, 164, 109, 0.25);
 }
@@ -1665,9 +1579,7 @@ textarea {
   margin-right: 8px;
 }
 
-.airport-input,
-.date-input,
-.select-input {
+.airport-input, .date-input, .select-input {
   width: 100%;
   border: none;
   background: transparent;
@@ -3189,17 +3101,9 @@ textarea {
   margin-top: 1px;
 }
 
-.price-amount.eco {
-  color: var(--color-economy);
-}
-
-.price-amount.biz {
-  color: var(--color-business);
-}
-
-.price-amount.first {
-  color: var(--color-first-class);
-}
+.price-amount.eco { color: var(--color-economy); }
+.price-amount.biz { color: var(--color-business); }
+.price-amount.first { color: var(--color-first-class); }
 
 .btn-select-seats {
   height: 42px;
@@ -3236,12 +3140,10 @@ textarea {
     justify-content: space-between;
     gap: 16px;
   }
-
   .flights-list-container .flight-card .card-pricing-classes {
     flex: 1;
     max-width: 440px;
   }
-
   .flights-list-container .flight-card .btn-select-seats {
     width: auto;
     padding: 0 24px;
@@ -3695,12 +3597,12 @@ textarea {
   transition: all var(--transition-fast);
 }
 
-.filter-checkbox-item input[type="checkbox"]:checked+.cb-custom {
+.filter-checkbox-item input[type="checkbox"]:checked + .cb-custom {
   background: var(--accent-gold);
   border-color: var(--accent-gold);
 }
 
-.filter-checkbox-item input[type="checkbox"]:checked+.cb-custom::after {
+.filter-checkbox-item input[type="checkbox"]:checked + .cb-custom::after {
   content: "✓";
   font-size: 0.75rem;
   font-weight: 800;
@@ -4208,27 +4110,11 @@ textarea {
   border-radius: 4px;
 }
 
-.legend-box.available-first {
-  background: var(--color-first-class);
-}
-
-.legend-box.available-business {
-  background: var(--color-business);
-}
-
-.legend-box.available-economy {
-  background: var(--color-economy);
-}
-
-.legend-box.seat-taken {
-  background: var(--seat-taken);
-  border: 1px solid var(--seat-taken-border);
-}
-
-.legend-box.seat-selected {
-  background: var(--seat-selected);
-  box-shadow: 0 0 8px var(--seat-selected-glow);
-}
+.legend-box.available-first { background: var(--color-first-class); }
+.legend-box.available-business { background: var(--color-business); }
+.legend-box.available-economy { background: var(--color-economy); }
+.legend-box.seat-taken { background: var(--seat-taken); border: 1px solid var(--seat-taken-border); }
+.legend-box.seat-selected { background: var(--seat-selected); box-shadow: 0 0 8px var(--seat-selected-glow); }
 
 .cabin-fuselage {
   width: 100%;
@@ -4322,7 +4208,7 @@ textarea {
 
 .seat-btn:hover:not(.taken) {
   transform: scale(1.1);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
 .seat-btn.taken {
@@ -4720,15 +4606,17 @@ textarea {
 .simulated-barcode {
   width: 280px;
   height: 44px;
-  background: repeating-linear-gradient(90deg,
-      var(--text-main) 0px,
-      var(--text-main) 3px,
-      transparent 3px,
-      transparent 6px,
-      var(--text-main) 6px,
-      var(--text-main) 10px,
-      transparent 10px,
-      transparent 12px);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--text-main) 0px,
+    var(--text-main) 3px,
+    transparent 3px,
+    transparent 6px,
+    var(--text-main) 6px,
+    var(--text-main) 10px,
+    transparent 10px,
+    transparent 12px
+  );
 }
 
 .barcode-num {
@@ -4767,13 +4655,8 @@ textarea {
   left: -11px;
 }
 
-.top-notch {
-  top: -10px;
-}
-
-.bottom-notch {
-  bottom: -10px;
-}
+.top-notch { top: -10px; }
+.bottom-notch { bottom: -10px; }
 
 .stub-airline {
   display: flex;
@@ -4826,11 +4709,13 @@ textarea {
   width: 100%;
   height: 30px;
   margin-top: 12px;
-  background: repeating-linear-gradient(90deg,
-      var(--text-main) 0px,
-      var(--text-main) 2px,
-      transparent 2px,
-      transparent 5px);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--text-main) 0px,
+    var(--text-main) 2px,
+    transparent 2px,
+    transparent 5px
+  );
 }
 
 /* --------------------------------------------------------------------------
@@ -5101,8 +4986,7 @@ textarea {
   margin-bottom: 6px;
 }
 
-.field-input,
-.field-select {
+.field-input, .field-select {
   height: 44px;
   padding: 0 14px;
   border-radius: var(--radius-md);
@@ -5114,8 +4998,7 @@ textarea {
   transition: border-color var(--transition-fast);
 }
 
-.field-input:focus,
-.field-select:focus {
+.field-input:focus, .field-select:focus {
   border-color: var(--border-focus);
 }
 
@@ -5181,7 +5064,7 @@ textarea {
   height: 26px;
   background: #f59e0b;
   border-radius: 4px;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
 }
 
 .card-brand-label {
@@ -5259,28 +5142,13 @@ textarea {
 }
 
 @keyframes modalEnter {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-.modal-sm {
-  max-width: 440px;
-}
-
-.modal-md {
-  max-width: 580px;
-}
-
-.modal-lg {
-  max-width: 860px;
-}
+.modal-sm { max-width: 440px; }
+.modal-md { max-width: 580px; }
+.modal-lg { max-width: 860px; }
 
 .modal-header {
   display: flex;
@@ -5530,28 +5398,13 @@ textarea {
 }
 
 @keyframes toastSlide {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
-.toast.success {
-  border-left: 4px solid #10b981;
-}
-
-.toast.error {
-  border-left: 4px solid #ef4444;
-}
-
-.toast.info {
-  border-left: 4px solid #3b82f6;
-}
+.toast.success { border-left: 4px solid #10b981; }
+.toast.error { border-left: 4px solid #ef4444; }
+.toast.info { border-left: 4px solid #3b82f6; }
 
 /* --------------------------------------------------------------------------
    PRINT STYLES FOR BOARDING PASS
@@ -5561,27 +5414,18 @@ textarea {
     margin: 1.2cm;
     size: auto;
   }
-
   body {
     background: #ffffff !important;
     color: #000000 !important;
     padding: 0 !important;
     margin: 0 !important;
   }
-
   body * {
     visibility: hidden;
   }
-
-  .print-hide,
-  .app-header,
-  .navbar,
-  .modal-header,
-  .modal-footer,
-  .toast-container {
+  .print-hide, .app-header, .navbar, .modal-header, .modal-footer, .toast-container {
     display: none !important;
   }
-
   #modalBoardingPass {
     display: block !important;
     position: static !important;
@@ -5592,7 +5436,6 @@ textarea {
     height: auto !important;
     overflow: visible !important;
   }
-
   .modal-box.glassmorphism-ticket {
     background: #ffffff !important;
     border: none !important;
@@ -5602,17 +5445,13 @@ textarea {
     width: 100% !important;
     max-width: 100% !important;
   }
-
   .modal-body {
     padding: 0 !important;
     margin: 0 !important;
   }
-
-  #printableTicket,
-  #printableTicket * {
+  #printableTicket, #printableTicket * {
     visibility: visible !important;
   }
-
   #printableTicket {
     position: absolute;
     top: 0;
@@ -5629,84 +5468,48 @@ textarea {
    RESPONSIVE QUERIES
    -------------------------------------------------------------------------- */
 @media (max-width: 1200px) and (min-width: 769px) {
-
-  .search-widget-form,
-  .search-widget-form.is-roundtrip {
+  .search-widget-form, .search-widget-form.is-roundtrip {
     grid-template-columns: 1fr auto 1fr;
     gap: 12px;
   }
-
-  #originGroup {
-    grid-column: 1;
-  }
-
-  #btnSwapHome {
-    grid-column: 2;
-    align-self: flex-end;
-    margin-bottom: 2px;
-  }
-
-  #destGroup {
-    grid-column: 3;
-  }
-
-  #departureDateField {
-    grid-column: 1;
-  }
-
-  #returnDateField {
-    grid-column: 3;
-  }
-
-  .passenger-class-picker-group {
-    grid-column: 1 / span 2;
-  }
-
-  .form-group-submit {
-    grid-column: 3;
-  }
-
-  .form-group-submit .btn-primary-search {
-    width: 100%;
-  }
+  #originGroup { grid-column: 1; }
+  #btnSwapHome { grid-column: 2; align-self: flex-end; margin-bottom: 2px; }
+  #destGroup { grid-column: 3; }
+  #departureDateField { grid-column: 1; }
+  #returnDateField { grid-column: 3; }
+  .passenger-class-picker-group { grid-column: 1 / span 2; }
+  .form-group-submit { grid-column: 3; }
+  .form-group-submit .btn-primary-search { width: 100%; }
 }
 
 @media (max-width: 1024px) {
   .destinations-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .benefits-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .footer-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 30px;
   }
-
   .help-support-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
   }
-
   .help-text-col {
     max-width: 100%;
   }
-
   .multicity-leg-row {
     grid-template-columns: 1fr auto 1fr;
   }
-
   .btn-mobile-filter-trigger {
     display: inline-flex;
   }
-
   .search-page-layout {
     grid-template-columns: 1fr;
   }
-
   .search-sidebar {
     position: fixed;
     top: 0;
@@ -5721,35 +5524,27 @@ textarea {
     border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
     max-height: 100vh;
   }
-
   .search-sidebar.mobile-open {
     transform: translateX(0);
   }
-
   .sidebar-mobile-header {
     display: flex;
   }
-
   .sidebar-mobile-footer {
     display: block;
   }
-
   .sidebar-drawer-overlay.active {
     display: block;
   }
-
   .modify-search-grid {
     grid-template-columns: 1fr 1fr;
   }
-
   .seatmap-content-grid {
     grid-template-columns: 1fr;
   }
-
   .seatmap-summary-panel {
     position: static;
   }
-
   .account-page-layout {
     grid-template-columns: 1fr;
   }
@@ -5759,30 +5554,23 @@ textarea {
   .hero-section {
     padding: 36px 0 48px 0;
   }
-
   .hero-title {
     font-size: 1.95rem;
   }
-
   .hero-subtitle {
     font-size: 0.95rem;
   }
-
   .search-widget-card {
     padding: 18px 16px;
   }
-
-  .search-widget-form,
-  .search-widget-form.is-roundtrip {
+  .search-widget-form, .search-widget-form.is-roundtrip {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
-
   #originGroup {
     grid-column: 1 / -1;
   }
-
   #btnSwapHome {
     grid-column: 1 / -1;
     justify-self: center;
@@ -5790,105 +5578,82 @@ textarea {
     margin: -4px auto;
     z-index: 2;
   }
-
   #destGroup {
     grid-column: 1 / -1;
   }
-
   #departureDateField {
     grid-column: 1;
   }
-
   #returnDateField {
     grid-column: 2;
   }
-
   .search-widget-form:not(.is-roundtrip) #departureDateField {
     grid-column: 1 / -1;
   }
-
   .passenger-class-picker-group {
     grid-column: 1 / -1;
   }
-
   .form-group-submit {
     grid-column: 1 / -1;
   }
-
   .btn-primary-search {
     width: 100%;
     height: 50px;
     font-size: 1rem;
   }
-
   .destinations-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-
   .benefits-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-
   .footer-grid {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-
   .multicity-leg-row {
     grid-template-columns: 1fr;
   }
-
   .modify-search-grid {
     grid-template-columns: 1fr;
   }
-
   .results-summary-card {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .summary-actions-col {
     width: 100%;
     justify-content: space-between;
   }
-
   .passenger-class-popover {
     width: 100%;
     right: 0;
     left: 0;
   }
-
   .header-container {
     padding: 0 16px;
   }
-
   .nav-links {
     gap: 4px;
   }
-
   .nav-btn {
     padding: 6px 10px;
     font-size: 0.82rem;
   }
-
   .brand-sub {
     display: none;
   }
-
   .header-locale-pill {
     padding: 5px 8px;
   }
-
   .header-locale-pill .locale-text {
     display: none;
   }
-
   .boarding-pass-card {
     flex-direction: column;
   }
-
   .ticket-stub {
     width: 100%;
     border-left: none;
@@ -5897,73 +5662,57 @@ textarea {
 }
 
 @media (max-width: 480px) {
-
-  .container,
-  .footer-container {
+  .container, .footer-container {
     padding: 0 14px;
   }
-
   .header-container {
     padding: 0 10px;
     height: 62px;
   }
-
   .brand-title {
     font-size: 1.25rem;
   }
-
   .hero-section {
     padding: 28px 0 40px 0;
   }
-
   .hero-title {
     font-size: 1.65rem;
     line-height: 1.25;
   }
-
   .hero-subtitle {
     font-size: 0.9rem;
   }
-
   .search-widget-tabs {
     gap: 6px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
   }
-
   .tab-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
     white-space: nowrap;
   }
-
   .tab-indicator-badge {
     display: none;
   }
-
   .help-support-card {
     padding: 22px 18px;
   }
-
   .help-title {
     font-size: 1.3rem;
   }
-
   .help-actions-col {
     flex-direction: column;
     width: 100%;
     align-items: stretch;
   }
-
   .help-contact-item {
     width: 100%;
   }
-
   .help-actions-col .btn-primary {
     width: 100%;
   }
-
   .footer-bottom-bar {
     flex-direction: column;
     align-items: flex-start;
@@ -5976,31 +5725,25 @@ textarea {
     padding: 16px 14px;
     gap: 12px;
   }
-
   .flight-card-header {
     flex-wrap: wrap;
     gap: 10px;
   }
-
   .point-time {
     font-size: 1.25rem;
   }
-
   .point-iata {
     font-size: 0.85rem;
   }
-
   .flight-card-footer {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
-
   .btn-select-seats {
     width: 100%;
     justify-content: center;
   }
-
   .brand-title {
     font-size: 1.15rem;
   }
@@ -6052,7 +5795,7 @@ textarea {
   width: 44px;
   height: 44px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
 }
 
 .auth-page-title {
@@ -6142,21 +5885,9 @@ textarea {
 }
 
 @keyframes pulseSession {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-
-  50% {
-    transform: scale(1.25);
-    opacity: 1;
-    box-shadow: 0 0 14px #22c55e;
-  }
-
-  100% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 14px #22c55e; }
+  100% { transform: scale(0.9); opacity: 0.8; }
 }
 
 .session-badge-text {
@@ -6352,17 +6083,14 @@ textarea {
   .auth-page-card {
     padding: 24px 18px;
   }
-
   .session-user-details-card {
     flex-direction: column;
     text-align: center;
   }
-
   .session-info-line {
     flex-direction: column;
     gap: 2px;
   }
-
   .session-shortcuts-grid {
     grid-template-columns: 1fr;
   }
@@ -6552,20 +6280,9 @@ textarea {
 }
 
 @keyframes pulseAmber {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.6;
-  }
-
-  50% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-
-  100% {
-    transform: scale(0.9);
-    opacity: 0.6;
-  }
+  0% { transform: scale(0.9); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.6; }
 }
 
 .timer-digits-row {
@@ -6831,7 +6548,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   position: sticky;
   top: 70px;
   z-index: 90;
@@ -7020,8 +6737,7 @@ textarea {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.demo-location,
-.demo-airline-iata {
+.demo-location, .demo-airline-iata {
   color: var(--text-secondary);
   font-size: 0.76rem;
 }
@@ -7108,8 +6824,7 @@ textarea {
    ========================================================================== */
 
 /* Universal Layout & Container Fit */
-html,
-body {
+html, body {
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -7133,34 +6848,27 @@ body {
     padding: 0 16px;
     height: 64px;
   }
-
   .brand-title {
     font-size: 1.25rem;
     letter-spacing: 0.1em;
   }
-
   .brand-logo-img {
     width: 30px;
     height: 30px;
   }
-
   .brand-logo-glow {
     width: 34px;
     height: 34px;
   }
-
   .nav-links {
     gap: 4px;
   }
-
   .nav-btn {
     padding: 6px 10px;
   }
-
   .header-actions {
     gap: 8px;
   }
-
   .theme-toggle-btn {
     width: 34px;
     height: 34px;
@@ -7173,16 +6881,13 @@ body {
     height: 58px;
     gap: 6px;
   }
-
   .brand-title {
     font-size: 1.15rem;
   }
-
   .header-user-btn {
     padding: 5px 8px;
     font-size: 0.78rem;
   }
-
   .header-user-name {
     max-width: 65px;
     overflow: hidden;
@@ -7196,21 +6901,17 @@ body {
   .hero-section {
     padding: 40px 0 48px 0;
   }
-
   .hero-title {
     font-size: 2.1rem;
     line-height: 1.2;
   }
-
   .hero-subtitle {
     font-size: 0.95rem;
     margin-bottom: 24px;
   }
-
   .search-widget-card {
     padding: 20px 16px;
   }
-
   .search-widget-tabs {
     gap: 6px;
     margin-bottom: 16px;
@@ -7218,13 +6919,11 @@ body {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-
   .tab-btn {
     padding: 6px 12px;
     font-size: 0.82rem;
     white-space: nowrap;
   }
-
   .tab-indicator-badge {
     display: none;
   }
@@ -7234,17 +6933,14 @@ body {
   .hero-section {
     padding: 32px 0 40px 0;
   }
-
   .hero-title {
     font-size: 1.7rem;
   }
-
   .hero-badge {
     margin-bottom: 14px;
     padding: 4px 12px;
     font-size: 0.74rem;
   }
-
   .search-widget-card {
     padding: 16px 12px;
     border-radius: var(--radius-lg);
@@ -7258,11 +6954,9 @@ body {
     gap: 6px;
     justify-content: center;
   }
-
   .booking-steps-bar .step-arrow {
     display: none;
   }
-
   .step-item {
     font-size: 0.78rem;
     padding: 4px 8px;
@@ -7273,7 +6967,6 @@ body {
   .step-item span:not(.step-circle) {
     display: none;
   }
-
   .step-item {
     padding: 4px 6px;
   }
@@ -7296,7 +6989,6 @@ body {
     width: 100%;
     box-sizing: border-box;
   }
-
   .seatmap-summary-panel {
     position: static;
     margin-top: 20px;
@@ -7309,21 +7001,17 @@ body {
   .aircraft-container {
     padding: 18px 6px;
   }
-
   .aircraft-nose {
     width: 220px;
     height: 90px;
   }
-
   .cockpit-windows {
     gap: 12px;
   }
-
   .window-pane {
     width: 28px;
     height: 18px;
   }
-
   .seatmap-legend {
     gap: 6px 10px;
     font-size: 0.74rem;
@@ -7331,7 +7019,6 @@ body {
     justify-content: center;
     flex-wrap: wrap;
   }
-
   .cabin-fuselage {
     max-width: 100%;
     padding: 14px 6px;
@@ -7340,27 +7027,22 @@ body {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-
   .cabin-row {
     grid-template-columns: 34px 34px 34px 20px 34px 34px 34px;
     gap: 3px;
   }
-
   .seat-btn {
     width: 34px;
     height: 34px;
     font-size: 0.68rem;
     border-radius: 4px;
   }
-
   .cabin-row-header {
     font-size: 0.72rem;
   }
-
   .row-num-badge {
     font-size: 0.68rem;
   }
-
   .exit-row-banner {
     font-size: 0.64rem;
     padding: 4px;
@@ -7371,16 +7053,13 @@ body {
   .aircraft-container {
     padding: 14px 4px;
   }
-
   .cabin-fuselage {
     padding: 10px 4px;
   }
-
   .cabin-row {
     grid-template-columns: 30px 30px 30px 16px 30px 30px 30px;
     gap: 2px;
   }
-
   .seat-btn {
     width: 30px;
     height: 30px;
@@ -7404,30 +7083,25 @@ body {
     flex-direction: column-reverse;
     align-items: stretch;
   }
-
-  .booking-card-footer>div {
+  .booking-card-footer > div {
     width: 100%;
     display: flex;
     justify-content: stretch;
   }
-
   .booking-card-footer button {
     width: 100%;
     justify-content: center;
     text-align: center;
   }
-
   .bookings-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 14px;
   }
-
   .bookings-tabs {
     width: 100%;
     display: flex;
   }
-
   .bookings-tabs .btn-tab-pill {
     flex: 1;
     text-align: center;
@@ -7440,7 +7114,6 @@ body {
   .modal-backdrop {
     padding: 12px;
   }
-
   .modal-box {
     padding: 20px 16px;
     border-radius: var(--radius-lg);
@@ -7448,23 +7121,19 @@ body {
     width: 100%;
     box-sizing: border-box;
   }
-
   .modal-header {
     margin-bottom: 14px;
     padding-bottom: 10px;
   }
-
   .modal-title {
     font-size: 1.18rem;
   }
-
   .modal-footer {
     flex-direction: column-reverse;
     align-items: stretch;
     gap: 10px;
     margin-top: 18px;
   }
-
   .modal-footer button {
     width: 100%;
     justify-content: center;
@@ -7479,8 +7148,7 @@ body {
     gap: 8px;
     padding: 10px 14px;
   }
-
-  .active-hold-sticky-banner>div:last-child {
+  .active-hold-sticky-banner > div:last-child {
     width: 100%;
     justify-content: flex-end;
   }
@@ -7493,38 +7161,31 @@ body {
     align-items: flex-start;
     gap: 16px;
   }
-
   .dashboard-actions {
     width: 100%;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
   }
-
   .dashboard-actions button {
     flex: 1;
     justify-content: center;
   }
-
   .kpi-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 12px;
     margin-bottom: 20px;
   }
-
   .kpi-card {
     padding: 14px;
   }
-
   .kpi-value {
     font-size: 1.6rem;
   }
-
   .dash-tab-nav {
     flex-direction: column;
     gap: 6px;
   }
-
   .dash-tab-btn {
     width: 100%;
     justify-content: center;
@@ -7779,15 +7440,12 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .passenger-form-grid {
     grid-template-columns: 1fr;
   }
-
   .passenger-form-grid .two-span {
     grid-column: 1;
   }
-
   .fare-row.total .fare-val {
     font-size: 1.25rem;
   }
@@ -7801,10 +7459,7 @@ body {
   outline-offset: 2px;
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible {
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
@@ -7818,10 +7473,7 @@ select:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -8137,9 +7789,7 @@ select:focus-visible {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .loading-state-text {
@@ -8163,16 +7813,8 @@ select:focus-visible {
   border-radius: var(--radius-xs);
 }
 
-.skeleton-title {
-  width: 50%;
-  height: 20px;
-  margin: 0 auto;
-}
-
-.skeleton-subtitle {
-  width: 70%;
-  margin: 0 auto;
-}
+.skeleton-title { width: 50%; height: 20px; margin: 0 auto; }
+.skeleton-subtitle { width: 70%; margin: 0 auto; }
 
 .skeleton-grid {
   display: grid;
@@ -8189,13 +7831,8 @@ select:focus-visible {
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 /* 7. Reusable Error Banner */
@@ -8323,8 +7960,7 @@ select:focus-visible {
   position: relative;
 }
 
-.form-field-input,
-.form-field-select {
+.form-field-input, .form-field-select {
   width: 100%;
   height: 46px;
   padding: 0 14px;
@@ -8338,15 +7974,13 @@ select:focus-visible {
   box-sizing: border-box;
 }
 
-.form-field-input:focus,
-.form-field-select:focus {
+.form-field-input:focus, .form-field-select:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
   outline: none;
 }
 
-[data-theme="dark"] .form-field-input:focus,
-[data-theme="dark"] .form-field-select:focus {
+[data-theme="dark"] .form-field-input:focus, [data-theme="dark"] .form-field-select:focus {
   border-color: var(--accent-gold);
   box-shadow: 0 0 0 3px rgba(197, 164, 109, 0.25);
 }
@@ -8529,8 +8163,7 @@ select:focus-visible {
   transition: all var(--transition-fast);
 }
 
-.mobile-nav-link:hover,
-.mobile-nav-link.active {
+.mobile-nav-link:hover, .mobile-nav-link.active {
   background: var(--bg-surface-hover);
   color: var(--accent-primary);
 }
@@ -9248,7 +8881,6 @@ select:focus-visible {
     grid-template-columns: 260px 1fr;
     gap: 20px;
   }
-
   .flight-details-layout {
     grid-template-columns: 1fr;
   }
@@ -9258,11 +8890,9 @@ select:focus-visible {
   .search-results-layout {
     grid-template-columns: 1fr;
   }
-
   .mobile-filter-bar {
     display: block;
   }
-
   .filters-sidebar {
     display: none;
     position: fixed;
@@ -9275,7 +8905,6 @@ select:focus-visible {
     overflow-y: auto;
     background: var(--bg-surface);
   }
-
   .filters-sidebar.is-drawer-open {
     display: block;
     animation: slideInLeft 0.25s ease-out;
@@ -9286,21 +8915,17 @@ select:focus-visible {
   .mobile-menu-toggle {
     display: flex;
   }
-
   .nav-links {
     display: none !important;
   }
-
   .booking-stepper-list {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
   }
-
   .stepper-label {
     display: none;
   }
-
   .stepper-item.is-active .stepper-label {
     display: inline-block;
     font-size: 0.8rem;
@@ -9309,53 +8934,43 @@ select:focus-visible {
     white-space: nowrap;
     color: var(--accent-primary);
   }
-
   .stepper-bubble-wrapper {
     padding: 0;
   }
-
   .stepper-connector {
     margin: 0 6px;
   }
-
   .flight-card {
     padding: 16px;
     gap: 14px;
   }
-
   .flight-card-body {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-
   .flight-time-point.arr-point {
     align-items: flex-start;
     text-align: left;
   }
-
   .flight-duration-col {
     align-items: flex-start;
     text-align: left;
     max-width: 100%;
     margin: 4px 0;
   }
-
   .flight-track-line {
     max-width: 100%;
   }
-
   .flight-card-footer {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
-
   .price-cta-group {
     width: 100%;
     justify-content: space-between;
     margin-left: 0;
   }
-
   .price-box {
     align-items: flex-start;
     text-align: left;
@@ -9366,16 +8981,13 @@ select:focus-visible {
   .page-heading-title {
     font-size: 1.65rem;
   }
-
   .flight-time-point .point-time {
     font-size: 1.25rem;
   }
-
   .flight-card-body {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-
   .flight-duration-col {
     width: 100%;
   }
@@ -9439,22 +9051,14 @@ select:focus-visible {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
   .flight-details-layout {
     flex-direction: column;
   }
-
   .details-side-col {
     width: 100%;
     margin-top: 24px;
