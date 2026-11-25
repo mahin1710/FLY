@@ -22,6 +22,7 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, 'static'),
     static_url_path=''
 )
+app.secret_key = os.environ.get('FLY_SECRET_KEY', 'fly_aviation_secret_token_2026_super_secure')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Initialize database schema and demo accounts on launch
@@ -264,7 +265,13 @@ def api_login():
 def web_logout():
     """Logs out user, invalidates session/token, clears cookies, and redirects to /login with no-cache headers."""
     from flask import redirect, make_response, session
-    token = get_auth_token_from_request() or session.get('token')
+    token = get_auth_token_from_request()
+    try:
+        if not token and 'token' in session:
+            token = session.get('token')
+    except Exception:
+        pass
+
     if token:
         try:
             conn = database.get_db()
@@ -273,7 +280,12 @@ def web_logout():
             conn.close()
         except Exception:
             pass
-    session.clear()
+
+    try:
+        session.clear()
+    except Exception:
+        pass
+
     resp = make_response(redirect('/login'))
     resp.set_cookie('auth_token', '', expires=0, max_age=0, path='/')
     resp.set_cookie('session', '', expires=0, max_age=0, path='/')
@@ -286,13 +298,27 @@ def web_logout():
 def api_logout():
     """Logs out user by invalidating their session token."""
     from flask import session
-    token = get_auth_token_from_request() or session.get('token')
+    token = get_auth_token_from_request()
+    try:
+        if not token and 'token' in session:
+            token = session.get('token')
+    except Exception:
+        pass
+
     if token:
-        conn = database.get_db()
-        conn.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
-        conn.commit()
-        conn.close()
-    session.clear()
+        try:
+            conn = database.get_db()
+            conn.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
+    try:
+        session.clear()
+    except Exception:
+        pass
+
     resp = jsonify({'success': True, 'message': 'Logged out successfully.'})
     resp.set_cookie('auth_token', '', expires=0, max_age=0, path='/')
     resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
