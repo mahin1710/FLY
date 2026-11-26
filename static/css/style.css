@@ -1051,15 +1051,14 @@ textarea {
   margin: 0 auto;
   padding: 0 20px;
   width: 100%;
-  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .hero-text-block {
   max-width: 820px;
-  margin: 0 auto 28px auto;
+  margin: 0 auto 100px auto;
 }
 
 .hero-badge {
@@ -1111,7 +1110,7 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.92);
   position: relative;
   z-index: 25;
-  margin-bottom: -102px;
+  margin-bottom: 0;
   text-align: left;
   color: var(--text-main);
   transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
@@ -10226,9 +10225,9 @@ select:focus-visible {
   gap: 12px;
 }
 
-/* Cascade Guard: Ensure responsive hero float overlap & clean top clearance for #destinations */
+/* Cascade Guard: Ensure responsive hero spacing & clean top clearance for #destinations */
 .popular-destinations-section {
-  padding: 132px 0 24px 0;
+  padding: 28px 0 24px 0;
 }
 
 @media (max-width: 1100px) {
@@ -10237,61 +10236,61 @@ select:focus-visible {
     padding: 14px 0 0 0;
   }
   .cinematic-hero .hero-text-block {
-    margin-bottom: 24px;
+    margin-bottom: 64px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
-    margin-bottom: -74px;
+    margin-bottom: 0;
   }
   .popular-destinations-section {
-    padding-top: 98px;
+    padding-top: 26px;
   }
 }
 
 @media (max-width: 768px) {
   .cinematic-hero {
-    min-height: 460px;
-    padding: 12px 0 0 0;
+    min-height: 480px;
+    padding: 12px 0 24px 0;
   }
   .cinematic-hero .hero-text-block {
-    margin-bottom: 20px;
+    margin-bottom: 36px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
-    margin-bottom: -44px;
+    margin-bottom: 0;
   }
   .popular-destinations-section {
-    padding-top: 68px;
+    padding-top: 22px;
   }
 }
 
 @media (max-width: 640px) {
   .cinematic-hero {
-    min-height: 420px;
-    padding: 12px 0 0 0;
+    min-height: 440px;
+    padding: 12px 0 24px 0;
   }
   .cinematic-hero .hero-text-block {
-    margin-bottom: 16px;
+    margin-bottom: 24px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
-    margin-bottom: -24px;
+    margin-bottom: 0;
   }
   .popular-destinations-section {
-    padding-top: 44px;
+    padding-top: 20px;
   }
 }
 
 @media (max-width: 480px) {
   .cinematic-hero {
-    min-height: 380px;
-    padding: 10px 0 0 0;
+    min-height: 400px;
+    padding: 10px 0 20px 0;
   }
   .cinematic-hero .hero-text-block {
-    margin-bottom: 14px;
+    margin-bottom: 18px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
-    margin-bottom: -18px;
+    margin-bottom: 0;
   }
   .popular-destinations-section {
-    padding-top: 36px;
+    padding-top: 18px;
   }
 }
 
