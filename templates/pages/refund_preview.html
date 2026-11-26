@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
+{% from "components/page_heading.html" import render_page_heading %}
+
+{% block title %}Cancellation &amp; Refund Preview {{ booking_ref }} — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumb([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'My Bookings', 'url': '/my-bookings'},
+    {'label': 'Cancellation Preview', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="refundPreviewApp" data-ref="{{ booking_ref }}">
+  {{ render_page_heading(
+    'Cancellation &amp; Authoritative Refund Preview',
+    'Inspect airline fare rules, itemized deductions, and original payment return details before confirming cancellation.'
+  ) }}
+
+  <div id="rpAlert" class="fly-alert is-hidden" role="alert" style="margin: 16px 0;"></div>
+
+  <!-- Quote Controls -->
+  <div class="fly-card" style="padding: 20px; margin-bottom: 18px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: end;">
+      <div class="fly-field">
+        <label for="rpCancelType" class="fly-label">Cancellation Reason / Type</label>
+        <select id="rpCancelType" class="fly-select">
+          <option value="VOLUNTARY">Voluntary Cancellation (Customer Request)</option>
+          <option value="PARTIAL">Partial Cancellation (Selected Passenger / Segment)</option>
+          <option value="AIRLINE_INITIATED">Airline-Initiated Cancellation</option>
+          <option value="SCHEDULE_CHANGE">Qualifying Schedule Change</option>
+          <option value="NO_SHOW">Missed Flight / No-Show Request</option>
+          <option value="BEFORE_ISSUANCE">Cancel Before Ticket Issuance</option>
+        </select>
+      </div>
+      <div class="fly-field">
+        <label for="rpReasonInput" class="fly-label">Reason Details *</label>
+        <input type="text" id="rpReasonInput" class="fly-input" value="Trip schedule changed by passenger" required>
+      </div>
+      <button type="button" id="btnRefreshQuote" class="fly-btn fly-btn-primary" style="height: 44px;">Calculate Refund Quote</button>
+    </div>
+
+    <!-- Partial Cancellation Selection (visible when PARTIAL chosen) -->
+    <div id="rpPartialWrap" class="is-hidden" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+      <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 8px;">Select Eligible Ticket(s) or Segment(s) for Partial Cancellation:</div>
+      <div id="rpPartialChoices" style="display: grid; gap: 8px;"></div>
+    </div>
+  </div>
+
+  <!-- Quote Details Grid -->
+  <div id="rpQuoteContainer" class="is-hidden" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 18px;">
+    <!-- Left Column: Booking, Cancellation Info & Payment Destination -->
+    <div style="display: grid; gap: 16px;">
+      <div class="fly-card" style="padding: 20px;">
+        <h2 style="margin: 0 0 12px; font-size: 1.05rem;">Original Booking</h2>
+        <div id="rpBookingMeta" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;"></div>
+      </div>
+
+      <div class="fly-card" style="padding: 20px;">
+        <h2 style="margin: 0 0 12px; font-size: 1.05rem;">Cancellation &amp; Fare Rules</h2>
+        <div id="rpCancelMeta" style="display: grid; gap: 8px; font-size: 0.9rem;"></div>
+        <div id="rpAlternativesBox" class="is-hidden" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle);"></div>
+      </div>
+
+      <div class="fly-card" style="padding: 20px;">
+        <h2 style="margin: 0 0 12px; font-size: 1.05rem;">Refund Destination &amp; Payment Method</h2>
+        <div id="rpPaymentMeta" style="display: grid; gap: 8px; font-size: 0.9rem;"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Transparent Itemized Calculation & Explicit Confirmation -->
+    <div style="display: grid; gap: 16px; align-content: start;">
+      <div class="fly-card" style="padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+          <h2 style="margin: 0; font-size: 1.1rem;">Authoritative Refund Breakdown</h2>
+          <span class="fly-badge" id="rpQuoteBadge">Quote</span>
+        </div>
+
+        <div id="rpItemsList" style="display: grid; gap: 10px; font-size: 0.92rem; margin-bottom: 16px;"></div>
+
+        <div style="padding: 14px; border-radius: 10px; background: var(--bg-secondary); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Estimated Net Refund</div>
+            <div style="font-size: 0.76rem; color: var(--text-muted);" id="rpQuoteExpiryNote">Valid until --</div>
+          </div>
+          <div style="font-size: 1.45rem; font-weight: 800; color: var(--accent-primary);" id="rpFinalAmount">BDT 0</div>
+        </div>
+
+        <div style="margin-top: 16px; padding: 12px 14px; border-radius: 10px; border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.12); font-size: 0.85rem; color: #92400e;" id="rpWarningBox">
+          Submitting cancellation to the airline/supplier may become irreversible once confirmed.
+        </div>
+
+        <label style="display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; font-size: 0.88rem; cursor: pointer;">
+          <input type="checkbox" id="rpConfirmCheck">
+          <span>I have reviewed the airline penalty, non-refundable taxes, FLY fee policy, and refund destination, and I explicitly confirm submitting this cancellation.</span>
+        </label>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;">
+          <button type="button" id="btnConfirmCancelSubmit" class="fly-btn fly-btn-danger" style="flex: 1;">Confirm Cancellation &amp; Submit Refund</button>
+          <button type="button" id="btnRejectQuote" class="fly-btn fly-btn-outline">Decline Quote &amp; Keep Booking</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/refund_preview.js"></script>
+{% endblock %}

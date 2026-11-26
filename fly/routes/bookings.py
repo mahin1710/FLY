@@ -5,9 +5,11 @@ FLY Bookings, Seat Locks, Payment Confirmation, PNR Lookup, Tickets, Saved Trave
 import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify, Response
+from config import Config
 import database
-from fly.middleware.auth import check_rate_limit, get_current_user, require_auth, verify_booking_access
+from fly.middleware.auth import check_rate_limit, get_current_user, require_auth, require_roles, verify_booking_access
 from fly.services.pdf_service import build_ticket_pdf, generate_qr_svg
+from fly.services import qr_service, cancellation_refund_service
 
 bookings_bp = Blueprint("bookings", __name__)
 
@@ -425,6 +427,7 @@ def api_confirm_payment():
         transaction_ref=transaction_ref,
         idempotency_key=idempotency_key or None,
         scenario=scenario,
+        issuance_scenario=data.get("issuanceScenario") or "ISSUED_IMMEDIATELY",
         ip_address=ip,
     )
 
@@ -438,6 +441,11 @@ def api_confirm_payment():
 @bookings_bp.route("/api/bookings/cancel", methods=["POST"])
 @require_auth
 def api_cancel_booking():
+    """
+    Direct cancellation endpoint (backwards-compatible with automated flows & quick hold releases).
+    Routes through the authoritative fare-rule & financial ledger engine, revokes QR tokens,
+    and releases seats upon supplier confirmation.
+    """
     user = get_current_user()
     data = request.get_json() or {}
     booking_ref = (data.get("bookingReference") or "").strip()
@@ -445,84 +453,105 @@ def api_cancel_booking():
     if not booking_ref:
         return jsonify({"error": "bookingReference is required."}), 400
 
-    conn = database.get_db(isolation_level=None)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("BEGIN IMMEDIATE;")
-        booking = cursor.execute(
-            """
-            SELECT b.*, f.id_airline, f.dep_datetime
-            FROM bookings b
-            JOIN flights f ON b.id_flight = f.id
-            WHERE b.booking_reference = ? OR UPPER(b.pnr_code) = UPPER(?)
-            """,
-            (booking_ref, booking_ref),
-        ).fetchone()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
+    q_code, q_payload = cancellation_refund_service.generate_refund_quote(
+        booking_ref_or_pnr=booking_ref,
+        user=user,
+        cancellation_type=data.get("cancellationType") or "VOLUNTARY",
+        selected_ticket_ids=data.get("selectedTicketIds"),
+        selected_segment_ids=data.get("selectedSegmentIds"),
+        reason=reason,
+    )
+    if q_code != 200:
+        return jsonify(q_payload), q_code
 
-        if not booking:
-            cursor.execute("ROLLBACK;")
-            return jsonify({"error": "Booking not found."}), 404
+    c_code, c_payload = cancellation_refund_service.confirm_cancellation_and_initiate_refund(
+        booking_ref_or_pnr=booking_ref,
+        user=user,
+        quote_id=q_payload["quoteId"],
+        customer_confirmed=True,
+        reason=reason,
+        idempotency_key=data.get("idempotencyKey"),
+        supplier_scenario=data.get("supplierScenario") or "SUPPLIER_OK",
+        gateway_scenario=data.get("gatewayScenario") or "GATEWAY_PENDING",
+        selected_ticket_ids=data.get("selectedTicketIds"),
+        selected_segment_ids=data.get("selectedSegmentIds"),
+        ip_address=ip,
+    )
+    return jsonify(c_payload), c_code
 
-        allowed, err_msg = verify_booking_access(booking, user)
-        if not allowed:
-            cursor.execute("ROLLBACK;")
-            return jsonify({"error": err_msg, "code": "FORBIDDEN"}), 403
 
-        if booking["status"] in ("CANCELLED", "EXPIRED", "REFUNDED"):
-            cursor.execute("ROLLBACK;")
-            return jsonify({"error": f"Booking is already {booking['status']}."}), 400
+@bookings_bp.route("/api/cancellations/quote", methods=["POST"])
+@require_auth
+def api_cancellation_quote():
+    """Generates an itemized, time-limited refund preview quote without submitting cancellation."""
+    user = get_current_user()
+    data = request.get_json() or {}
+    booking_ref = (data.get("bookingReference") or data.get("pnr") or "").strip()
+    if not booking_ref:
+        return jsonify({"error": "bookingReference is required."}), 400
 
-        ref = booking["booking_reference"]
-        now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-        refund_amt = _compute_refund_amount(booking, booking["dep_datetime"])
-        refund_stat = "REFUNDED" if refund_amt > 0 else "NO_REFUND"
+    status_code, payload = cancellation_refund_service.generate_refund_quote(
+        booking_ref_or_pnr=booking_ref,
+        user=user,
+        cancellation_type=data.get("cancellationType") or "VOLUNTARY",
+        selected_ticket_ids=data.get("selectedTicketIds"),
+        selected_segment_ids=data.get("selectedSegmentIds"),
+        reason=data.get("reason") or "",
+        simulate_coupon_state=data.get("simulateCouponState"),
+        simulate_no_show=bool(data.get("simulateNoShow", False)),
+    )
+    return jsonify(payload), status_code
 
-        cursor.execute(
-            """
-            UPDATE bookings
-            SET status = 'CANCELLED', cancelled_at = ?, cancellation_reason = ?, refund_amount = ?, refund_status = ?
-            WHERE booking_reference = ?
-            """,
-            (now_iso, reason, refund_amt, refund_stat if booking["status"] == "CONFIRMED" else None, ref),
-        )
-        cursor.execute("UPDATE reservations SET status = 'CANCELLED' WHERE booking_reference = ?", (ref,))
-        cursor.execute("UPDATE tickets SET status = 'CANCELLED' WHERE booking_reference = ?", (ref,))
 
-        if booking["status"] == "CONFIRMED" and refund_amt > 0:
-            cursor.execute(
-                """
-                INSERT INTO refund_requests (booking_reference, id_account, id_airline, reason, requested_amount, approved_amount, status, reviewed_by, review_note, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, 'APPROVED', ?, 'Auto-calculated cancellation refund policy', ?, ?)
-                """,
-                (ref, booking["id_account"], booking["id_airline"], reason, refund_amt, refund_amt, user["id"], now_iso, now_iso),
-            )
+@bookings_bp.route("/api/cancellations/confirm", methods=["POST"])
+@require_auth
+def api_cancellation_confirm():
+    """Submits explicit customer-confirmed cancellation using a valid unexpired quote."""
+    user = get_current_user()
+    data = request.get_json() or {}
+    booking_ref = (data.get("bookingReference") or data.get("pnr") or "").strip()
+    if not booking_ref:
+        return jsonify({"error": "bookingReference is required."}), 400
 
-        database.log_audit_event(
-            cursor,
-            event_type="BOOKING_CANCELLED",
-            result="CANCELLED",
-            actor_id=user["id"],
-            actor_role=user["role"],
-            airline_id=booking["id_airline"],
-            flight_id=booking["id_flight"],
-            reservation_ref=ref,
-            details=f"Booking cancelled ({reason}). Refund: ৳{refund_amt:.0f}",
-        )
-        cursor.execute("COMMIT;")
-        return jsonify({
-            "success": True,
-            "message": "Reservation cancelled and seats released.",
-            "refundAmount": refund_amt,
-            "refundStatus": refund_stat if booking["status"] == "CONFIRMED" else "HOLD_RELEASED",
-        })
-    except Exception:
-        try:
-            cursor.execute("ROLLBACK;")
-        except Exception:
-            pass
-        return jsonify({"error": "Cancellation failed due to a server error."}), 500
-    finally:
-        conn.close()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
+    idem = (data.get("idempotencyKey") or request.headers.get("Idempotency-Key") or "").strip() or None
+    status_code, payload = cancellation_refund_service.confirm_cancellation_and_initiate_refund(
+        booking_ref_or_pnr=booking_ref,
+        user=user,
+        quote_id=data.get("quoteId"),
+        quote_ref=data.get("quoteRef"),
+        customer_confirmed=bool(data.get("customerConfirmed", False)),
+        cancellation_type=data.get("cancellationType") or "VOLUNTARY",
+        reason=(data.get("reason") or "Customer confirmed cancellation after reviewing quote").strip(),
+        idempotency_key=idem,
+        supplier_scenario=data.get("supplierScenario") or "SUPPLIER_OK",
+        gateway_scenario=data.get("gatewayScenario") or "GATEWAY_PENDING",
+        bank_account=data.get("bankAccount"),
+        selected_ticket_ids=data.get("selectedTicketIds"),
+        selected_segment_ids=data.get("selectedSegmentIds"),
+        ip_address=ip,
+    )
+    return jsonify(payload), status_code
+
+
+@bookings_bp.route("/api/refund-quotes/<string:quote_ref>/reject", methods=["POST"])
+@require_auth
+def api_reject_refund_quote(quote_ref):
+    user = get_current_user()
+    data = request.get_json() or {}
+    status_code, payload = cancellation_refund_service.reject_refund_quote(
+        quote_ref, user, reason=(data.get("reason") or "Customer declined quote").strip()
+    )
+    return jsonify(payload), status_code
+
+
+@bookings_bp.route("/api/refunds/track/<string:ref_or_booking>", methods=["GET"])
+@require_auth
+def api_track_refund(ref_or_booking):
+    user = get_current_user()
+    status_code, payload = cancellation_refund_service.get_refund_tracking(ref_or_booking, user)
+    return jsonify(payload), status_code
 
 
 @bookings_bp.route("/api/bookings/<string:booking_ref>/refund-request", methods=["POST"])
@@ -658,12 +687,15 @@ def api_my_reservations():
                b.status, b.total_amount, b.discount_amount, b.promo_code, b.cabin_class,
                b.nbr_luggages, b.weight, b.created_at, b.expires_at, b.paid_at,
                b.cancelled_at, b.refund_amount, b.refund_status, b.passenger_data, b.return_flight_id, b.trip_type,
-               f.id as flightId, f.flight_number, f.dep_datetime, f.arr_datetime,
+               b.fare_family, b.fee_policy_version,
+               f.id as flightId, f.flight_number, f.dep_datetime, f.arr_datetime, f.status as flightStatus,
                al.id as airlineId, al.name as airlineName, al.IATA as airlineIATA,
                da.name as depAirportName, da.IATA as depIATA, da.city as depCity, da.country as depCountry,
                aa.name as arrAirportName, aa.IATA as arrIATA, aa.city as arrCity, aa.country as arrCountry,
-               (SELECT ticket_number FROM tickets t WHERE t.booking_reference = b.booking_reference LIMIT 1) as ticketNumber,
-               (SELECT verification_token FROM tickets t WHERE t.booking_reference = b.booking_reference LIMIT 1) as verificationToken,
+               (SELECT ticket_number FROM tickets t WHERE t.booking_reference = b.booking_reference ORDER BY t.id ASC LIMIT 1) as ticketNumber,
+               (SELECT COALESCE(t.issuance_state, t.status) FROM tickets t WHERE t.booking_reference = b.booking_reference ORDER BY t.id ASC LIMIT 1) as issuanceState,
+               (SELECT r2.refund_ref FROM refunds r2 WHERE r2.booking_reference = b.booking_reference ORDER BY r2.id DESC LIMIT 1) as refundRef,
+               (SELECT r2.status FROM refunds r2 WHERE r2.booking_reference = b.booking_reference ORDER BY r2.id DESC LIMIT 1) as detailedRefundStatus,
                (SELECT GROUP_CONCAT(s.column || s.row, ', ')
                 FROM reservations r JOIN seats s ON r.id_seat = s.id
                 WHERE r.booking_reference = b.booking_reference AND r.id_flight = b.id_flight) as seatNumbers
@@ -688,6 +720,8 @@ def api_my_reservations():
             d["secondsRemaining"] = max(0, int((exp_dt - now_dt).total_seconds())) if exp_dt else 0
         else:
             d["secondsRemaining"] = 0
+        if d.get("detailedRefundStatus"):
+            d["refund_status"] = d["detailedRefundStatus"]
         bookings_list.append(d)
     return jsonify(bookings_list)
 
@@ -696,7 +730,8 @@ def api_my_reservations():
 @require_auth
 def api_get_ticket(ticket_id):
     user = get_current_user()
-    ticket = database.get_ticket_data(ticket_id.strip())
+    req_tid = request.args.get("ticketId")
+    ticket = database.get_ticket_data(ticket_id.strip(), ticket_id=int(req_tid) if req_tid and req_tid.isdigit() else None)
     if not ticket:
         return jsonify({"error": "Ticket not found."}), 404
 
@@ -704,16 +739,27 @@ def api_get_ticket(ticket_id):
     if not allowed:
         return jsonify({"error": err_msg, "code": "FORBIDDEN"}), 403
 
-    vtok = ticket.get("verificationToken") or ticket.get("pnrCode") or ticket["bookingReference"]
-    ticket["qrSvg"] = generate_qr_svg(f"/ticket/verify/{vtok}", size=124)
+    # Fetch notification outbox records for this ticket
+    conn = database.get_db()
+    notifs = [
+        dict(n)
+        for n in conn.execute(
+            "SELECT subject, body_summary, status, created_at FROM notification_outbox WHERE booking_reference = ? ORDER BY id DESC LIMIT 10",
+            (ticket["bookingReference"],),
+        ).fetchall()
+    ]
+    conn.close()
+    ticket["notifications"] = notifs
+    ticket["qrVerifyBaseUrl"] = Config.get_qr_verify_base_url()
     return jsonify(ticket)
 
 
-@bookings_bp.route("/api/tickets/<string:pnr_or_ref>/pdf", methods=["GET"])
-def api_download_ticket_pdf(pnr_or_ref):
+@bookings_bp.route("/api/tickets/<string:pnr_or_ref>/qr.png", methods=["GET"])
+def api_download_ticket_qr_png(pnr_or_ref):
     user = get_current_user()
     vtoken = (request.args.get("vtoken") or "").strip()
-    ticket = database.get_ticket_data(pnr_or_ref.strip())
+    req_tid = request.args.get("ticketId")
+    ticket = database.get_ticket_data(pnr_or_ref.strip(), ticket_id=int(req_tid) if req_tid and req_tid.isdigit() else None)
     if not ticket:
         return jsonify({"error": "Ticket not found."}), 404
 
@@ -726,8 +772,38 @@ def api_download_ticket_pdf(pnr_or_ref):
     else:
         return jsonify({"error": "Authentication or valid verification token required."}), 401
 
-    pdf_bytes = build_ticket_pdf(ticket)
-    filename = f"FLY-Ticket-{ticket.get('pnrCode') or ticket['bookingReference']}.pdf"
+    if not ticket.get("verifyUrl"):
+        return jsonify({"error": f"QR unavailable: ticket is in {ticket.get('issuanceState')} state."}), 409
+
+    png_bytes = qr_service.generate_qr_png_bytes(ticket["verifyUrl"], target_px=380)
+    return Response(
+        png_bytes,
+        mimetype="image/png",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@bookings_bp.route("/api/tickets/<string:pnr_or_ref>/pdf", methods=["GET"])
+def api_download_ticket_pdf(pnr_or_ref):
+    user = get_current_user()
+    vtoken = (request.args.get("vtoken") or "").strip()
+    req_tid = request.args.get("ticketId")
+    ticket = database.get_ticket_data(pnr_or_ref.strip(), ticket_id=int(req_tid) if req_tid and req_tid.isdigit() else None)
+    if not ticket:
+        return jsonify({"error": "Ticket not found."}), 404
+
+    if vtoken and ticket.get("verificationToken") == vtoken:
+        pass
+    elif user:
+        allowed, err_msg = verify_booking_access(ticket, user)
+        if not allowed:
+            return jsonify({"error": err_msg}), 403
+    else:
+        return jsonify({"error": "Authentication or valid verification token required."}), 401
+
+    pdf_bytes = build_ticket_pdf(ticket, verify_url=ticket.get("verifyUrl"))
+    suffix = ticket.get("ticketNumber") or ticket.get("pnrCode") or ticket["bookingReference"]
+    filename = f"FLY-ETicket-{suffix}.pdf"
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
@@ -737,26 +813,87 @@ def api_download_ticket_pdf(pnr_or_ref):
 
 @bookings_bp.route("/api/tickets/verify/<string:token>", methods=["GET"])
 def api_verify_ticket_token(token):
+    if not check_rate_limit("qr_verify", limit=Config.QR_VERIFY_RATE_LIMIT, window_seconds=Config.QR_VERIFY_RATE_WINDOW):
+        return jsonify({
+            "valid": False,
+            "verdict": "RATE_LIMITED",
+            "headline": "TOO MANY REQUESTS",
+            "error": "Too many verification attempts from this device. Please wait a minute and retry.",
+        }), 429
+
+    actor = get_current_user()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
+    ua = request.headers.get("User-Agent", "")
+    source = (request.args.get("source") or "PUBLIC_MOBILE").strip().upper()
+    device_ref = request.args.get("device")
+
+    status_code, payload = qr_service.verify_ticket_token(
+        raw_token=token,
+        scan_source=source if source in ("PUBLIC_MOBILE", "WEB_VERIFY", "API") else "PUBLIC_MOBILE",
+        actor_user=actor,
+        ip_address=ip,
+        user_agent=ua,
+        device_ref=device_ref,
+    )
+    resp = jsonify(payload)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return resp, status_code
+
+
+@bookings_bp.route("/api/staff/tickets/verify/<string:token>/checkin", methods=["POST"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_staff_checkin_ticket(token):
+    staff = get_current_user()
+    data = request.get_json(silent=True) or {}
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
+    status_code, payload = qr_service.staff_checkin_ticket(
+        raw_token=token,
+        staff_user=staff,
+        ip_address=ip,
+        device_ref=data.get("deviceRef"),
+    )
+    return jsonify(payload), status_code
+
+
+@bookings_bp.route("/api/tickets/<string:booking_ref>/issue-deferred", methods=["POST"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_issue_deferred_tickets(booking_ref):
+    staff = get_current_user()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
+    ok, msg, code, tk = database.issue_deferred_tickets_atomic(booking_ref.strip(), actor_id=staff["id"], ip_address=ip)
+    if not ok:
+        return jsonify({"error": msg, "code": code}), 409 if code in ("PAYMENT_REQUIRED", "INVALID_STATE") else 404
+    return jsonify({"success": True, "message": msg, "ticket": tk})
+
+
+@bookings_bp.route("/api/tickets/<string:booking_ref>/scan-history", methods=["GET"])
+@require_auth
+def api_ticket_scan_history(booking_ref):
+    user = get_current_user()
+    ticket = database.get_ticket_data(booking_ref.strip())
+    if not ticket:
+        return jsonify({"error": "Ticket not found."}), 404
+    allowed, err_msg = verify_booking_access(ticket, user)
+    if not allowed:
+        return jsonify({"error": err_msg}), 403
+
     conn = database.get_db()
-    row = conn.execute(
-        """
-        SELECT t.ticket_number, t.pnr_code, t.status, t.cabin_class, t.seat_codes, t.baggage_allowance, t.issued_at,
-               al.name as airlineName, al.IATA as airlineIATA,
-               f.flight_number, f.dep_datetime, f.arr_datetime,
-               da.IATA as depIATA, da.city as depCity, aa.IATA as arrIATA, aa.city as arrCity
-        FROM tickets t
-        JOIN airLines al ON t.id_airline = al.id
-        JOIN flights f ON t.id_flight = f.id
-        JOIN airports da ON f.dep_airport = da.id
-        JOIN airports aa ON f.arr_airport = aa.id
-        WHERE t.verification_token = ? OR UPPER(t.pnr_code) = UPPER(?)
-        """,
-        (token.strip(), token.strip()),
-    ).fetchone()
+    rows = [
+        dict(r)
+        for r in conn.execute(
+            """
+            SELECT sl.id, t.ticket_number, sl.scan_result, sl.scan_source, sl.checkin_event,
+                   sl.device_ref, sl.scanned_at
+            FROM ticket_scan_logs sl
+            JOIN tickets t ON sl.ticket_id = t.id
+            WHERE t.booking_reference = ?
+            ORDER BY sl.id DESC LIMIT 50
+            """,
+            (ticket["bookingReference"],),
+        ).fetchall()
+    ]
     conn.close()
-    if not row:
-        return jsonify({"valid": False, "error": "Verification reference not found."}), 404
-    return jsonify({"valid": True, **dict(row)})
+    return jsonify({"bookingReference": ticket["bookingReference"], "scans": rows})
 
 
 # -------------------------------------------------------------

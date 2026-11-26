@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
+{% from "components/page_heading.html" import render_page_heading %}
+
+{% block title %}Refund Status Tracker — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumb([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'My Bookings', 'url': '/my-bookings'},
+    {'label': 'Refund Tracking', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="refundTrackApp" data-ref="{{ refund_ref }}">
+  {{ render_page_heading(
+    'Customer Refund Status Tracker',
+    'Track real-time airline cancellation acknowledgement, gateway submission, and final settlement status.'
+  ) }}
+
+  <div class="fly-card" style="padding: 18px; margin: 18px 0;">
+    <form id="rfTrackSearchForm" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+      <div class="fly-field" style="flex: 1; min-width: 240px;">
+        <label for="rfTrackInput" class="fly-label">Refund Reference, Booking Ref, or PNR</label>
+        <input type="text" id="rfTrackInput" class="fly-input" value="{{ refund_ref }}" placeholder="e.g. RF-A1B2C3D4 or PNR">
+      </div>
+      <button type="submit" class="fly-btn fly-btn-primary" style="height: 44px;">Track Refund</button>
+    </form>
+  </div>
+
+  <div id="rfTrackAlert" class="fly-alert is-hidden" role="alert" style="margin-bottom: 16px;"></div>
+
+  <div id="rfTrackBody" class="is-hidden" style="display: grid; gap: 18px;">
+    <div class="fly-card" style="padding: 22px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div>
+          <div style="font-size: 0.76rem; color: var(--text-muted);">REFUND REFERENCE</div>
+          <h2 style="margin: 2px 0 0; font-size: 1.35rem; font-family: var(--font-mono);" id="rtRef">--</h2>
+        </div>
+        <span class="fly-badge" id="rtStatusBadge">--</span>
+      </div>
+      <div id="rtSummaryGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; font-size: 0.9rem;"></div>
+      <div id="rtWindowNotice" style="margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--bg-secondary); font-size: 0.86rem;"></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
+      <div class="fly-card" style="padding: 22px;">
+        <h3 style="margin: 0 0 14px; font-size: 1.05rem;">7-Stage Refund Progress Timeline</h3>
+        <div id="rtTimeline" style="display: grid; gap: 10px;"></div>
+      </div>
+      <div class="fly-card" style="padding: 22px;">
+        <h3 style="margin: 0 0 14px; font-size: 1.05rem;">Status Transition Log &amp; Quote Items</h3>
+        <div id="rtHistory" style="display: grid; gap: 8px; font-size: 0.86rem;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/refund_tracking.js"></script>
+{% endblock %}

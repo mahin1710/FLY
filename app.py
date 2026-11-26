@@ -50,7 +50,7 @@ def apply_security_and_cors_headers(response):
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
 
     origin = request.headers.get("Origin")
-    if origin and (origin in Config.ALLOWED_ORIGINS or Config.ENV != "production"):
+    if origin and Config.is_allowed_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Idempotency-Key"
@@ -101,6 +101,8 @@ if __name__ == "__main__":
     print("========================================================")
     print("  FLY Flight Booking & Ticket Management System")
     print("  Author: mahin1710")
-    print(f"  Server running on http://localhost:{Config.PORT}")
+    print(f"  Server running on http://{Config.HOST}:{Config.PORT}")
+    print(f"  Local URL: http://localhost:{Config.PORT}")
+    print(f"  QR Verify Base URL ({Config.ENV}): {Config.get_qr_verify_base_url()}")
     print("========================================================")
     app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG, threaded=True)

@@ -3,10 +3,12 @@ FLY Airline & System Administration API Blueprint
 Strictly enforces RBAC (AIRLINE_ADMIN / SYSTEM_ADMIN) and airline-level tenant isolation.
 """
 
+import secrets
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 import database
 from fly.middleware.auth import get_current_user, require_roles
+from fly.services import cancellation_refund_service
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -529,6 +531,467 @@ def api_admin_refunds(req_id=None):
     conn.commit()
     conn.close()
     return jsonify({"success": True, "decision": decision})
+
+
+# ------------------------------------------------------------------
+# COMPLETE ADMIN REFUND MANAGEMENT, FEE POLICY, RECONCILIATION & REPORTS
+# ------------------------------------------------------------------
+@admin_bp.route("/api/admin/refunds/dashboard", methods=["GET"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_refunds_dashboard():
+    user = get_current_user()
+    airline_scope, err = _resolve_airline_scope(user)
+    if err:
+        return err
+
+    conn = database.get_db()
+    cursor = conn.cursor()
+    where = "WHERE id_airline = ?" if airline_scope else ""
+    params = (airline_scope,) if airline_scope else ()
+
+    summary = cursor.execute(
+        f"""
+        SELECT COUNT(*) as totalRequests,
+               SUM(CASE WHEN status IN ('SUBMITTED_TO_SUPPLIER', 'SUPPLIER_APPROVED') THEN 1 ELSE 0 END) as pendingSupplierRefunds,
+               SUM(CASE WHEN status IN ('GATEWAY_REFUND_PENDING', 'GATEWAY_PROCESSING') THEN 1 ELSE 0 END) as pendingGatewayRefunds,
+               SUM(CASE WHEN status IN ('APPROVAL_PENDING', 'SUPPLIER_APPROVED') THEN 1 ELSE 0 END) as approvedOrPendingApproval,
+               SUM(CASE WHEN status = 'REFUNDED' THEN 1 ELSE 0 END) as completedRefunds,
+               SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) as failedRefunds,
+               SUM(CASE WHEN status = 'RECONCILIATION_REQUIRED' THEN 1 ELSE 0 END) as reconciliationRequired,
+               COALESCE(SUM(approved_amount_minor), 0) as totalApprovedMinor,
+               COALESCE(SUM(settled_amount_minor), 0) as totalSettledMinor
+        FROM refunds {where}
+        """,
+        params,
+    ).fetchone()
+
+    by_method = [
+        {
+            "paymentMethod": r["payment_method"],
+            "count": r["cnt"],
+            "approvedAmountBDT": cancellation_refund_service.from_minor(r["approved_minor"]),
+            "settledAmountBDT": cancellation_refund_service.from_minor(r["settled_minor"]),
+        }
+        for r in cursor.execute(
+            f"""
+            SELECT payment_method, COUNT(*) as cnt,
+                   COALESCE(SUM(approved_amount_minor), 0) as approved_minor,
+                   COALESCE(SUM(settled_amount_minor), 0) as settled_minor
+            FROM refunds {where}
+            GROUP BY payment_method
+            ORDER BY approved_minor DESC
+            """,
+            params,
+        ).fetchall()
+    ]
+    conn.close()
+    return jsonify({
+        "airlineId": airline_scope,
+        "totalRequests": int(summary["totalRequests"] or 0),
+        "pendingSupplierRefunds": int(summary["pendingSupplierRefunds"] or 0),
+        "pendingGatewayRefunds": int(summary["pendingGatewayRefunds"] or 0),
+        "approvedRefunds": int(summary["approvedOrPendingApproval"] or 0),
+        "completedRefunds": int(summary["completedRefunds"] or 0),
+        "failedRefunds": int(summary["failedRefunds"] or 0),
+        "reconciliationRequired": int(summary["reconciliationRequired"] or 0),
+        "totalApprovedBDT": cancellation_refund_service.from_minor(summary["totalApprovedMinor"] or 0),
+        "totalSettledBDT": cancellation_refund_service.from_minor(summary["totalSettledMinor"] or 0),
+        "byPaymentMethod": by_method,
+    })
+
+
+@admin_bp.route("/api/admin/refunds/list", methods=["GET"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_refunds_list():
+    user = get_current_user()
+    airline_scope, err = _resolve_airline_scope(user)
+    if err:
+        return err
+
+    q = (request.args.get("q") or "").strip()
+    status_f = (request.args.get("status") or "").strip().upper()
+    method_f = (request.args.get("paymentMethod") or "").strip().upper()
+    ctype_f = (request.args.get("cancellationType") or "").strip().upper()
+    from_date = (request.args.get("fromDate") or "").strip()
+    to_date = (request.args.get("toDate") or "").strip()
+    travel_date = (request.args.get("travelDate") or "").strip()
+
+    where = ["1=1"]
+    params = []
+    if airline_scope:
+        where.append("r.id_airline = ?")
+        params.append(airline_scope)
+    if status_f:
+        where.append("UPPER(r.status) = ?")
+        params.append(status_f)
+    if method_f:
+        where.append("UPPER(r.payment_method) LIKE ?")
+        params.append(f"%{method_f}%")
+    if ctype_f:
+        where.append("UPPER(r.cancellation_type) = ?")
+        params.append(ctype_f)
+    if from_date:
+        where.append("substr(r.created_at, 1, 10) >= ?")
+        params.append(from_date[:10])
+    if to_date:
+        where.append("substr(r.created_at, 1, 10) <= ?")
+        params.append(to_date[:10])
+    if travel_date:
+        where.append("substr(f.dep_datetime, 1, 10) = ?")
+        params.append(travel_date[:10])
+    if q:
+        like = f"%{q}%"
+        where.append(
+            "("
+            "r.refund_ref LIKE ? OR r.booking_reference LIKE ? OR COALESCE(b.pnr_code, '') LIKE ? "
+            "OR COALESCE(r.original_payment_ref, '') LIKE ? OR COALESCE(r.provider_ref, '') LIKE ? "
+            "OR COALESCE(a.emailAddress, '') LIKE ? OR COALESCE(a.username, '') LIKE ? "
+            "OR EXISTS (SELECT 1 FROM tickets t WHERE t.booking_reference = r.booking_reference AND (t.ticket_number LIKE ? OR t.passenger_name LIKE ?))"
+            ")"
+        )
+        params.extend([like] * 9)
+
+    conn = database.get_db()
+    rows = [
+        dict(row)
+        for row in conn.execute(
+            f"""
+            SELECT r.*, b.pnr_code, b.total_amount as originalBookingAmount, b.fare_family,
+                   a.username, a.emailAddress, a.display_name,
+                   al.name as airlineName, al.IATA as airlineIATA,
+                   f.flight_number, f.dep_datetime,
+                   da.IATA as depIATA, aa.IATA as arrIATA,
+                   c.cancellation_ref, c.status as cancellation_status,
+                   (SELECT GROUP_CONCAT(t.ticket_number, ', ') FROM tickets t WHERE t.booking_reference = r.booking_reference) as ticketNumbers,
+                   (SELECT GROUP_CONCAT(t.passenger_name, ', ') FROM tickets t WHERE t.booking_reference = r.booking_reference) as passengerNames
+            FROM refunds r
+            JOIN bookings b ON r.booking_reference = b.booking_reference
+            JOIN accounts a ON r.id_account = a.id
+            JOIN airLines al ON r.id_airline = al.id
+            JOIN flights f ON b.id_flight = f.id
+            JOIN airports da ON f.dep_airport = da.id
+            JOIN airports aa ON f.arr_airport = aa.id
+            LEFT JOIN cancellations c ON r.cancellation_id = c.id
+            WHERE {' AND '.join(where)}
+            ORDER BY r.id DESC
+            LIMIT 150
+            """,
+            params,
+        ).fetchall()
+    ]
+    conn.close()
+    for row in rows:
+        row["approvedAmountBDT"] = cancellation_refund_service.from_minor(row["approved_amount_minor"])
+        row["settledAmountBDT"] = cancellation_refund_service.from_minor(row["settled_amount_minor"])
+    return jsonify({"airlineId": airline_scope, "refunds": rows})
+
+
+@admin_bp.route("/api/admin/refunds/<string:refund_id_or_ref>/details", methods=["GET"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_refund_details(refund_id_or_ref):
+    user = get_current_user()
+    airline_scope, err = _resolve_airline_scope(user)
+    if err:
+        return err
+
+    key = refund_id_or_ref.strip()
+    conn = database.get_db()
+    cursor = conn.cursor()
+    row = cursor.execute(
+        """
+        SELECT r.*, b.pnr_code, b.status as booking_status, b.total_amount, b.fee_policy_version, b.fare_family,
+               a.username, a.emailAddress, a.display_name,
+               al.name as airlineName, al.IATA as airlineIATA,
+               f.flight_number, f.dep_datetime, f.arr_datetime,
+               c.cancellation_ref, c.status as cancellation_status, c.reason, c.customer_confirmed_at, c.supplier_response_json
+        FROM refunds r
+        JOIN bookings b ON r.booking_reference = b.booking_reference
+        JOIN accounts a ON r.id_account = a.id
+        JOIN airLines al ON r.id_airline = al.id
+        JOIN flights f ON b.id_flight = f.id
+        LEFT JOIN cancellations c ON r.cancellation_id = c.id
+        WHERE UPPER(r.refund_ref) = UPPER(?) OR r.id = ?
+        """,
+        (key, int(key) if key.isdigit() else -1),
+    ).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": "Refund record not found."}), 404
+    if airline_scope and int(row["id_airline"]) != airline_scope:
+        conn.close()
+        return jsonify({"error": "Forbidden: Refund belongs to another airline."}), 403
+
+    ref_id = row["id"]
+    b_ref = row["booking_reference"]
+    d = dict(row)
+    d["approvedAmountBDT"] = cancellation_refund_service.from_minor(row["approved_amount_minor"])
+    d["settledAmountBDT"] = cancellation_refund_service.from_minor(row["settled_amount_minor"])
+    d["tickets"] = [dict(x) for x in cursor.execute("SELECT id, ticket_number, passenger_name, seat_codes, status, issuance_state, checkin_status, fare_family FROM tickets WHERE booking_reference = ?", (b_ref,)).fetchall()]
+    d["quoteItems"] = [dict(x) for x in cursor.execute("SELECT * FROM refund_quote_items WHERE quote_id = ? ORDER BY id ASC", (row["quote_id"],)).fetchall()] if row["quote_id"] else []
+    d["payments"] = [dict(x) for x in cursor.execute("SELECT id, amount, currency, payment_method, status, transaction_ref, created_at FROM payments WHERE booking_reference = ? ORDER BY id DESC", (b_ref,)).fetchall()]
+    d["transactions"] = [dict(x) for x in cursor.execute("SELECT * FROM refund_transactions WHERE refund_id = ? ORDER BY id DESC", (ref_id,)).fetchall()]
+    d["history"] = [dict(x) for x in cursor.execute("SELECT * FROM refund_status_history WHERE refund_id = ? ORDER BY id ASC", (ref_id,)).fetchall()]
+    d["supplierRefs"] = [dict(x) for x in cursor.execute("SELECT * FROM supplier_refund_references WHERE refund_id = ? ORDER BY id DESC", (ref_id,)).fetchall()]
+    d["manualApprovals"] = [dict(x) for x in cursor.execute("SELECT * FROM manual_refund_approvals WHERE refund_id = ? ORDER BY id DESC", (ref_id,)).fetchall()]
+    d["ledgerEntries"] = [dict(x) for x in cursor.execute("SELECT * FROM financial_ledger_entries WHERE booking_reference = ? ORDER BY id DESC", (b_ref,)).fetchall()]
+    d["auditLogs"] = [dict(x) for x in cursor.execute("SELECT * FROM audit_logs WHERE reservation_ref = ? ORDER BY id DESC LIMIT 30", (b_ref,)).fetchall()]
+    conn.close()
+    return jsonify(d)
+
+
+@admin_bp.route("/api/admin/refunds/<string:refund_id_or_ref>/reconcile", methods=["POST"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_reconcile_refund(refund_id_or_ref):
+    user = get_current_user()
+    data = request.get_json() or {}
+    st_code, payload = cancellation_refund_service.reconcile_gateway_refund(
+        refund_ref=refund_id_or_ref,
+        staff_user=user,
+        simulate_outcome=data.get("outcome") or "SETTLED",
+        settled_amount_bdt=data.get("settledAmountBDT"),
+        provider_ref=data.get("providerRef"),
+        note=data.get("note") or "Admin settlement reconciliation",
+    )
+    return jsonify(payload), st_code
+
+
+@admin_bp.route("/api/admin/refunds/<string:refund_id_or_ref>/manual", methods=["POST"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_manual_refund(refund_id_or_ref):
+    user = get_current_user()
+    data = request.get_json() or {}
+    st_code, payload = cancellation_refund_service.process_manual_refund_operation(
+        refund_id_or_ref=refund_id_or_ref,
+        staff_user=user,
+        action=data.get("action") or "",
+        reason=data.get("reason") or "",
+        transfer_reference=data.get("transferReference") or "",
+        evidence_ref=data.get("evidenceRef") or "",
+        bank_account_masked=data.get("bankAccountMasked") or "",
+    )
+    return jsonify(payload), st_code
+
+
+@admin_bp.route("/api/admin/refunds/reports", methods=["GET"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_refund_reports():
+    user = get_current_user()
+    airline_scope, err = _resolve_airline_scope(user)
+    if err:
+        return err
+
+    conn = database.get_db()
+    cursor = conn.cursor()
+    where = "WHERE r.id_airline = ?" if airline_scope else ""
+    params = (airline_scope,) if airline_scope else ()
+
+    daily = [
+        {
+            "date": r["day"],
+            "requests": r["cnt"],
+            "approvedBDT": cancellation_refund_service.from_minor(r["app_m"]),
+            "settledBDT": cancellation_refund_service.from_minor(r["stl_m"]),
+        }
+        for r in cursor.execute(
+            f"""
+            SELECT substr(r.created_at, 1, 10) as day, COUNT(*) as cnt,
+                   COALESCE(SUM(r.approved_amount_minor), 0) as app_m,
+                   COALESCE(SUM(r.settled_amount_minor), 0) as stl_m
+            FROM refunds r {where}
+            GROUP BY substr(r.created_at, 1, 10)
+            ORDER BY day DESC LIMIT 30
+            """,
+            params,
+        ).fetchall()
+    ]
+
+    monthly = [
+        {
+            "month": r["mon"],
+            "requests": r["cnt"],
+            "approvedBDT": cancellation_refund_service.from_minor(r["app_m"]),
+            "settledBDT": cancellation_refund_service.from_minor(r["stl_m"]),
+        }
+        for r in cursor.execute(
+            f"""
+            SELECT substr(r.created_at, 1, 7) as mon, COUNT(*) as cnt,
+                   COALESCE(SUM(r.approved_amount_minor), 0) as app_m,
+                   COALESCE(SUM(r.settled_amount_minor), 0) as stl_m
+            FROM refunds r {where}
+            GROUP BY substr(r.created_at, 1, 7)
+            ORDER BY mon DESC LIMIT 12
+            """,
+            params,
+        ).fetchall()
+    ]
+
+    by_airline = [
+        {
+            "airlineIATA": r["IATA"],
+            "airlineName": r["name"],
+            "requests": r["cnt"],
+            "approvedBDT": cancellation_refund_service.from_minor(r["app_m"]),
+            "settledBDT": cancellation_refund_service.from_minor(r["stl_m"]),
+        }
+        for r in cursor.execute(
+            f"""
+            SELECT al.IATA, al.name, COUNT(*) as cnt,
+                   COALESCE(SUM(r.approved_amount_minor), 0) as app_m,
+                   COALESCE(SUM(r.settled_amount_minor), 0) as stl_m
+            FROM refunds r JOIN airLines al ON r.id_airline = al.id {where}
+            GROUP BY r.id_airline
+            ORDER BY app_m DESC
+            """,
+            params,
+        ).fetchall()
+    ]
+
+    by_method = [
+        {
+            "paymentMethod": r["payment_method"],
+            "requests": r["cnt"],
+            "approvedBDT": cancellation_refund_service.from_minor(r["app_m"]),
+            "settledBDT": cancellation_refund_service.from_minor(r["stl_m"]),
+        }
+        for r in cursor.execute(
+            f"""
+            SELECT r.payment_method, COUNT(*) as cnt,
+                   COALESCE(SUM(r.approved_amount_minor), 0) as app_m,
+                   COALESCE(SUM(r.settled_amount_minor), 0) as stl_m
+            FROM refunds r {where}
+            GROUP BY r.payment_method
+            """,
+            params,
+        ).fetchall()
+    ]
+
+    pending_aging = cursor.execute(
+        f"""
+        SELECT SUM(CASE WHEN status NOT IN ('REFUNDED', 'FAILED', 'NOT_ELIGIBLE') AND julianday('now') - julianday(created_at) <= 3 THEN 1 ELSE 0 END) as d0_3,
+               SUM(CASE WHEN status NOT IN ('REFUNDED', 'FAILED', 'NOT_ELIGIBLE') AND julianday('now') - julianday(created_at) > 3 AND julianday('now') - julianday(created_at) <= 7 THEN 1 ELSE 0 END) as d4_7,
+               SUM(CASE WHEN status NOT IN ('REFUNDED', 'FAILED', 'NOT_ELIGIBLE') AND julianday('now') - julianday(created_at) > 7 THEN 1 ELSE 0 END) as d8_plus
+        FROM refunds r {where}
+        """,
+        params,
+    ).fetchone()
+
+    penalties_minor = cursor.execute(
+        f"""
+        SELECT COALESCE(SUM(l.amount_minor), 0) FROM financial_ledger_entries l
+        JOIN bookings b ON l.booking_reference = b.booking_reference
+        JOIN flights f ON b.id_flight = f.id
+        WHERE l.entry_type = 'AIRLINE_PENALTY' {"AND f.id_airline = ?" if airline_scope else ""}
+        """,
+        params,
+    ).fetchone()[0] or 0
+
+    disbursed_minor = cursor.execute(
+        f"""
+        SELECT COALESCE(SUM(r.settled_amount_minor), 0) FROM refunds r {where} {"AND" if where else "WHERE"} r.status IN ('REFUNDED', 'PARTIALLY_REFUNDED')
+        """,
+        params,
+    ).fetchone()[0] or 0
+
+    failed_list = [
+        {"refundRef": r["refund_ref"], "bookingReference": r["booking_reference"], "status": r["status"], "failureReason": r["failure_reason"]}
+        for r in cursor.execute(
+            f"SELECT refund_ref, booking_reference, status, failure_reason FROM refunds r {where} {'AND' if where else 'WHERE'} r.status IN ('FAILED', 'RECONCILIATION_REQUIRED') ORDER BY r.id DESC LIMIT 25",
+            params,
+        ).fetchall()
+    ]
+
+    conn.close()
+    return jsonify({
+        "currency": "BDT",
+        "dailyReport": daily,
+        "monthlyReport": monthly,
+        "airlineWiseRefunds": by_airline,
+        "paymentMethodWiseRefunds": by_method,
+        "pendingAging": {
+            "0_3_days": int(pending_aging["d0_3"] or 0),
+            "4_7_days": int(pending_aging["d4_7"] or 0),
+            "8_plus_days": int(pending_aging["d8_plus"] or 0),
+        },
+        "failedRefunds": failed_list,
+        "totalCancellationPenaltiesBDT": cancellation_refund_service.from_minor(penalties_minor),
+        "totalDisbursedBDT": cancellation_refund_service.from_minor(disbursed_minor),
+    })
+
+
+@admin_bp.route("/api/admin/fee-policies", methods=["GET", "POST"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_fee_policies():
+    user = get_current_user()
+    conn = database.get_db()
+    cursor = conn.cursor()
+    if request.method == "GET":
+        rows = [dict(r) for r in cursor.execute("SELECT * FROM fee_policies ORDER BY id DESC").fetchall()]
+        conn.close()
+        return jsonify({"policies": rows})
+
+    if str(user["role"]).upper() not in ("SYSTEM_ADMIN", "SUPER_ADMIN", "AIRLINE_ADMIN"):
+        conn.close()
+        return jsonify({"error": "Forbidden."}), 403
+
+    data = request.get_json() or {}
+    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    version = (data.get("version") or f"FLY-POL-V{secrets.token_hex(2).upper()}").strip()
+    name = (data.get("name") or f"Service Fee Policy {version}").strip()
+    booking_fee_m = cancellation_refund_service.to_minor(data.get("bookingServiceFeeBDT") or 0)
+    cancel_fee_m = cancellation_refund_service.to_minor(data.get("cancellationServiceFeeBDT") or 350)
+    refund_proc_m = cancellation_refund_service.to_minor(data.get("refundProcessingFeeBDT") or 0)
+    legal_notes = (data.get("legalNotes") or "Updated versioned fee policy; prior bookings preserve purchase-time policy version.").strip()
+
+    cursor.execute("UPDATE fee_policies SET is_active = 0, updated_at = ? WHERE is_active = 1", (now_iso,))
+    cursor.execute(
+        """
+        INSERT INTO fee_policies (
+            version, name, booking_service_fee_minor, cancellation_service_fee_minor,
+            refund_processing_fee_minor, waive_on_airline_cancel, waive_on_ticketing_error,
+            waive_on_schedule_change, currency, legal_notes, is_active, updated_by, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'BDT', ?, 1, ?, ?, ?)
+        """,
+        (
+            version, name, booking_fee_m, cancel_fee_m, refund_proc_m,
+            1 if data.get("waiveOnAirlineCancel", True) else 0,
+            1 if data.get("waiveOnTicketingError", True) else 0,
+            1 if data.get("waiveOnScheduleChange", True) else 0,
+            legal_notes, user["id"], now_iso, now_iso,
+        ),
+    )
+    database.log_audit_event(cursor, "ADMIN_FEE_POLICY_CREATED", "SUCCESS", user["id"], user["role"], details=f"Published fee policy {version} (cancel fee BDT {cancel_fee_m/100:.2f})")
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "version": version}), 201
+
+
+@admin_bp.route("/api/admin/qr-scans", methods=["GET"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_admin_qr_scans():
+    user = get_current_user()
+    airline_scope, err = _resolve_airline_scope(user)
+    if err:
+        return err
+
+    conn = database.get_db()
+    where = "WHERE t.id_airline = ?" if airline_scope else ""
+    params = (airline_scope,) if airline_scope else ()
+    rows = [
+        dict(r)
+        for r in conn.execute(
+            f"""
+            SELECT sl.*, t.ticket_number, t.booking_reference, t.pnr_code, t.passenger_name
+            FROM ticket_scan_logs sl
+            LEFT JOIN tickets t ON sl.ticket_id = t.id
+            {where}
+            ORDER BY sl.id DESC LIMIT 100
+            """,
+            params,
+        ).fetchall()
+    ]
+    conn.close()
+    return jsonify({"scans": rows})
 
 
 @admin_bp.route("/api/admin/settings", methods=["GET", "PUT"])

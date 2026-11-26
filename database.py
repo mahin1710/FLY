@@ -299,6 +299,10 @@ def init_db():
     _ensure_column(cursor, "bookings", "refund_status", "TEXT")
     _ensure_column(cursor, "bookings", "contact_email", "TEXT")
     _ensure_column(cursor, "bookings", "contact_phone", "TEXT")
+    _ensure_column(cursor, "bookings", "fee_policy_version", "TEXT DEFAULT 'FLY-POL-V1'")
+    _ensure_column(cursor, "bookings", "cancellation_type", "TEXT")
+    _ensure_column(cursor, "bookings", "fare_family", "TEXT DEFAULT 'STANDARD'")
+    _ensure_column(cursor, "bookings", "is_test_booking", "INTEGER DEFAULT 1")
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_bookings_account ON bookings(id_account);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_bookings_flight ON bookings(id_flight, status);")
@@ -504,6 +508,491 @@ def init_db():
         """
     )
 
+    # 14. Extended Tickets Columns & Multi-Segment / QR / Scan History (Part A, D, E)
+    _ensure_column(cursor, "tickets", "passenger_id", "INTEGER")
+    _ensure_column(cursor, "tickets", "passenger_index", "INTEGER DEFAULT 1")
+    _ensure_column(cursor, "tickets", "issuance_state", "TEXT DEFAULT 'ISSUED'")
+    _ensure_column(cursor, "tickets", "checkin_status", "TEXT DEFAULT 'NOT_CHECKED_IN'")
+    _ensure_column(cursor, "tickets", "checked_in_at", "TEXT")
+    _ensure_column(cursor, "tickets", "checked_in_by", "INTEGER")
+    _ensure_column(cursor, "tickets", "is_test_ticket", "INTEGER DEFAULT 1")
+    _ensure_column(cursor, "tickets", "fare_family", "TEXT DEFAULT 'STANDARD'")
+    _ensure_column(cursor, "tickets", "provider_name", "TEXT DEFAULT 'DEMO_LOCAL'")
+    _ensure_column(cursor, "tickets", "airline_pnr", "TEXT")
+    _ensure_column(cursor, "tickets", "fee_policy_version", "TEXT DEFAULT 'FLY-POL-V1'")
+    _ensure_column(cursor, "tickets", "updated_at", "TEXT")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ticket_segments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER NOT NULL,
+            booking_reference TEXT NOT NULL,
+            id_flight INTEGER NOT NULL,
+            segment_order INTEGER NOT NULL DEFAULT 1,
+            origin_iata TEXT NOT NULL,
+            dest_iata TEXT NOT NULL,
+            dep_datetime TEXT NOT NULL,
+            arr_datetime TEXT NOT NULL,
+            coupon_status TEXT NOT NULL DEFAULT 'OPEN' CHECK(coupon_status IN ('OPEN', 'CHECKED_IN', 'USED', 'VOID', 'CANCELLED', 'REFUNDED')),
+            seat_code TEXT,
+            cabin_class TEXT DEFAULT 'Economy',
+            FOREIGN KEY(ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+            FOREIGN KEY(id_flight) REFERENCES flights(id)
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ticket_segments_ticket ON ticket_segments(ticket_id, segment_order);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ticket_segments_ref ON ticket_segments(booking_reference);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ticket_qr_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER NOT NULL,
+            token_hash TEXT UNIQUE NOT NULL,
+            token_nonce TEXT NOT NULL,
+            token_version INTEGER NOT NULL DEFAULT 1,
+            is_test_token INTEGER NOT NULL DEFAULT 1,
+            issued_at TEXT NOT NULL,
+            expires_at TEXT,
+            revoked_at TEXT,
+            revoke_reason TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_qr_tokens_ticket ON ticket_qr_tokens(ticket_id, revoked_at);")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_qr_token_version ON ticket_qr_tokens(ticket_id, token_version);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ticket_scan_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticket_id INTEGER,
+            qr_token_id INTEGER,
+            scan_result TEXT NOT NULL,
+            scan_source TEXT NOT NULL,
+            scanned_by INTEGER,
+            ip_address TEXT,
+            user_agent TEXT,
+            device_ref TEXT,
+            checkin_event INTEGER NOT NULL DEFAULT 0,
+            scanned_at TEXT NOT NULL,
+            FOREIGN KEY(ticket_id) REFERENCES tickets(id) ON DELETE SET NULL,
+            FOREIGN KEY(qr_token_id) REFERENCES ticket_qr_tokens(id) ON DELETE SET NULL
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scan_logs_ticket ON ticket_scan_logs(ticket_id, scanned_at DESC);")
+
+    # 15. Versioned Fee Policies & Per-Airline Fare Rules (Part F, G)
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fee_policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            version TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            booking_service_fee_minor INTEGER NOT NULL DEFAULT 0,
+            cancellation_service_fee_minor INTEGER NOT NULL DEFAULT 50000,
+            refund_processing_fee_minor INTEGER NOT NULL DEFAULT 0,
+            waive_on_airline_cancel INTEGER NOT NULL DEFAULT 1,
+            waive_on_ticketing_error INTEGER NOT NULL DEFAULT 1,
+            waive_on_schedule_change INTEGER NOT NULL DEFAULT 1,
+            currency TEXT NOT NULL DEFAULT 'BDT',
+            legal_notes TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            updated_by INTEGER,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fare_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_airline INTEGER,
+            fare_family TEXT NOT NULL,
+            is_refundable INTEGER NOT NULL DEFAULT 1,
+            voluntary_cancel_fee_minor INTEGER NOT NULL DEFAULT 150000,
+            no_show_fee_minor INTEGER NOT NULL DEFAULT 250000,
+            partial_cancel_allowed INTEGER NOT NULL DEFAULT 1,
+            split_pnr_required INTEGER NOT NULL DEFAULT 0,
+            min_hours_before_dep INTEGER NOT NULL DEFAULT 4,
+            tax_refundable_pct INTEGER NOT NULL DEFAULT 100,
+            airline_charge_refundable INTEGER NOT NULL DEFAULT 1,
+            ancillary_refundable INTEGER NOT NULL DEFAULT 0,
+            notes TEXT,
+            updated_at TEXT NOT NULL
+        );
+        """
+    )
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_fare_rule_airline_fam ON fare_rules(COALESCE(id_airline, 0), fare_family);")
+
+    # 16. Cancellations, Immutable Quotes, Refunds, Adapters & Financial Ledger (Part F-M)
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cancellations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cancellation_ref TEXT UNIQUE NOT NULL,
+            booking_reference TEXT NOT NULL,
+            id_account INTEGER NOT NULL,
+            id_airline INTEGER NOT NULL,
+            cancellation_type TEXT NOT NULL CHECK(cancellation_type IN (
+                'VOLUNTARY', 'AIRLINE_INITIATED', 'SCHEDULE_CHANGE', 'PARTIAL',
+                'NO_SHOW', 'BEFORE_ISSUANCE', 'TICKETING_FAILURE'
+            )),
+            status TEXT NOT NULL CHECK(status IN (
+                'REQUESTED', 'QUOTE_PENDING', 'QUOTE_READY', 'CUSTOMER_CONFIRMATION_REQUIRED',
+                'SUPPLIER_CANCEL_PENDING', 'CANCELLED_BY_SUPPLIER', 'REJECTED', 'MANUAL_REVIEW', 'FAILED'
+            )),
+            reason TEXT NOT NULL,
+            quote_id INTEGER,
+            customer_confirmed INTEGER NOT NULL DEFAULT 0,
+            customer_confirmed_at TEXT,
+            supplier_ref TEXT,
+            supplier_status TEXT,
+            supplier_response_json TEXT,
+            alternative_options_json TEXT,
+            is_partial INTEGER NOT NULL DEFAULT 0,
+            is_test INTEGER NOT NULL DEFAULT 1,
+            created_by INTEGER,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(id_account) REFERENCES accounts(id),
+            FOREIGN KEY(id_airline) REFERENCES airLines(id)
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cancellations_booking ON cancellations(booking_reference);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cancellations_airline ON cancellations(id_airline, status);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cancellation_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cancellation_id INTEGER NOT NULL,
+            ticket_id INTEGER,
+            segment_id INTEGER,
+            passenger_name TEXT,
+            seat_code TEXT,
+            item_type TEXT NOT NULL CHECK(item_type IN ('PASSENGER', 'SEGMENT', 'ANCILLARY', 'FULL')),
+            item_status TEXT NOT NULL DEFAULT 'PENDING',
+            amount_minor INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY(cancellation_id) REFERENCES cancellations(id) ON DELETE CASCADE,
+            FOREIGN KEY(ticket_id) REFERENCES tickets(id),
+            FOREIGN KEY(segment_id) REFERENCES ticket_segments(id)
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refund_quotes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quote_ref TEXT UNIQUE NOT NULL,
+            booking_reference TEXT NOT NULL,
+            cancellation_type TEXT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'BDT',
+            fare_family TEXT NOT NULL,
+            coupon_state TEXT NOT NULL,
+            no_show_detected INTEGER NOT NULL DEFAULT 0,
+            fee_policy_version TEXT NOT NULL,
+            original_paid_minor INTEGER NOT NULL,
+            airline_penalty_minor INTEGER NOT NULL DEFAULT 0,
+            supplier_charge_minor INTEGER NOT NULL DEFAULT 0,
+            non_refundable_tax_minor INTEGER NOT NULL DEFAULT 0,
+            refundable_tax_minor INTEGER NOT NULL DEFAULT 0,
+            fly_service_fee_minor INTEGER NOT NULL DEFAULT 0,
+            other_deductions_minor INTEGER NOT NULL DEFAULT 0,
+            final_refund_minor INTEGER NOT NULL DEFAULT 0,
+            refundable_eligible INTEGER NOT NULL DEFAULT 1,
+            supplier_quote_ref TEXT,
+            expires_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'EXPIRED', 'CONFIRMED', 'REJECTED')),
+            breakdown_json TEXT,
+            created_by INTEGER,
+            created_at TEXT NOT NULL
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_refund_quotes_booking ON refund_quotes(booking_reference, created_at DESC);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refund_quote_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quote_id INTEGER NOT NULL,
+            line_code TEXT NOT NULL,
+            label TEXT NOT NULL,
+            category TEXT NOT NULL CHECK(category IN ('CREDIT', 'DEDUCTION', 'INFO')),
+            amount_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'BDT',
+            authority_source TEXT NOT NULL,
+            FOREIGN KEY(quote_id) REFERENCES refund_quotes(id) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refunds (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            refund_ref TEXT UNIQUE NOT NULL,
+            cancellation_id INTEGER,
+            quote_id INTEGER,
+            booking_reference TEXT NOT NULL,
+            id_account INTEGER NOT NULL,
+            id_airline INTEGER NOT NULL,
+            cancellation_type TEXT NOT NULL DEFAULT 'VOLUNTARY',
+            currency TEXT NOT NULL DEFAULT 'BDT',
+            approved_amount_minor INTEGER NOT NULL DEFAULT 0,
+            settled_amount_minor INTEGER NOT NULL DEFAULT 0,
+            payment_method TEXT NOT NULL,
+            original_payment_ref TEXT,
+            refund_destination TEXT,
+            status TEXT NOT NULL CHECK(status IN (
+                'NOT_ELIGIBLE', 'QUOTE_READY', 'APPROVAL_PENDING', 'SUBMITTED_TO_SUPPLIER',
+                'SUPPLIER_APPROVED', 'GATEWAY_REFUND_PENDING', 'GATEWAY_PROCESSING',
+                'PARTIALLY_REFUNDED', 'REFUNDED', 'FAILED', 'RECONCILIATION_REQUIRED'
+            )),
+            estimated_window TEXT,
+            provider_ref TEXT,
+            failure_reason TEXT,
+            requires_manual INTEGER NOT NULL DEFAULT 0,
+            dual_approval_required INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(cancellation_id) REFERENCES cancellations(id),
+            FOREIGN KEY(quote_id) REFERENCES refund_quotes(id),
+            FOREIGN KEY(id_account) REFERENCES accounts(id),
+            FOREIGN KEY(id_airline) REFERENCES airLines(id)
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_refunds_booking_new ON refunds(booking_reference);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_refunds_status_new ON refunds(id_airline, status, created_at DESC);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refund_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            refund_id INTEGER NOT NULL,
+            refund_txn_ref TEXT UNIQUE NOT NULL,
+            idempotency_key TEXT UNIQUE NOT NULL,
+            adapter_name TEXT NOT NULL,
+            operation TEXT NOT NULL,
+            amount_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'BDT',
+            status TEXT NOT NULL,
+            gateway_ref TEXT,
+            raw_response_json TEXT,
+            error_message TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(refund_id) REFERENCES refunds(id) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refund_status_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            refund_id INTEGER NOT NULL,
+            from_status TEXT,
+            to_status TEXT NOT NULL,
+            stage_label TEXT NOT NULL,
+            note TEXT,
+            actor_id INTEGER,
+            actor_role TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(refund_id) REFERENCES refunds(id) ON DELETE CASCADE
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_refund_hist_ref ON refund_status_history(refund_id, id ASC);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS supplier_refund_references (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            refund_id INTEGER NOT NULL,
+            cancellation_id INTEGER NOT NULL,
+            supplier_name TEXT NOT NULL,
+            supplier_cancel_ref TEXT,
+            supplier_refund_ref TEXT,
+            bsp_settlement_status TEXT NOT NULL DEFAULT 'PENDING',
+            settled_at TEXT,
+            raw_payload TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(refund_id) REFERENCES refunds(id) ON DELETE CASCADE,
+            FOREIGN KEY(cancellation_id) REFERENCES cancellations(id) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS manual_refund_approvals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            refund_id INTEGER NOT NULL,
+            requested_by INTEGER,
+            reason TEXT NOT NULL,
+            first_approver_id INTEGER,
+            first_approved_at TEXT,
+            second_approver_id INTEGER,
+            second_approved_at TEXT,
+            transfer_reference TEXT,
+            evidence_ref TEXT,
+            evidence_notes TEXT,
+            bank_account_masked TEXT,
+            settlement_verified INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'FIRST_APPROVED', 'APPROVED', 'SETTLED', 'REJECTED')),
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(refund_id) REFERENCES refunds(id) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS financial_ledger_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entry_ref TEXT UNIQUE NOT NULL,
+            booking_reference TEXT NOT NULL,
+            refund_id INTEGER,
+            cancellation_id INTEGER,
+            entry_type TEXT NOT NULL,
+            direction TEXT NOT NULL CHECK(direction IN ('DEBIT', 'CREDIT')),
+            amount_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'BDT',
+            original_currency TEXT NOT NULL DEFAULT 'BDT',
+            fx_rate TEXT NOT NULL DEFAULT '1.0000',
+            reference_id TEXT,
+            description TEXT,
+            created_by INTEGER,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(refund_id) REFERENCES refunds(id),
+            FOREIGN KEY(cancellation_id) REFERENCES cancellations(id)
+        );
+        """
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ledger_booking ON financial_ledger_entries(booking_reference, id DESC);")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS notification_outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            booking_reference TEXT NOT NULL,
+            recipient_email TEXT,
+            channel TEXT NOT NULL DEFAULT 'EMAIL',
+            subject TEXT NOT NULL,
+            body_summary TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'QUEUED_DEV_LOG',
+            metadata_json TEXT,
+            created_at TEXT NOT NULL
+        );
+        """
+    )
+
+    # 6. Seed Versioned Service Fee Policy (Part G3) & Per-Airline Fare Rules (Part F3/G1)
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO fee_policies (
+            version, name, booking_service_fee_minor, cancellation_service_fee_minor,
+            refund_processing_fee_minor, waive_on_airline_cancel, waive_on_ticketing_error,
+            waive_on_schedule_change, currency, legal_notes, is_active, created_at, updated_at
+        )
+        VALUES (
+            'FLY-POL-V1',
+            'Standard FLY Service Fee Policy v1',
+            0,
+            35000,
+            0,
+            1,
+            1,
+            1,
+            'BDT',
+            'Cancellation service fee BDT 350 disclosed prior to purchase. Automatically waived on airline-initiated cancellations, schedule changes, and ticketing failures.',
+            1,
+            ?,
+            ?
+        )
+        """,
+        (now_iso, now_iso),
+    )
+
+    seeded_fare_rules = [
+        # (id_airline, fare_family, is_refundable, vol_fee_minor, noshow_fee_minor, partial_ok, split_pnr, min_hrs, tax_pct, air_chg_ref, anc_ref, notes)
+        (None, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "Non-refundable promotional fare; unused government/airport taxes remain eligible."),
+        (None, "STANDARD", 1, 80000, 200000, 1, 1, 4, 100, 1, 0, "Standard refundable fare subject to carrier penalty & FLY disclosed policy."),
+        (None, "FLEX", 1, 40000, 120000, 1, 0, 2, 100, 1, 1, "Flexible refundable fare with reduced penalty & ancillary refundability."),
+        (None, "BUSINESS", 1, 50000, 150000, 1, 0, 2, 100, 1, 1, "Business cabin fare with low cancellation penalty."),
+        (None, "FIRST", 1, 50000, 150000, 1, 0, 2, 100, 1, 1, "First class cabin fare with priority refund handling."),
+        (839, "STANDARD", 1, 75000, 180000, 1, 1, 4, 100, 1, 0, "Biman Bangladesh Standard fare cancellation tariff."),
+        (839, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "Biman Super Saver non-refundable; unused taxes refundable."),
+        (839, "BUSINESS", 1, 60000, 140000, 1, 0, 2, 100, 1, 1, "Biman Business flexible penalty rule."),
+        (371, "STANDARD", 1, 65000, 160000, 1, 1, 4, 100, 1, 0, "US-Bangla Airlines Standard fare cancellation tariff."),
+        (371, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "US-Bangla Saver non-refundable except unused govt taxes."),
+        (396, "STANDARD", 1, 450000, 750000, 1, 1, 6, 100, 1, 0, "Emirates International Economy Flex cancellation tariff."),
+        (396, "BUSINESS", 1, 300000, 600000, 1, 0, 4, 100, 1, 1, "Emirates Business Class fare rules."),
+    ]
+    for aid, ffam, is_ref, vfee, nsfee, p_ok, sp_pnr, mhrs, tpct, achg, anc, note in seeded_fare_rules:
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO fare_rules (
+                id_airline, fare_family, is_refundable, voluntary_cancel_fee_minor,
+                no_show_fee_minor, partial_cancel_allowed, split_pnr_required,
+                min_hours_before_dep, tax_refundable_pct, airline_charge_refundable,
+                ancillary_refundable, notes, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (aid, ffam, is_ref, vfee, nsfee, p_ok, sp_pnr, mhrs, tpct, achg, anc, note, now_iso),
+        )
+
+    # 7. Backfill missing QR token hashes & flight segments for legacy ISSUED tickets cleanly
+    try:
+        from fly.services import qr_service
+        legacy_tickets = cursor.execute(
+            """
+            SELECT t.*, b.status as booking_status, f.dep_datetime, f.arr_datetime,
+                   da.IATA as depIATA, aa.IATA as arrIATA
+            FROM tickets t
+            JOIN bookings b ON t.booking_reference = b.booking_reference
+            JOIN flights f ON t.id_flight = f.id
+            JOIN airports da ON f.dep_airport = da.id
+            JOIN airports aa ON f.arr_airport = aa.id
+            WHERE NOT EXISTS (SELECT 1 FROM ticket_qr_tokens qt WHERE qt.ticket_id = t.id)
+            """
+        ).fetchall()
+        for lt in legacy_tickets:
+            seg_cnt = cursor.execute("SELECT COUNT(*) FROM ticket_segments WHERE ticket_id = ?", (lt["id"],)).fetchone()[0]
+            if seg_cnt == 0:
+                c_stat = "CANCELLED" if lt["status"] in ("CANCELLED", "REFUNDED") else "OPEN"
+                cursor.execute(
+                    """
+                    INSERT INTO ticket_segments (
+                        ticket_id, booking_reference, id_flight, segment_order,
+                        origin_iata, dest_iata, dep_datetime, arr_datetime, coupon_status, seat_code, cabin_class
+                    ) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        lt["id"], lt["booking_reference"], lt["id_flight"],
+                        lt["depIATA"], lt["arrIATA"], lt["dep_datetime"], lt["arr_datetime"],
+                        c_stat, lt["seat_codes"], lt["cabin_class"],
+                    ),
+                )
+            if lt["status"] == "ISSUED" and lt["booking_status"] == "CONFIRMED":
+                qr_service.issue_qr_for_ticket(cursor, lt["id"], issuance_state="ISSUED", is_test_ticket=True)
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -641,6 +1130,99 @@ def seed_initial_data():
                         """,
                         (aid, fnum, ap_map[dep_c], ap_map[arr_c], dep_dt, arr_dt, model, stops, p1, p2, p3),
                     )
+
+    # 6. Seed Versioned Service Fee Policy (Part G3) & Per-Airline Fare Rules (Part F3/G1)
+    cursor.execute(
+        """
+        INSERT OR IGNORE INTO fee_policies (
+            version, name, booking_service_fee_minor, cancellation_service_fee_minor,
+            refund_processing_fee_minor, waive_on_airline_cancel, waive_on_ticketing_error,
+            waive_on_schedule_change, currency, legal_notes, is_active, created_at, updated_at
+        )
+        VALUES (
+            'FLY-POL-V1',
+            'Standard FLY Service Fee Policy v1',
+            0,
+            35000,
+            0,
+            1,
+            1,
+            1,
+            'BDT',
+            'Cancellation service fee BDT 350 disclosed prior to purchase. Automatically waived on airline-initiated cancellations, schedule changes, and ticketing failures.',
+            1,
+            ?,
+            ?
+        )
+        """,
+        (now_iso, now_iso),
+    )
+
+    seeded_fare_rules = [
+        # (id_airline, fare_family, is_refundable, vol_fee_minor, noshow_fee_minor, partial_ok, split_pnr, min_hrs, tax_pct, air_chg_ref, anc_ref, notes)
+        (None, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "Non-refundable promotional fare; unused government/airport taxes remain eligible."),
+        (None, "STANDARD", 1, 80000, 200000, 1, 1, 4, 100, 1, 0, "Standard refundable fare subject to carrier penalty & FLY disclosed policy."),
+        (None, "FLEX", 1, 40000, 120000, 1, 0, 2, 100, 1, 1, "Flexible refundable fare with reduced penalty & ancillary refundability."),
+        (None, "BUSINESS", 1, 50000, 150000, 1, 0, 2, 100, 1, 1, "Business cabin fare with low cancellation penalty."),
+        (None, "FIRST", 1, 50000, 150000, 1, 0, 2, 100, 1, 1, "First class cabin fare with priority refund handling."),
+        (839, "STANDARD", 1, 75000, 180000, 1, 1, 4, 100, 1, 0, "Biman Bangladesh Standard fare cancellation tariff."),
+        (839, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "Biman Super Saver non-refundable; unused taxes refundable."),
+        (839, "BUSINESS", 1, 60000, 140000, 1, 0, 2, 100, 1, 1, "Biman Business flexible penalty rule."),
+        (371, "STANDARD", 1, 65000, 160000, 1, 1, 4, 100, 1, 0, "US-Bangla Airlines Standard fare cancellation tariff."),
+        (371, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "US-Bangla Saver non-refundable except unused govt taxes."),
+        (396, "STANDARD", 1, 450000, 750000, 1, 1, 6, 100, 1, 0, "Emirates International Economy Flex cancellation tariff."),
+        (396, "BUSINESS", 1, 300000, 600000, 1, 0, 4, 100, 1, 1, "Emirates Business Class fare rules."),
+    ]
+    for aid, ffam, is_ref, vfee, nsfee, p_ok, sp_pnr, mhrs, tpct, achg, anc, note in seeded_fare_rules:
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO fare_rules (
+                id_airline, fare_family, is_refundable, voluntary_cancel_fee_minor,
+                no_show_fee_minor, partial_cancel_allowed, split_pnr_required,
+                min_hours_before_dep, tax_refundable_pct, airline_charge_refundable,
+                ancillary_refundable, notes, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (aid, ffam, is_ref, vfee, nsfee, p_ok, sp_pnr, mhrs, tpct, achg, anc, note, now_iso),
+        )
+
+    # 7. Backfill missing QR token hashes & flight segments for legacy ISSUED tickets cleanly
+    try:
+        from fly.services import qr_service
+        legacy_tickets = cursor.execute(
+            """
+            SELECT t.*, b.status as booking_status, f.dep_datetime, f.arr_datetime,
+                   da.IATA as depIATA, aa.IATA as arrIATA
+            FROM tickets t
+            JOIN bookings b ON t.booking_reference = b.booking_reference
+            JOIN flights f ON t.id_flight = f.id
+            JOIN airports da ON f.dep_airport = da.id
+            JOIN airports aa ON f.arr_airport = aa.id
+            WHERE NOT EXISTS (SELECT 1 FROM ticket_qr_tokens qt WHERE qt.ticket_id = t.id)
+            """
+        ).fetchall()
+        for lt in legacy_tickets:
+            seg_cnt = cursor.execute("SELECT COUNT(*) FROM ticket_segments WHERE ticket_id = ?", (lt["id"],)).fetchone()[0]
+            if seg_cnt == 0:
+                c_stat = "CANCELLED" if lt["status"] in ("CANCELLED", "REFUNDED") else "OPEN"
+                cursor.execute(
+                    """
+                    INSERT INTO ticket_segments (
+                        ticket_id, booking_reference, id_flight, segment_order,
+                        origin_iata, dest_iata, dep_datetime, arr_datetime, coupon_status, seat_code, cabin_class
+                    ) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        lt["id"], lt["booking_reference"], lt["id_flight"],
+                        lt["depIATA"], lt["arrIATA"], lt["dep_datetime"], lt["arr_datetime"],
+                        c_stat, lt["seat_codes"], lt["cabin_class"],
+                    ),
+                )
+            if lt["status"] == "ISSUED" and lt["booking_status"] == "CONFIRMED":
+                qr_service.issue_qr_for_ticket(cursor, lt["id"], issuance_state="ISSUED", is_test_ticket=True)
+    except Exception:
+        pass
 
     conn.commit()
     conn.close()
@@ -936,12 +1518,19 @@ def calculate_fare_breakdown(
         f_dict["flightTaxes"] = flight_taxes
         flights_info.append(f_dict)
 
+    fee_pol = cursor.execute(
+        "SELECT * FROM fee_policies WHERE is_active = 1 ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    pol_version = fee_pol["version"] if fee_pol else "FLY-POL-V1"
+    booking_service_fee = round((int(fee_pol["booking_service_fee_minor"] or 0) / 100.0), 2) if fee_pol else 0.0
+    cancel_service_fee = round((int(fee_pol["cancellation_service_fee_minor"] or 0) / 100.0), 2) if fee_pol else 350.0
+
     insurance_fee = 450.0 * (adults + children) if insurance else 0.0
     meal_total = max(0.0, float(meal_fee or 0.0))
     seat_fee_total = max(0.0, float(seat_upgrade_fee or 0.0))
     extras_total = total_luggage_fee + insurance_fee + meal_total + seat_fee_total
 
-    subtotal = total_base_fare + total_taxes + total_airline_charges + extras_total
+    subtotal = total_base_fare + total_taxes + total_airline_charges + extras_total + booking_service_fee
 
     discount = 0.0
     promo_info = None
@@ -967,7 +1556,7 @@ def calculate_fare_breakdown(
         "baseFare": total_base_fare,
         "taxes": total_taxes,
         "airlineCharges": total_airline_charges,
-        "serviceCharges": 0.0,
+        "serviceCharges": booking_service_fee,
         "luggageFee": total_luggage_fee,
         "mealFee": meal_total,
         "insuranceFee": insurance_fee,
@@ -976,6 +1565,12 @@ def calculate_fare_breakdown(
         "discounts": discount,
         "discount": discount,
         "promo": promo_info,
+        "feePolicy": {
+            "version": pol_version,
+            "bookingServiceFeeBDT": booking_service_fee,
+            "cancellationServiceFeeBDT": cancel_service_fee,
+            "waiverNotice": fee_pol["legal_notes"] if fee_pol else "Cancellation service fee waived on airline-initiated cancellations.",
+        },
         "totalPayable": total_payable,
         "flights": flights_info,
     }
@@ -1166,6 +1761,9 @@ def hold_seats_atomic(
         created_str = created_dt.strftime("%Y-%m-%d %H:%M:%S")
         expires_str = expires_dt.strftime("%Y-%m-%d %H:%M:%S")
 
+        fee_ver = (fare_breakdown.get("feePolicy") or {}).get("version") or "FLY-POL-V1"
+        fare_fam = "BUSINESS" if cabin_class.lower().startswith("bus") else ("FIRST" if cabin_class.lower().startswith("first") else ("FLEX" if cabin_class.lower().startswith("prem") else "STANDARD"))
+
         cursor.execute(
             """
             INSERT INTO bookings (
@@ -1173,9 +1771,10 @@ def hold_seats_atomic(
                 nbr_luggages, weight, created_at, expires_at,
                 passenger_data, return_flight_id, multi_leg_data, fare_breakdown,
                 trip_type, cabin_class, extras_data, discount_amount, promo_code,
-                lock_extensions, contact_email, contact_phone
+                lock_extensions, contact_email, contact_phone,
+                fee_policy_version, fare_family, is_test_booking
             )
-            VALUES (?, ?, ?, 'PENDING_PAYMENT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+            VALUES (?, ?, ?, 'PENDING_PAYMENT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 1)
             """,
             (
                 booking_ref,
@@ -1197,6 +1796,8 @@ def hold_seats_atomic(
                 promo_code.strip().upper() if promo_code and discount_amt > 0 else None,
                 contact_email,
                 contact_phone,
+                fee_ver,
+                fare_fam,
             ),
         )
 
@@ -1359,6 +1960,258 @@ def _generate_unique_ticket_number(cursor) -> str:
     return f"997-{int(datetime.utcnow().timestamp())}"
 
 
+def _to_minor_units(amount_val) -> int:
+    from decimal import Decimal, ROUND_HALF_UP
+    d = Decimal(str(amount_val if amount_val is not None else "0")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return int(d * 100)
+
+
+def _extract_passengers_for_booking(booking_row, seat_codes: list) -> list:
+    pax_entries = []
+    if booking_row["passenger_data"]:
+        try:
+            raw_list = json.loads(booking_row["passenger_data"])
+            seat_idx = 0
+            for idx, p in enumerate(raw_list, start=1):
+                nm = p.get("fullName") or f"{p.get('title', '')} {p.get('firstName', '')} {p.get('lastName', '')}".strip()
+                ptype = str(p.get("type") or p.get("passengerType") or "adult").lower()
+                assigned = p.get("seatCode") or ""
+                if not assigned:
+                    if "infant" in ptype:
+                        assigned = "Infant Lap"
+                    elif seat_idx < len(seat_codes):
+                        assigned = seat_codes[seat_idx]
+                        seat_idx += 1
+                    else:
+                        assigned = seat_codes[0] if seat_codes else "Assigned"
+                pax_entries.append({
+                    "passenger_index": idx,
+                    "name": nm or f"Passenger {idx}",
+                    "seat_code": assigned,
+                    "type": ptype,
+                })
+        except Exception:
+            pax_entries = []
+    if not pax_entries:
+        # Fallback: 1 ticket per occupied seat or single primary passenger
+        if seat_codes and len(seat_codes) > 1:
+            for idx, sc in enumerate(seat_codes, start=1):
+                pax_entries.append({"passenger_index": idx, "name": f"Passenger {idx}", "seat_code": sc, "type": "adult"})
+        else:
+            pax_entries.append({"passenger_index": 1, "name": "Passenger", "seat_code": ", ".join(seat_codes) or "Assigned", "type": "adult"})
+    return pax_entries
+
+
+def _issue_tickets_and_qr_in_tx(cursor, booking, pnr_code: str, seat_codes: list, now_iso: str, issue_qr: bool = True):
+    """Issues per-passenger e-tickets, segment records, QR tokens (only if issued), and notifications."""
+    from fly.services import qr_service
+
+    booking_ref = booking["booking_reference"]
+    is_dom = (booking["depCountry"] == "Bangladesh" and booking["arrCountry"] == "Bangladesh")
+    bpol = get_baggage_policy(booking["id_airline"], is_dom, cursor=cursor)
+    baggage_str = f"Check-in: {bpol['included_checked_kg']} kg ({bpol['included_pieces']} pc) • Cabin: {bpol['cabin_kg']} kg"
+    if int(booking["nbr_luggages"] or 0) > 0:
+        baggage_str += f" + {booking['nbr_luggages']} extra pc"
+
+    pax_entries = _extract_passengers_for_booking(booking, seat_codes)
+    issuance_state = "ISSUED" if issue_qr else "TICKETING_PENDING"
+    fare_family = (booking["fare_family"] if "fare_family" in booking.keys() and booking["fare_family"] else "STANDARD")
+    fee_ver = (booking["fee_policy_version"] if "fee_policy_version" in booking.keys() and booking["fee_policy_version"] else "FLY-POL-V1")
+    is_test = int(booking["is_test_booking"]) if "is_test_booking" in booking.keys() and booking["is_test_booking"] is not None else 1
+
+    # Segment rows (outbound + optional return / multi-leg)
+    flight_legs = []
+    main_leg = cursor.execute(
+        """
+        SELECT f.id, f.dep_datetime, f.arr_datetime, da.IATA as origin_iata, aa.IATA as dest_iata
+        FROM flights f
+        JOIN airports da ON f.dep_airport = da.id
+        JOIN airports aa ON f.arr_airport = aa.id
+        WHERE f.id = ?
+        """,
+        (booking["id_flight"],),
+    ).fetchone()
+    if main_leg:
+        flight_legs.append(dict(main_leg))
+    if booking["return_flight_id"]:
+        ret_leg = cursor.execute(
+            """
+            SELECT f.id, f.dep_datetime, f.arr_datetime, da.IATA as origin_iata, aa.IATA as dest_iata
+            FROM flights f
+            JOIN airports da ON f.dep_airport = da.id
+            JOIN airports aa ON f.arr_airport = aa.id
+            WHERE f.id = ?
+            """,
+            (int(booking["return_flight_id"]),),
+        ).fetchone()
+        if ret_leg:
+            flight_legs.append(dict(ret_leg))
+
+    issued_numbers = []
+    qr_urls = []
+    for pax in pax_entries:
+        t_num = _generate_unique_ticket_number(cursor) if issue_qr else f"PEND-{booking_ref}-{pax['passenger_index']}"
+        placeholder_digest = hashlib.sha256(f"{booking_ref}:{pax['passenger_index']}:{secrets.token_hex(8)}".encode()).hexdigest()
+        cursor.execute(
+            """
+            INSERT INTO tickets (
+                ticket_number, pnr_code, booking_reference, id_account, id_flight, id_airline,
+                passenger_name, passenger_index, seat_codes, cabin_class, baggage_allowance,
+                verification_token, status, issuance_state, checkin_status, is_test_ticket,
+                fare_family, provider_name, airline_pnr, fee_policy_version, issued_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ISSUED', ?, 'NOT_CHECKED_IN', ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                t_num,
+                pnr_code,
+                booking_ref,
+                booking["id_account"],
+                booking["id_flight"],
+                booking["id_airline"],
+                pax["name"],
+                pax["passenger_index"],
+                pax["seat_code"],
+                booking["cabin_class"] or "Economy",
+                baggage_str,
+                placeholder_digest,
+                issuance_state,
+                is_test,
+                fare_family,
+                Config.FLIGHT_PROVIDER_ACTIVE,
+                pnr_code,
+                fee_ver,
+                now_iso if issue_qr else "PENDING",
+                now_iso,
+            ),
+        )
+        t_id = cursor.lastrowid
+        for seg_idx, leg in enumerate(flight_legs, start=1):
+            cursor.execute(
+                """
+                INSERT INTO ticket_segments (
+                    ticket_id, booking_reference, id_flight, segment_order,
+                    origin_iata, dest_iata, dep_datetime, arr_datetime,
+                    coupon_status, seat_code, cabin_class
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
+                """,
+                (
+                    t_id,
+                    booking_ref,
+                    leg["id"],
+                    seg_idx,
+                    leg["origin_iata"],
+                    leg["dest_iata"],
+                    leg["dep_datetime"],
+                    leg["arr_datetime"],
+                    pax["seat_code"] if seg_idx == 1 else "Assigned",
+                    booking["cabin_class"] or "Economy",
+                ),
+            )
+        if issue_qr:
+            raw_tok, vurl, _ = qr_service.issue_qr_for_ticket(
+                cursor, t_id, issuance_state="ISSUED", is_test_ticket=bool(is_test)
+            )
+            if vurl:
+                qr_urls.append(vurl)
+        issued_numbers.append(t_num)
+
+    # Notification outbox entry (A3: dispatch e-ticket notification upon genuine issuance)
+    if issue_qr:
+        cursor.execute(
+            """
+            INSERT INTO notification_outbox (
+                booking_reference, recipient_email, channel, subject, body_summary, status, metadata_json, created_at
+            )
+            VALUES (?, ?, 'EMAIL', ?, ?, 'DISPATCHED_LOCAL_OUTBOX', ?, ?)
+            """,
+            (
+                booking_ref,
+                booking["contact_email"] or "",
+                f"FLY E-Ticket Issued — PNR {pnr_code}",
+                f"Issued {len(issued_numbers)} e-ticket(s) ({', '.join(issued_numbers)}). Verification links & PDF available.",
+                json.dumps({"ticketNumbers": issued_numbers, "verifyUrls": qr_urls}),
+                now_iso,
+            ),
+        )
+    return issued_numbers
+
+
+def issue_deferred_tickets_atomic(booking_ref: str, actor_id: int = None, ip_address: str = None):
+    """Transitions a TICKETING_PENDING / AWAITING_ISSUANCE booking to confirmed ISSUED tickets & QRs."""
+    from fly.services import qr_service
+    conn = get_db(isolation_level=None)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("BEGIN IMMEDIATE;")
+        now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        booking = cursor.execute(
+            """
+            SELECT b.*, f.id_airline, da.country as depCountry, aa.country as arrCountry
+            FROM bookings b
+            JOIN flights f ON b.id_flight = f.id
+            JOIN airports da ON f.dep_airport = da.id
+            JOIN airports aa ON f.arr_airport = aa.id
+            WHERE b.booking_reference = ? OR UPPER(b.pnr_code) = UPPER(?)
+            """,
+            (booking_ref, booking_ref),
+        ).fetchone()
+        if not booking:
+            cursor.execute("ROLLBACK;")
+            return False, "Booking not found.", "NOT_FOUND", None
+
+        ref = booking["booking_reference"]
+        if booking["status"] not in ("TICKETING_PENDING", "CONFIRMED"):
+            cursor.execute("ROLLBACK;")
+            return False, f"Cannot issue tickets for booking in status {booking['status']}.", "INVALID_STATE", None
+
+        paid = cursor.execute(
+            "SELECT 1 FROM payments WHERE booking_reference = ? AND status = 'CAPTURED'",
+            (ref,),
+        ).fetchone()
+        if not paid:
+            cursor.execute("ROLLBACK;")
+            return False, "Cannot issue tickets before captured payment is verified.", "PAYMENT_REQUIRED", None
+
+        pending_rows = cursor.execute(
+            "SELECT * FROM tickets WHERE booking_reference = ? AND COALESCE(issuance_state, status) != 'ISSUED'",
+            (ref,),
+        ).fetchall()
+        issued_nums = []
+        for row in pending_rows:
+            t_num = _generate_unique_ticket_number(cursor) if str(row["ticket_number"]).startswith("PEND-") else row["ticket_number"]
+            cursor.execute(
+                "UPDATE tickets SET ticket_number = ?, status = 'ISSUED', issuance_state = 'ISSUED', issued_at = ?, updated_at = ? WHERE id = ?",
+                (t_num, now_iso, now_iso, row["id"]),
+            )
+            qr_service.issue_qr_for_ticket(cursor, row["id"], issuance_state="ISSUED", is_test_ticket=bool(row["is_test_ticket"]))
+            issued_nums.append(t_num)
+
+        cursor.execute("UPDATE bookings SET status = 'CONFIRMED' WHERE booking_reference = ?", (ref,))
+        log_audit_event(
+            cursor,
+            event_type="DEFERRED_TICKETS_ISSUED",
+            result="ISSUED",
+            actor_id=actor_id,
+            airline_id=booking["id_airline"],
+            flight_id=booking["id_flight"],
+            reservation_ref=ref,
+            details=f"Issued deferred e-tickets: {', '.join(issued_nums)}",
+            ip_address=ip_address,
+        )
+        cursor.execute("COMMIT;")
+        return True, "Tickets issued and QR credentials generated.", None, get_ticket_data(ref)
+    except Exception as exc:
+        try:
+            cursor.execute("ROLLBACK;")
+        except Exception:
+            pass
+        return False, str(exc), "SERVER_ERROR", None
+    finally:
+        conn.close()
+
+
 def confirm_payment_atomic(
     booking_ref: str,
     account_id: int,
@@ -1366,11 +2219,13 @@ def confirm_payment_atomic(
     transaction_ref: str = None,
     idempotency_key: str = None,
     scenario: str = "SIMULATE_SUCCESS",
+    issuance_scenario: str = "ISSUED_IMMEDIATELY",
     ip_address: str = None,
 ):
     """
-    Idempotently processes mock payment scenarios:
-      - SIMULATE_SUCCESS: Confirms booking & reservations, generates PNR + e-ticket.
+    Idempotently processes payment scenarios:
+      - SIMULATE_SUCCESS + ISSUED_IMMEDIATELY: Captures payment, records ledger, issues per-passenger tickets & cryptographic QR tokens.
+      - SIMULATE_SUCCESS + DEFER_ISSUANCE: Captures payment & creates PNR, sets TICKETING_PENDING with NO QR until airline confirms issuance.
       - SIMULATE_FAILURE: Logs failure, cancels hold & releases seats immediately.
       - SIMULATE_TIMEOUT: Logs timeout, expires hold & releases seats immediately.
     """
@@ -1427,7 +2282,7 @@ def confirm_payment_atomic(
             return False, "Access denied: Booking belongs to another airline.", "FORBIDDEN", None
 
         # 3. Already confirmed idempotency
-        if booking["status"] == "CONFIRMED":
+        if booking["status"] in ("CONFIRMED", "TICKETING_PENDING"):
             cursor.execute("COMMIT;")
             ticket = get_ticket_data(booking_ref)
             return True, "Payment already confirmed for this reservation.", None, {
@@ -1511,15 +2366,18 @@ def confirm_payment_atomic(
             cursor.execute("COMMIT;")
             return False, "Simulated payment gateway timed out. Seats released back to inventory.", "PAYMENT_TIMEOUT", None
 
-        # 6. SIMULATE_SUCCESS -> Confirm booking, generate PNR & Official E-Ticket
+        # 6. SIMULATE_SUCCESS -> Capture payment + PNR + ledger + conditional immediate vs deferred ticket issuance
+        defer_issue = (str(issuance_scenario or "").strip().upper() == "DEFER_ISSUANCE")
         pnr_code = booking["pnr_code"] or _generate_unique_pnr(cursor)
+        target_b_status = "TICKETING_PENDING" if defer_issue else "CONFIRMED"
+
         cursor.execute(
             """
             UPDATE bookings
-            SET status = 'CONFIRMED', pnr_code = ?, payment_ref = ?, payment_method = ?, paid_at = ?, idempotency_key = ?
+            SET status = ?, pnr_code = ?, payment_ref = ?, payment_method = ?, paid_at = ?, idempotency_key = ?
             WHERE booking_reference = ?
             """,
-            (pnr_code, txn_ref, payment_method, now_iso, idem_key, booking_ref),
+            (target_b_status, pnr_code, txn_ref, payment_method, now_iso, idem_key, booking_ref),
         )
         cursor.execute(
             "UPDATE reservations SET status = 'CONFIRMED', payment_ref = ? WHERE booking_reference = ?",
@@ -1533,13 +2391,32 @@ def confirm_payment_atomic(
             (booking_ref, account_id, idem_key, booking["total_amount"], payment_method, scen, txn_ref, now_iso),
         )
 
+        # Immutable Ledger Credit Entry (exact integer minor units / paisa)
+        cursor.execute(
+            """
+            INSERT INTO financial_ledger_entries (
+                entry_ref, booking_reference, entry_type, direction, amount_minor, currency,
+                original_currency, fx_rate, reference_id, description, created_by, created_at
+            )
+            VALUES (?, ?, 'PAYMENT_CAPTURE', 'CREDIT', ?, 'BDT', 'BDT', '1.0000', ?, ?, ?, ?)
+            """,
+            (
+                f"LED-PAY-{secrets.token_hex(4).upper()}",
+                booking_ref,
+                _to_minor_units(booking["total_amount"]),
+                txn_ref,
+                f"Captured payment via {payment_method} for PNR {pnr_code}",
+                account_id,
+                now_iso,
+            ),
+        )
+
         if booking["promo_code"]:
             cursor.execute(
                 "UPDATE promo_codes SET used_count = used_count + 1 WHERE UPPER(code) = ? AND used_count < usage_limit AND is_active = 1",
                 (booking["promo_code"].upper(),),
             )
 
-        # Build ticket record
         seats = cursor.execute(
             """
             SELECT s.column, s.row, s.type
@@ -1549,72 +2426,36 @@ def confirm_payment_atomic(
             """,
             (booking_ref, booking["id_flight"]),
         ).fetchall()
-        seat_codes_str = ", ".join(f"{s['column']}{s['row']}" for s in seats) or "Assigned"
+        seat_codes = [f"{s['column']}{s['row']}" for s in seats]
+        seat_codes_str = ", ".join(seat_codes) or "Assigned"
 
-        pax_names = []
-        if booking["passenger_data"]:
-            try:
-                for p in json.loads(booking["passenger_data"]):
-                    nm = p.get("fullName") or f"{p.get('title', '')} {p.get('firstName', '')} {p.get('lastName', '')}".strip()
-                    if nm:
-                        pax_names.append(nm)
-            except Exception:
-                pass
-        lead_pax = pax_names[0] if pax_names else "Passenger"
-
-        is_dom = (booking["depCountry"] == "Bangladesh" and booking["arrCountry"] == "Bangladesh")
-        bpol = get_baggage_policy(booking["id_airline"], is_dom, cursor=cursor)
-        baggage_str = f"Check-in: {bpol['included_checked_kg']} kg ({bpol['included_pieces']} pc) • Cabin: {bpol['cabin_kg']} kg"
-        if int(booking["nbr_luggages"] or 0) > 0:
-            baggage_str += f" + {booking['nbr_luggages']} extra pc"
-
-        t_num = _generate_unique_ticket_number(cursor)
-        v_token = secrets.token_urlsafe(24)
-        cursor.execute(
-            """
-            INSERT INTO tickets (
-                ticket_number, pnr_code, booking_reference, id_account, id_flight, id_airline,
-                passenger_name, seat_codes, cabin_class, baggage_allowance, verification_token, status, issued_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ISSUED', ?)
-            """,
-            (
-                t_num,
-                pnr_code,
-                booking_ref,
-                booking["id_account"],
-                booking["id_flight"],
-                booking["id_airline"],
-                lead_pax,
-                seat_codes_str,
-                booking["cabin_class"] or "Economy",
-                baggage_str,
-                v_token,
-                now_iso,
-            ),
+        issued_nums = _issue_tickets_and_qr_in_tx(
+            cursor, booking, pnr_code, seat_codes, now_iso, issue_qr=(not defer_issue)
         )
 
         log_audit_event(
             cursor,
-            event_type="BOOKING_CONFIRMED",
-            result="CONFIRMED",
+            event_type="BOOKING_CONFIRMED" if not defer_issue else "BOOKING_TICKETING_PENDING",
+            result=target_b_status,
             actor_id=account_id,
             airline_id=booking["id_airline"],
             flight_id=booking["id_flight"],
             seat_codes=seat_codes_str,
             reservation_ref=booking_ref,
-            details=f"Confirmed PNR {pnr_code} and issued e-ticket {t_num}.",
+            details=f"PNR {pnr_code} {'issued tickets ' + ','.join(issued_nums) if not defer_issue else 'awaiting airline ticket issuance (no QR generated)'}.",
             ip_address=ip_address,
         )
 
         cursor.execute("COMMIT;")
 
         ticket = get_ticket_data(booking_ref)
-        return True, "Payment confirmed and e-ticket issued.", None, {
+        msg = "Payment confirmed and e-ticket issued." if not defer_issue else "Payment captured; booking is awaiting airline ticket issuance (QR withheld until issued)."
+        return True, msg, None, {
             "bookingReference": booking_ref,
             "pnrCode": pnr_code,
             "paymentRef": txn_ref,
             "paidAt": now_iso,
+            "status": target_b_status,
             "ticket": ticket,
         }
 
@@ -1634,8 +2475,10 @@ def confirm_payment_atomic(
         conn.close()
 
 
-def get_ticket_data(ref_or_pnr: str):
-    """Retrieves full ticket & boarding pass data by booking_reference, pnr_code, or ticket_number."""
+def get_ticket_data(ref_or_pnr: str, ticket_id: int = None):
+    """Retrieves full per-passenger tickets, segments, & in-memory QR URLs (never exposes plaintext tokens on non-ISSUED tickets)."""
+    from fly.services import qr_service
+
     key = (ref_or_pnr or "").strip()
     if not key:
         return None
@@ -1670,7 +2513,17 @@ def get_ticket_data(ref_or_pnr: str):
         conn.close()
         return None
 
-    t_row = cursor.execute("SELECT * FROM tickets WHERE booking_reference = ? ORDER BY id DESC LIMIT 1", (b["booking_reference"],)).fetchone()
+    t_rows = cursor.execute(
+        "SELECT * FROM tickets WHERE booking_reference = ? ORDER BY passenger_index ASC, id ASC",
+        (b["booking_reference"],),
+    ).fetchall()
+    selected_row = None
+    if ticket_id is not None:
+        selected_row = next((r for r in t_rows if int(r["id"]) == int(ticket_id)), None)
+    if selected_row is None and t_rows:
+        # Match by ticket_number if queried directly by ticket number
+        selected_row = next((r for r in t_rows if r["ticket_number"] == key), t_rows[0])
+
     seats = cursor.execute(
         """
         SELECT s.id, s.column, s.row, s.type
@@ -1683,7 +2536,47 @@ def get_ticket_data(ref_or_pnr: str):
 
     is_dom = (b["depCountry"] == "Bangladesh" and b["arrCountry"] == "Bangladesh")
     bpol = get_baggage_policy(b["airlineId"], is_dom, cursor=cursor)
+
+    # Enrich each individual ticket record with segments and active QR credential (only when ISSUED / PARTIALLY_USED)
+    enriched_tickets = []
+    for tr in t_rows:
+        segs = [
+            dict(s)
+            for s in cursor.execute(
+                "SELECT * FROM ticket_segments WHERE ticket_id = ? ORDER BY segment_order ASC",
+                (tr["id"],),
+            ).fetchall()
+        ]
+        raw_tok, verify_url = qr_service.resolve_raw_token_for_ticket(cursor, tr)
+        tr_dict = {
+            "ticketId": tr["id"],
+            "ticketNumber": tr["ticket_number"],
+            "passengerName": tr["passenger_name"],
+            "passengerIndex": tr["passenger_index"] if "passenger_index" in tr.keys() else 1,
+            "seatCodes": tr["seat_codes"],
+            "cabinClass": tr["cabin_class"],
+            "baggageAllowance": tr["baggage_allowance"],
+            "ticketStatus": tr["status"],
+            "issuanceState": tr["issuance_state"] if "issuance_state" in tr.keys() and tr["issuance_state"] else tr["status"],
+            "checkinStatus": tr["checkin_status"] if "checkin_status" in tr.keys() and tr["checkin_status"] else "NOT_CHECKED_IN",
+            "checkedInAt": tr["checked_in_at"] if "checked_in_at" in tr.keys() else None,
+            "isTestTicket": bool(tr["is_test_ticket"]) if "is_test_ticket" in tr.keys() and tr["is_test_ticket"] is not None else True,
+            "fareFamily": tr["fare_family"] if "fare_family" in tr.keys() and tr["fare_family"] else "STANDARD",
+            "verificationToken": raw_tok,
+            "verifyUrl": verify_url,
+            "qrSvg": qr_service.generate_qr_svg(verify_url, size=180) if verify_url else None,
+            "segments": segs,
+            "issuedAt": tr["issued_at"],
+        }
+        enriched_tickets.append(tr_dict)
+
     conn.close()
+
+    lead_enriched = None
+    if selected_row:
+        lead_enriched = next((x for x in enriched_tickets if x["ticketId"] == selected_row["id"]), None)
+    if not lead_enriched and enriched_tickets:
+        lead_enriched = enriched_tickets[0]
 
     passenger_name = f"{b['firstName'] or ''} {b['lastName'] or ''}".strip()
     passenger_names = []
@@ -1703,23 +2596,34 @@ def get_ticket_data(ref_or_pnr: str):
     seat_codes = [f"{s['column']}{s['row']}" for s in seats]
     seat_class = b["cabin_class"] or (seats[0]["type"].capitalize() if seats else "Economy")
     f_num = b["flight_number"] or f"{b['airlineIATA']}-{100 + (b['flightId'] % 900)}"
-    baggage_text = (t_row["baggage_allowance"] if t_row else None) or f"Check-in: {bpol['included_checked_kg']} kg ({bpol['included_pieces']} pc) • Cabin: {bpol['cabin_kg']} kg"
+    baggage_text = (lead_enriched["baggageAllowance"] if lead_enriched else None) or f"Check-in: {bpol['included_checked_kg']} kg ({bpol['included_pieces']} pc) • Cabin: {bpol['cabin_kg']} kg"
 
     return {
+        "ticketId": lead_enriched["ticketId"] if lead_enriched else None,
         "bookingReference": b["booking_reference"],
-        "pnrCode": b["pnr_code"] or (t_row["pnr_code"] if t_row else None),
-        "ticketNumber": t_row["ticket_number"] if t_row else None,
-        "verificationToken": t_row["verification_token"] if t_row else None,
-        "ticketStatus": t_row["status"] if t_row else b["status"],
+        "pnrCode": b["pnr_code"] or (selected_row["pnr_code"] if selected_row else None),
+        "ticketNumber": lead_enriched["ticketNumber"] if lead_enriched else None,
+        "verificationToken": lead_enriched["verificationToken"] if lead_enriched else None,
+        "verifyUrl": lead_enriched["verifyUrl"] if lead_enriched else None,
+        "qrSvg": lead_enriched["qrSvg"] if lead_enriched else None,
+        "ticketStatus": lead_enriched["ticketStatus"] if lead_enriched else b["status"],
+        "issuanceState": lead_enriched["issuanceState"] if lead_enriched else b["status"],
+        "checkinStatus": lead_enriched["checkinStatus"] if lead_enriched else "NOT_CHECKED_IN",
+        "checkedInAt": lead_enriched["checkedInAt"] if lead_enriched else None,
+        "isTestTicket": lead_enriched["isTestTicket"] if lead_enriched else True,
+        "segments": lead_enriched["segments"] if lead_enriched else [],
+        "tickets": enriched_tickets,
         "id_account": b["id_account"],
         "id_airline": b["airlineId"],
         "flightId": b["flightId"],
         "flightNumber": f_num,
         "aircraft": b["aircraft_model"] or "Boeing 737-800",
-        "passengerName": passenger_name,
+        "passengerName": lead_enriched["passengerName"] if lead_enriched else passenger_name,
         "passengerNames": passenger_names if passenger_names else [passenger_name],
         "contactEmail": b["contact_email"] or b["emailAddress"],
         "tripType": b["trip_type"] or "one_way",
+        "fareFamily": b["fare_family"] if "fare_family" in b.keys() and b["fare_family"] else "STANDARD",
+        "feePolicyVersion": b["fee_policy_version"] if "fee_policy_version" in b.keys() and b["fee_policy_version"] else "FLY-POL-V1",
         "fareBreakdown": json.loads(b["fare_breakdown"]) if b["fare_breakdown"] else None,
         "airlineName": b["airlineName"],
         "airlineIATA": b["airlineIATA"],
@@ -1741,10 +2645,11 @@ def get_ticket_data(ref_or_pnr: str):
         "discountAmount": b["discount_amount"] or 0,
         "promoCode": b["promo_code"],
         "paymentRef": b["payment_ref"],
-        "paymentStatus": "PAID" if b["status"] == "CONFIRMED" else b["status"],
+        "paymentMethod": b["payment_method"],
+        "paymentStatus": "PAID" if b["status"] in ("CONFIRMED", "TICKETING_PENDING") else b["status"],
         "status": b["status"],
         "gate": f"G{b['flightId'] % 12 + 1}",
         "terminal": f"T{b['flightId'] % 3 + 1}",
         "returnFlightId": b["return_flight_id"],
-        "issuedAt": t_row["issued_at"] if t_row else b["paid_at"],
+        "issuedAt": lead_enriched["issuedAt"] if lead_enriched else b["paid_at"],
     }

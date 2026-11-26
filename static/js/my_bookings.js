@@ -72,15 +72,21 @@
       const pnr = b.pnrCode || b.pnr_code || ref;
 
       let actions = '';
-      if (st === 'CONFIRMED') {
+      if (st === 'CONFIRMED' || st === 'PARTIALLY_CANCELLED') {
         actions += `<a href="/ticket/${encodeURIComponent(pnr)}" class="fly-btn fly-btn-primary">E-Ticket &amp; QR</a>`;
-        actions += `<a href="/api/tickets/${encodeURIComponent(pnr)}/pdf?vtoken=${encodeURIComponent(b.verificationToken || '')}" class="fly-btn fly-btn-outline">Download PDF</a>`;
-        actions += `<button type="button" class="fly-btn fly-btn-danger" data-cancel-ref="${esc(ref)}">Cancel &amp; Refund</button>`;
+        actions += `<a href="/api/tickets/${encodeURIComponent(pnr)}/pdf" class="fly-btn fly-btn-outline">Download PDF</a>`;
+        actions += `<a href="/cancel-booking/${encodeURIComponent(ref)}" class="fly-btn fly-btn-danger">Cancel &amp; Refund Quote</a>`;
+      } else if (st === 'TICKETING_PENDING') {
+        actions += `<a href="/booking/status/${encodeURIComponent(ref)}" class="fly-btn fly-btn-outline">Ticketing Pending</a>`;
+        actions += `<a href="/cancel-booking/${encodeURIComponent(ref)}" class="fly-btn fly-btn-danger">Cancel Before Issuance</a>`;
       } else if (st === 'PENDING_PAYMENT') {
         actions += `<a href="/checkout?ref=${encodeURIComponent(ref)}" class="fly-btn fly-btn-primary">Complete Checkout (${b.secondsRemaining || 0}s left)</a>`;
         actions += `<button type="button" class="fly-btn fly-btn-outline" data-cancel-ref="${esc(ref)}">Release Lock</button>`;
       } else {
-        actions += `<a href="/booking/status/${encodeURIComponent(ref)}" class="fly-btn fly-btn-outline">View Details</a>`;
+        actions += `<a href="/booking/status/${encodeURIComponent(ref)}" class="fly-btn fly-btn-outline">Booking Details</a>`;
+        if (b.refundRef || st === 'CANCELLED' || st === 'REFUNDED') {
+          actions += `<a href="/refunds/track/${encodeURIComponent(b.refundRef || ref)}" class="fly-btn fly-btn-primary">Track Refund</a>`;
+        }
       }
 
       return `

@@ -52,7 +52,9 @@
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           ${b.status === 'CONFIRMED' ? `<a href="${pdfUrl}" class="fly-btn fly-btn-primary">Download E-Ticket PDF</a>` : ''}
-          <a href="${verifyUrl}" class="fly-btn fly-btn-outline">Verify Boarding Pass</a>
+          ${b.verificationToken ? `<a href="${verifyUrl}" class="fly-btn fly-btn-outline">Verify E-Ticket QR</a>` : ''}
+          ${(b.status === 'CONFIRMED' || b.status === 'TICKETING_PENDING') ? `<a href="/cancel-booking/${encodeURIComponent(b.bookingReference)}" class="fly-btn fly-btn-danger">Cancel &amp; Refund Preview</a>` : ''}
+          ${(b.status === 'CANCELLED' || b.status === 'REFUNDED') ? `<a href="/refunds/track/${encodeURIComponent(b.bookingReference)}" class="fly-btn fly-btn-primary">Track Refund Status</a>` : ''}
         </div>
       `;
       resultEl.classList.remove('is-hidden');

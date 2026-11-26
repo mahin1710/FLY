@@ -93,6 +93,17 @@ def ticket_verify_page(token):
     return render_template("pages/ticket_verify.html", token=token)
 
 
+@pages_bp.route("/cancel-booking/<booking_ref>")
+def cancel_booking_preview_page(booking_ref):
+    return render_template("pages/refund_preview.html", booking_ref=booking_ref)
+
+
+@pages_bp.route("/refunds/track")
+@pages_bp.route("/refunds/track/<ref>")
+def refund_tracking_page(ref=None):
+    return render_template("pages/refund_tracking.html", refund_ref=ref or "")
+
+
 @pages_bp.route("/my-bookings")
 def my_bookings_page():
     return render_template("pages/my_bookings.html")
@@ -139,6 +150,11 @@ def admin_flights_page():
 @pages_bp.route("/admin/bookings")
 def admin_bookings_page():
     return render_template("pages/admin_operations.html", admin_tab="bookings")
+
+
+@pages_bp.route("/admin/refunds")
+def admin_refunds_page():
+    return render_template("pages/admin_operations.html", admin_tab="refunds")
 
 
 @pages_bp.route("/admin/inventory")

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "components/breadcrumb.html" import render_breadcrumb %}
 
-{% block title %}Verify E-Ticket — FLY{% endblock %}
+{% block title %}FLY Ticket Verification{% endblock %}
 
 {% block breadcrumbs %}
   {{ render_breadcrumb([
@@ -12,13 +12,38 @@
 
 {% block content %}
 <div class="fly-container fly-page-section" id="verifyApp" data-token="{{ token }}">
-  <div class="fly-card" style="max-width: 640px; margin: 24px auto; padding: 28px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px;">
-      <h1 style="margin: 0; font-size: 1.35rem;">E-Ticket Verification</h1>
-      <span id="vBadge" class="fly-badge">Checking...</span>
+  <div class="fly-card" style="max-width: 680px; margin: 16px auto; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+      <div>
+        <div style="font-size: 0.74rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+          FLY Cryptographic Verification
+        </div>
+        <h1 style="margin: 4px 0 0; font-size: 1.35rem;" id="vHeadline">Verifying Ticket...</h1>
+      </div>
+      <span id="vBadge" class="fly-badge">Checking Server...</span>
     </div>
-    <div id="vBody" style="display: grid; gap: 10px; font-size: 0.94rem;">
-      <p style="color: var(--text-muted);">Validating boarding pass signature...</p>
+
+    <div id="vStatusBanner" style="padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--bg-secondary); margin-bottom: 16px; font-size: 0.92rem;">
+      Contacting FLY verification server...
+    </div>
+
+    <div id="vBody" style="display: grid; gap: 12px; font-size: 0.94rem;"></div>
+
+    <!-- Staff-Only Check-In Panel (shown only to authenticated airline/system admins) -->
+    <div id="vStaffPanel" class="is-hidden" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">
+        Authorized FLY Staff Workflow
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <span id="vStaffCheckinNote" style="font-size: 0.86rem;">Ready for staff check-in verification.</span>
+        <button type="button" id="btnStaffCheckin" class="fly-btn fly-btn-primary">Confirm FLY Check-In</button>
+      </div>
+      <div id="vStaffResult" class="fly-alert is-hidden" style="margin-top: 10px;"></div>
+    </div>
+
+    <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.78rem; color: var(--text-muted);">
+      <span>Public verification is read-only &amp; does not consume airport boarding coupons.</span>
+      <button type="button" id="btnRetryVerify" class="fly-btn fly-btn-outline" style="padding: 4px 10px; font-size: 0.76rem;">Re-Verify Live Status</button>
     </div>
   </div>
 </div>
@@ -26,30 +51,131 @@
 
 {% block scripts %}
 <script>
-(async function () {
+(function () {
   const token = document.getElementById('verifyApp').getAttribute('data-token');
+  const headlineEl = document.getElementById('vHeadline');
   const badge = document.getElementById('vBadge');
+  const banner = document.getElementById('vStatusBanner');
   const body = document.getElementById('vBody');
-  const esc = s => window.FlyApi.escapeHtml(s);
+  const staffPanel = document.getElementById('vStaffPanel');
+  const btnStaffCheckin = document.getElementById('btnStaffCheckin');
+  const staffResult = document.getElementById('vStaffResult');
+  const esc = s => window.FlyApi ? window.FlyApi.escapeHtml(s) : String(s || '');
 
-  try {
-    const res = await window.FlyApi.get('/api/tickets/verify/' + encodeURIComponent(token));
-    const isOk = String(res.status || '').toUpperCase() === 'CONFIRMED' || String(res.status || '').toUpperCase() === 'ISSUED';
-    badge.textContent = isOk ? 'VERIFIED VALID' : esc(res.status || 'CHECK');
-    badge.className = 'fly-badge ' + (isOk ? 'fly-badge-success' : 'fly-badge-danger');
-    body.innerHTML = `
-      <div><strong>Airline:</strong> ${esc(res.airlineName)} (${esc(res.airlineIATA)})</div>
-      <div><strong>Flight:</strong> ${esc(res.flight_number)} &bull; ${esc(res.depCity)} (${esc(res.depIATA)}) ➔ ${esc(res.arrCity)} (${esc(res.arrIATA)})</div>
-      <div><strong>Departure:</strong> ${esc(res.dep_datetime)}</div>
-      <div><strong>PNR / Ticket:</strong> ${esc(res.pnr_code)} / ${esc(res.ticket_number)}</div>
-      <div><strong>Cabin &amp; Seats:</strong> ${esc(res.cabin_class)} (${esc(res.seat_codes)})</div>
-      <div><strong>Baggage:</strong> ${esc(res.baggage_allowance)}</div>
-    `;
-  } catch (err) {
-    badge.textContent = 'INVALID';
-    badge.className = 'fly-badge fly-badge-danger';
-    body.innerHTML = `<p style="color:#dc2626;margin:0;">${esc(err.message || 'Verification reference could not be matched.')}</p>`;
+  function setVerdictStyle(verdict) {
+    const v = String(verdict || '').toUpperCase();
+    if (v === 'VALID_ISSUED' || v === 'PARTIALLY_USED') {
+      badge.className = 'fly-badge fly-badge-success';
+      banner.style.background = 'rgba(16, 185, 129, 0.12)';
+      banner.style.borderColor = '#10b981';
+      banner.style.color = '#065f46';
+    } else if (v.includes('PENDING') || v === 'AWAITING_ISSUANCE' || v === 'UNDER_REVIEW') {
+      badge.className = 'fly-badge fly-badge-warning';
+      banner.style.background = 'rgba(245, 158, 11, 0.14)';
+      banner.style.borderColor = '#d97706';
+      banner.style.color = '#92400e';
+    } else {
+      badge.className = 'fly-badge fly-badge-danger';
+      banner.style.background = 'rgba(239, 68, 68, 0.12)';
+      banner.style.borderColor = '#dc2626';
+      banner.style.color = '#991b1b';
+    }
   }
+
+  async function runVerification() {
+    body.innerHTML = '';
+    try {
+      const resp = await fetch('/api/tickets/verify/' + encodeURIComponent(token) + '?source=PUBLIC_MOBILE', {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+      const res = await resp.json();
+      const verdict = String(res.verdict || (resp.ok ? 'VALID_ISSUED' : 'INVALID')).toUpperCase();
+      headlineEl.textContent = res.headline || 'INVALID TICKET';
+      badge.textContent = verdict.replace(/_/g, ' ');
+      setVerdictStyle(verdict);
+
+      if (!res.bookingReference) {
+        banner.textContent = res.reason || 'This ticket could not be verified against FLY issuance records.';
+        return;
+      }
+
+      banner.innerHTML = `
+        <strong>${esc(res.headline)}</strong>
+        ${res.testFixtureBadge ? ` &bull; <span class="fly-badge fly-badge-warning">${esc(res.testFixtureBadge)}</span>` : ''}
+        <div style="margin-top:4px;font-size:0.84rem;">${esc(res.reason || res.checkinLabel || '')}</div>
+      `;
+
+      const segHtml = (res.segments || []).map((s, idx) => `
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:8px;font-size:0.84rem;">
+          <span>Seg ${idx + 1}: <strong>${esc(s.origin_iata)} ➔ ${esc(s.dest_iata)}</strong> (${esc(s.dep_datetime)})</span>
+          <span class="fly-badge">${esc(s.coupon_status || 'OPEN')}</span>
+        </div>
+      `).join('');
+
+      body.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;">
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">FLY BOOKING REF</div><strong style="font-family:var(--font-mono);">${esc(res.bookingReference)}</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">MASKED PASSENGER</div><strong>${esc(res.maskedPassengerName)}</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">AIRLINE &amp; FLIGHT</div><strong>${esc(res.airlineName)} (${esc(res.flightNumber)})</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">ROUTE</div><strong>${esc(res.depCity)} (${esc(res.depIATA)}) ➔ ${esc(res.arrCity)} (${esc(res.arrIATA)})</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">DEPARTURE DATE</div><strong>${esc(res.departureDateTime)}</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">ISSUANCE STATUS</div><strong>${esc(res.issuanceStatus)}</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">E-TICKET NO.</div><strong style="font-family:var(--font-mono);">${esc(res.ticketNumber)}</strong></div>
+          <div><div style="font-size:0.74rem;color:var(--text-muted);">VERIFIED AT (UTC)</div><strong>${esc(res.verifiedAt)}</strong></div>
+        </div>
+        <div style="padding:10px 12px;border-radius:8px;background:var(--bg-secondary);font-size:0.84rem;">
+          <strong>FLY Check-In Status:</strong> ${esc(res.checkinLabel)}
+          &bull; <strong>Public Scans:</strong> ${Number(res.publicScanCount || 1)}
+        </div>
+        ${segHtml ? `<div style="display:grid;gap:6px;"><div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Coupon Segments</div>${segHtml}</div>` : ''}
+      `;
+
+      // Show staff check-in button only if logged in with staff role & ticket is valid
+      const user = window.FlyApi ? window.FlyApi.getUser() : null;
+      const role = String((user && user.role) || '').toUpperCase();
+      if (['AIRLINE_ADMIN', 'SYSTEM_ADMIN', 'SUPER_ADMIN'].includes(role) && res.valid) {
+        staffPanel.classList.remove('is-hidden');
+        if (res.checkinStatus === 'FLY_CHECKED_IN') {
+          btnStaffCheckin.disabled = true;
+          btnStaffCheckin.textContent = 'Already Checked In (FLY)';
+          document.getElementById('vStaffCheckinNote').textContent = `Checked in at ${res.checkedInAt || '--'}.`;
+        } else {
+          btnStaffCheckin.disabled = false;
+          btnStaffCheckin.textContent = 'Confirm FLY Check-In';
+        }
+      }
+    } catch (err) {
+      // B3 exact offline/unreachable error (never show cached success)
+      headlineEl.textContent = 'SERVER UNREACHABLE';
+      badge.textContent = 'OFFLINE / UNREACHABLE';
+      setVerdictStyle('INVALID');
+      banner.textContent = 'FLY verification server is currently unreachable. Please connect to the same network and try again.';
+    }
+  }
+
+  btnStaffCheckin.addEventListener('click', async () => {
+    btnStaffCheckin.disabled = true;
+    staffResult.classList.add('is-hidden');
+    try {
+      const r = await window.FlyApi.post('/api/staff/tickets/verify/' + encodeURIComponent(token) + '/checkin', {
+        deviceRef: navigator.userAgent.slice(0, 60)
+      });
+      staffResult.textContent = r.note || 'FLY check-in recorded.';
+      staffResult.className = 'fly-alert fly-alert-success';
+      staffResult.classList.remove('is-hidden');
+      runVerification();
+    } catch (err) {
+      staffResult.textContent = err.message || 'Check-in rejected.';
+      staffResult.className = 'fly-alert fly-alert-danger';
+      staffResult.classList.remove('is-hidden');
+      btnStaffCheckin.disabled = false;
+    }
+  });
+
+  document.getElementById('btnRetryVerify').addEventListener('click', runVerification);
+  runVerification();
 })();
 </script>
 {% endblock %}
