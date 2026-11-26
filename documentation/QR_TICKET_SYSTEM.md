@@ -24,10 +24,12 @@
 ## 4. Verification Verdicts & Read-Only Public vs Staff Check-In Separation
 - **Public Verification (`GET /api/tickets/verify/<token>`):** Read-only, `Cache-Control: no-store`. Never modifies ticket status or consumes flight coupons; allows unlimited repeated scans across devices.
   - `VALID_ISSUED` -> `VALID — TICKET ISSUED` (masked passenger name, airline, flight, route, date, FLY check-in distinction).
-  - `CANCELLED` -> `CANCELLED — NOT VALID FOR TRAVEL`.
+  - `CANCELLED` -> `CANCELLED — NOT VALID FOR TRAVEL` (or `CANCELLED (REFUND PENDING) — NOT VALID FOR TRAVEL` while confirmed cancellation awaits payout settlement).
+  - `VOID` -> `VOID — TICKET INVALID FOR TRAVEL` (revoked via `POST /api/staff/tickets/verify/<token>/void`).
   - `REFUNDED` -> `REFUNDED — TICKET NOT VALID FOR TRAVEL`.
   - `TICKETING_PENDING` / `CANCELLATION_PENDING` / `REFUND_PENDING` / `UNDER_REVIEW` -> Displays exact pending state; never reports pending tickets as valid.
   - `PARTIALLY_USED` / `USED` -> Distinguishes partially flown vs fully consumed coupons.
-  - `INVALID` / `REVOKED` / `EXPIRED` -> `INVALID TICKET` without leaking secrets.
+  - `INVALID` / `REVOKED` / `EXPIRED` -> `INVALID TICKET` / `REVOKED — INVALID TICKET` without leaking secrets.
+  - Verification authority is labeled explicitly (`FLY Record Verification (Sandbox / Local Issuance)` when live GDS isn't connected).
 - **Authorized Staff Check-In (`POST /api/staff/tickets/verify/<token>/checkin`):** Restricted to `AIRLINE_ADMIN` (airline-scoped) / `SYSTEM_ADMIN` / `SUPER_ADMIN`. Uses SQLite `BEGIN IMMEDIATE` + atomic conditional `UPDATE ... WHERE checkin_status = 'NOT_CHECKED_IN'` to block concurrent multi-device double check-ins (`409 ALREADY_CHECKED_IN`).
 - **Audit Trail:** All public scans and staff check-in attempts are permanently appended to `ticket_scan_logs` and visible in Admin `Audit & QR Logs`.

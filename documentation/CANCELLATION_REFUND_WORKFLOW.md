@@ -27,7 +27,7 @@ Supported `cancellationType` workflows:
 - Opening `/cancel-booking/<ref>` never cancels a booking. The customer reviews original payment, airline penalty, non-refundable taxes, refundable taxes, disclosed FLY service fee, and destination before checking explicit confirmation.
 - Expired quotes return `409 QUOTE_EXPIRED` requiring quote revalidation before submission. Rejecting a quote (`POST /api/refund-quotes/<ref>/reject`) keeps the itinerary active.
 - Cancellation state (`REQUESTED` -> `QUOTE_READY` -> `SUPPLIER_CANCEL_PENDING` -> `CANCELLED_BY_SUPPLIER` / `MANUAL_REVIEW` / `FAILED`) and refund payment state (`NOT_ELIGIBLE` / `APPROVAL_PENDING` / `SUBMITTED_TO_SUPPLIER` / `SUPPLIER_APPROVED` / `GATEWAY_REFUND_PENDING` / `GATEWAY_PROCESSING` / `PARTIALLY_REFUNDED` / `REFUNDED` / `FAILED` / `RECONCILIATION_REQUIRED`) are stored independently.
-- **No Premature Completion:** Supplier acceptance or gateway initiation never immediately marks a refund `REFUNDED` unless authoritative settlement confirms.
+- **Customer Tracking (`/my-bookings` -> Refund Tracking & `/refunds/track/<ref>`):** Displays Cancellation Ref, Refund Ref, Original Paid Amount, Eligible Refund Amount, Payment Method, Supplier/Gateway Ref, Customer Notifications, and the **9-Stage Timeline** (`1. Cancellation requested` through `9. Refund completed`), plus background reconciliation (`_start_lock_expiry_scheduler`).
 
 ---
 

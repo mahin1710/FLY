@@ -174,10 +174,11 @@ class CancellationAndRefundSystemTests(unittest.TestCase):
             # Independent refund status is NOT prematurely REFUNDED yet!
             self.assertIn(pc["refundStatus"], ("GATEWAY_PROCESSING", "APPROVAL_PENDING"))
 
-            # Ticket 1 QR invalidated, Ticket 2 QR still VALID!
+            # Ticket 1 QR invalidated (shows CANCELLED or CANCELLED REFUND PENDING), Ticket 2 QR still VALID!
             _, v1 = req("GET", f"/api/tickets/verify/{t1['verificationToken']}")
             _, v2 = req("GET", f"/api/tickets/verify/{t2['verificationToken']}")
-            self.assertEqual(v1["headline"], "CANCELLED — NOT VALID FOR TRAVEL")
+            self.assertFalse(v1["valid"])
+            self.assertIn("NOT VALID FOR TRAVEL", v1["headline"])
             self.assertEqual(v2["headline"], "VALID — TICKET ISSUED")
 
             # Duplicate refund submission blocked / idempotent
@@ -195,11 +196,15 @@ class CancellationAndRefundSystemTests(unittest.TestCase):
             self.assertEqual(st_rec, 200)
             self.assertEqual(rec_res["status"], "REFUNDED")
 
-            # Customer refund tracking timeline shows stage 7 completed
+            # Customer 9-stage refund tracking timeline & My Refunds endpoint
             st_tr, tr = req("GET", f"/api/refunds/track/{rf_ref}", token=self.tok_m0)
             self.assertEqual(st_tr, 200)
             self.assertEqual(tr["status"], "REFUNDED")
+            self.assertEqual(len(tr["timelineStages"]), 9)
             self.assertTrue(all(st["completed"] for st in tr["timelineStages"]))
+            st_myrf, my_rf = req("GET", "/api/refunds/my", token=self.tok_m0)
+            self.assertEqual(st_myrf, 200)
+            self.assertTrue(any(r["refund_ref"] == rf_ref for r in my_rf["refunds"]))
         finally:
             req("POST", "/api/bookings/cancel", {"bookingReference": ref, "reason": "Cleanup"}, token=self.tok_m0)
 

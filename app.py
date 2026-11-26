@@ -79,12 +79,14 @@ def serve_images(filename):
 
 
 def _start_lock_expiry_scheduler():
-    """Background daemon that automatically releases expired temporary seat locks."""
+    """Background daemon that automatically releases expired temporary seat locks and polls pending gateway refunds."""
     interval = max(10, Config.LOCK_SWEEP_INTERVAL_SECONDS)
 
     def _sweep_loop():
         try:
             database.cleanup_expired_holds()
+            from fly.services import cancellation_refund_service
+            cancellation_refund_service.run_background_reconciliation_sweep()
         except Exception:
             pass
         timer = threading.Timer(interval, _sweep_loop)

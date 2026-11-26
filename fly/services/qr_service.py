@@ -406,14 +406,28 @@ def verify_ticket_token(
         reason = None
         http_status = 200
 
-        if t_status == "REFUNDED" or i_state == "REFUNDED" or b_status == "REFUNDED":
+        if t_status == "VOID" or i_state == "VOID":
+            verdict = "VOID"
+            headline = "VOID — TICKET INVALID FOR TRAVEL"
+            reason = "This ticket has been voided by an authorized issuer and is not valid for travel."
+        elif t_status == "REFUNDED" or i_state == "REFUNDED" or b_status == "REFUNDED":
             verdict = "REFUNDED"
             headline = "REFUNDED — TICKET NOT VALID FOR TRAVEL"
             reason = "This ticket has been refunded and invalidated."
         elif t_status == "CANCELLED" or i_state == "CANCELLED" or b_status == "CANCELLED":
-            verdict = "CANCELLED"
-            headline = "CANCELLED — NOT VALID FOR TRAVEL"
-            reason = "This ticket was cancelled and is no longer valid for travel."
+            # Check if a refund settlement is currently pending after confirmed cancellation
+            rf_row = cursor.execute(
+                "SELECT refund_ref, status FROM refunds WHERE booking_reference = ? ORDER BY id DESC LIMIT 1",
+                (row["booking_reference"],),
+            ).fetchone()
+            if rf_row and str(rf_row["status"]).upper() in ("APPROVAL_PENDING", "SUBMITTED_TO_SUPPLIER", "SUPPLIER_APPROVED", "GATEWAY_REFUND_PENDING", "GATEWAY_PROCESSING"):
+                verdict = "REFUND_PENDING"
+                headline = "CANCELLED (REFUND PENDING) — NOT VALID FOR TRAVEL"
+                reason = f"Ticket cancelled; refund {rf_row['refund_ref']} is currently {rf_row['status']}."
+            else:
+                verdict = "CANCELLED"
+                headline = "CANCELLED — NOT VALID FOR TRAVEL"
+                reason = "This ticket was cancelled and is no longer valid for travel."
         elif i_state in ("TICKETING_PENDING", "AWAITING_ISSUANCE", "CANCELLATION_PENDING", "REFUND_PENDING", "UNDER_REVIEW"):
             label_map = {
                 "TICKETING_PENDING": "Ticketing Pending",
@@ -427,7 +441,7 @@ def verify_ticket_token(
             reason = f"Ticket is currently {label_map[i_state]} and not cleared as valid for travel."
         elif revoked_at:
             verdict = "REVOKED"
-            headline = "INVALID TICKET"
+            headline = "REVOKED — INVALID TICKET"
             reason = "This verification QR code has been revoked."
             http_status = 410
         elif token_expired:
@@ -509,9 +523,14 @@ def verify_ticket_token(
             "segments": segments,
             "isTestTicket": bool(row["isTestTicket"]),
             "testFixtureBadge": "TEST FIXTURE TICKET (NON-LIVE)" if row["isTestTicket"] else None,
+            "verificationAuthority": (
+                "FLY Record Verification (Sandbox / Local Issuance)"
+                if Config.FLIGHT_PROVIDER_ACTIVE in ("DEMO_LOCAL", "")
+                else f"Provider Synchronized Verification ({Config.FLIGHT_PROVIDER_ACTIVE})"
+            ),
             "verifiedAt": now_iso,
             "publicScanCount": prior_scans + 1,
-            "note": "Public QR verification is read-only and does not consume travel entitlement.",
+            "note": "Public QR verification is read-only and does not consume travel entitlement. Not an airline airport boarding pass.",
         }
     finally:
         conn.close()
@@ -650,5 +669,41 @@ def staff_checkin_ticket(raw_token: str, staff_user: dict, ip_address: str = Non
         except Exception:
             pass
         return 500, {"error": f"Check-in failed: {exc}", "code": "SERVER_ERROR"}
+    finally:
+        conn.close()
+
+
+def staff_void_ticket(raw_token: str, staff_user: dict, reason: str = "Voided by authorized issuer", ip_address: str = None) -> tuple:
+    """Authorized staff void operation: sets issuance_state='VOID' and revokes active QR tokens."""
+    if not staff_user or str(staff_user.get("role") or "").upper() not in ("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN"):
+        return 403, {"error": "Forbidden: Authorized staff role required."}
+    tok_hash = hash_token((raw_token or "").strip())
+    conn = database.get_db(isolation_level=None)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("BEGIN IMMEDIATE;")
+        now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        row = cursor.execute(
+            "SELECT qt.ticket_id, t.ticket_number, t.booking_reference, t.id_airline, t.id_flight FROM ticket_qr_tokens qt JOIN tickets t ON qt.ticket_id = t.id WHERE qt.token_hash = ? LIMIT 1",
+            (tok_hash,),
+        ).fetchone()
+        if not row:
+            cursor.execute("ROLLBACK;")
+            return 404, {"error": "Verification token not found."}
+        if str(staff_user.get("role")).upper() == "AIRLINE_ADMIN" and int(row["id_airline"]) != int(staff_user.get("airlineId") or -1):
+            cursor.execute("ROLLBACK;")
+            return 403, {"error": "Forbidden: Cannot void another airline's ticket."}
+        cursor.execute("UPDATE tickets SET status = 'CANCELLED', issuance_state = 'VOID', updated_at = ? WHERE id = ?", (now_iso, row["ticket_id"]))
+        cursor.execute("UPDATE ticket_segments SET coupon_status = 'VOID' WHERE ticket_id = ?", (row["ticket_id"],))
+        revoke_qr_tokens(cursor, ticket_id=row["ticket_id"], reason="TICKET_VOIDED")
+        database.log_audit_event(cursor, "TICKET_VOIDED", "VOID", staff_user["id"], staff_user["role"], row["id_airline"], row["id_flight"], reservation_ref=row["booking_reference"], details=f"Voided ticket {row['ticket_number']}: {reason}", ip_address=ip_address)
+        cursor.execute("COMMIT;")
+        return 200, {"success": True, "ticketNumber": row["ticket_number"], "issuanceState": "VOID"}
+    except Exception as exc:
+        try:
+            cursor.execute("ROLLBACK;")
+        except Exception:
+            pass
+        return 500, {"error": str(exc)}
     finally:
         conn.close()

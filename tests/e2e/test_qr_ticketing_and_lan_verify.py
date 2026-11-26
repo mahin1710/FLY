@@ -231,12 +231,37 @@ class QrTicketingAndLanTests(unittest.TestCase):
             _, _, ver_ci = req("GET", f"/api/tickets/verify/{vtok1}")
             self.assertEqual(ver_ci["checkinStatus"], "FLY_CHECKED_IN")
 
-            # Cancel booking -> QR invalidated -> CANCELLED — NOT VALID FOR TRAVEL
+            # Cancel booking -> QR invalidated -> NOT VALID FOR TRAVEL (CANCELLED / REFUND PENDING)
             st_can, _, _ = req("POST", "/api/bookings/cancel", {"bookingReference": ref, "reason": "QR revocation verification"}, token=self.tok_user)
             self.assertEqual(st_can, 200)
             _, _, ver_cancelled = req("GET", f"/api/tickets/verify/{vtok1}")
             self.assertFalse(ver_cancelled["valid"])
-            self.assertEqual(ver_cancelled["headline"], "CANCELLED — NOT VALID FOR TRAVEL")
+            self.assertIn("NOT VALID FOR TRAVEL", ver_cancelled["headline"])
+            self.assertIn("FLY Record Verification", ver_cancelled["verificationAuthority"])
+        finally:
+            req("POST", "/api/bookings/cancel", {"bookingReference": ref, "reason": "Cleanup"}, token=self.tok_user)
+
+    def test_03_staff_void_ticket_and_qr_invalidation(self):
+        seat_id = self.avail_seats[3]
+        st, _, hold = req("POST", "/api/bookings/hold", {"flightId": self.flight_id, "seatIds": [seat_id]}, token=self.tok_user)
+        self.assertEqual(st, 201)
+        ref = hold["bookingReference"]
+        try:
+            st_c, _, conf = req(
+                "POST",
+                "/api/bookings/confirm",
+                {"bookingReference": ref, "scenario": "SIMULATE_SUCCESS", "idempotencyKey": uuid.uuid4().hex},
+                token=self.tok_user,
+            )
+            self.assertEqual(st_c, 200)
+            vtok = conf["ticket"]["verificationToken"]
+            st_void, _, vres = req("POST", f"/api/staff/tickets/verify/{vtok}/void", {"reason": "Carrier void QA"}, token=self.tok_sa)
+            self.assertEqual(st_void, 200)
+            self.assertEqual(vres["issuanceState"], "VOID")
+            _, _, scan_void = req("GET", f"/api/tickets/verify/{vtok}")
+            self.assertFalse(scan_void["valid"])
+            self.assertEqual(scan_void["verdict"], "VOID")
+            self.assertEqual(scan_void["headline"], "VOID — TICKET INVALID FOR TRAVEL")
         finally:
             req("POST", "/api/bookings/cancel", {"bookingReference": ref, "reason": "Cleanup"}, token=self.tok_user)
 

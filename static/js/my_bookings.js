@@ -54,6 +54,9 @@
   }
 
   function renderBookings() {
+    if (activeTab === 'cancelled') {
+      loadAndRenderMyRefundsSection();
+    }
     const filtered = activeTab === 'all' ? allBookings : allBookings.filter(b => classify(b) === activeTab);
     if (!filtered.length) {
       listEl.innerHTML = `
@@ -128,6 +131,30 @@
         }
       });
     });
+  }
+
+  async function loadAndRenderMyRefundsSection() {
+    try {
+      const res = await window.FlyApi.get('/api/refunds/my');
+      const items = (res && res.refunds) || [];
+      if (!items.length) return;
+      const box = document.createElement('div');
+      box.className = 'fly-card';
+      box.style.padding = '18px';
+      box.innerHTML = `<h3 style="margin:0 0 12px;font-size:1.05rem;">My Refund Requests &amp; Settlements</h3>` + items.map(rf => `
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-subtle);font-size:0.88rem;">
+          <div>
+            <strong style="font-family:var(--font-mono);">${esc(rf.refund_ref)}</strong> &bull; Can: ${esc(rf.cancellation_ref || '--')} &bull; PNR: ${esc(rf.pnr_code || '--')}
+            <div style="font-size:0.78rem;color:var(--text-muted);">Original: ${window.FlyApi.formatBDT(rf.originalBookingAmount)} &bull; Eligible Refund: ${window.FlyApi.formatBDT(rf.amountBDT)} &bull; Method: ${esc(rf.payment_method)}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="fly-badge ${rf.status === 'REFUNDED' ? 'fly-badge-success' : 'fly-badge-warning'}">${esc(rf.status)}</span>
+            <a href="/refunds/track/${encodeURIComponent(rf.refund_ref)}" class="fly-btn fly-btn-outline" style="padding:4px 10px;font-size:0.78rem;">9-Stage Timeline</a>
+          </div>
+        </div>
+      `).join('');
+      listEl.prepend(box);
+    } catch (_) {}
   }
 
   document.querySelectorAll('#myBookingsTabs [data-tab]').forEach(btn => {

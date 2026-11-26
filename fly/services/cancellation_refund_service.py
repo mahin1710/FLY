@@ -121,15 +121,113 @@ class BaseRefundAdapter:
 
 
 class CardGatewayRefundAdapter(BaseRefundAdapter):
-    name = "CARD_GATEWAY_ADAPTER"
+    """
+    SSLCommerz / Card Gateway Refund Adapter following the official SSLCommerz
+    merchantTransIDvalidationAPI.php specification:
+    - Sandbox: https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php
+    - Live:    https://securepay.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php
+    Required params: store_id, store_passwd, bank_tran_id, refund_amount, refund_remarks, refund_trans_id, refe_id, v=1, format=json.
+    Never sets verify=False in production and never marks REFUNDED on initiation alone.
+    """
+    name = "SSLCOMMERZ_CARD_ADAPTER"
+
+    @staticmethod
+    def _sslcommerz_endpoint() -> str:
+        if Config.SSLCOMMERZ_IS_SANDBOX:
+            return "https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php"
+        return "https://securepay.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php"
+
+    @classmethod
+    def query_sslcommerz_status(cls, refund_ref_id: str) -> dict:
+        if not (Config.SSLCOMMERZ_STORE_ID and Config.SSLCOMMERZ_STORE_PASS and refund_ref_id):
+            return {"ok": False, "error": "SSLCommerz credentials or refund_ref_id unavailable."}
+        import requests
+        resp = requests.get(
+            cls._sslcommerz_endpoint(),
+            params={
+                "refund_ref_id": refund_ref_id,
+                "store_id": Config.SSLCOMMERZ_STORE_ID,
+                "store_passwd": Config.SSLCOMMERZ_STORE_PASS,
+                "v": "1",
+                "format": "json",
+            },
+            timeout=15,
+            verify=True,
+        )
+        return {"ok": resp.ok, "data": resp.json() if "json" in resp.headers.get("content-type", "") else {"raw": resp.text}}
 
     @classmethod
     def initiate(cls, refund_row: dict, gateway_scenario: str = "GATEWAY_PENDING") -> dict:
         scen = (gateway_scenario or "GATEWAY_PENDING").strip().upper()
         is_sandbox = Config.PAYMENT_GATEWAY_ACTIVE in ("SIMULATED", "SANDBOX", "")
-        has_live_sslc = bool(Config.SSLCOMMERZ_STORE_ID and Config.SSLCOMMERZ_STORE_PASS)
+        use_live_sslc = (Config.PAYMENT_GATEWAY_ACTIVE == "SSLCOMMERZ") and bool(Config.SSLCOMMERZ_STORE_ID and Config.SSLCOMMERZ_STORE_PASS)
 
-        if not is_sandbox and not has_live_sslc:
+        if Config.PAYMENT_GATEWAY_ACTIVE == "SSLCOMMERZ" and not use_live_sslc:
+            return {
+                "ok": False,
+                "refundStatus": "RECONCILIATION_REQUIRED",
+                "gatewayRef": None,
+                "estimatedWindow": None,
+                "error": "Live SSLCommerz store credentials are not configured; routed for finance reconciliation.",
+            }
+
+        refund_trans_id = f"RFTR-{secrets.token_hex(5).upper()}"
+        refund_amt_str = f"{(Decimal(int(refund_row['approved_amount_minor'])) / Decimal(100)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)}"
+
+        if use_live_sslc:
+            import requests
+            bank_tran_id = str(refund_row.get("original_payment_ref") or "").strip()
+            if not bank_tran_id:
+                return {
+                    "ok": False,
+                    "refundStatus": "RECONCILIATION_REQUIRED",
+                    "gatewayRef": None,
+                    "error": "Missing original bank_tran_id required by SSLCommerz Refund API.",
+                }
+            try:
+                api_res = requests.get(
+                    cls._sslcommerz_endpoint(),
+                    params={
+                        "store_id": Config.SSLCOMMERZ_STORE_ID,
+                        "store_passwd": Config.SSLCOMMERZ_STORE_PASS,
+                        "bank_tran_id": bank_tran_id,
+                        "refund_amount": refund_amt_str,
+                        "refund_remarks": f"FLY ticket refund {refund_row['refund_ref']}",
+                        "refund_trans_id": refund_trans_id,
+                        "refe_id": refund_row["refund_ref"],
+                        "v": "1",
+                        "format": "json",
+                    },
+                    timeout=15,
+                    verify=True,
+                )
+                payload = api_res.json()
+                st = str(payload.get("status") or "").lower()
+                if payload.get("APIConnect") == "DONE" and st in ("success", "processing"):
+                    return {
+                        "ok": True,
+                        "refundStatus": "GATEWAY_PROCESSING",
+                        "gatewayRef": payload.get("refund_ref_id") or refund_trans_id,
+                        "rawPayload": payload,
+                        "estimatedWindow": "Processing depends on SSLCommerz, card issuer, and receiving bank.",
+                        "message": f"SSLCommerz refund initialized ({st}); awaiting final bank settlement confirmation.",
+                    }
+                return {
+                    "ok": False,
+                    "refundStatus": "FAILED",
+                    "gatewayRef": payload.get("refund_ref_id") or refund_trans_id,
+                    "rawPayload": payload,
+                    "error": payload.get("errorReason") or "SSLCommerz refund initiation failed.",
+                }
+            except Exception as exc:
+                return {
+                    "ok": False,
+                    "refundStatus": "RECONCILIATION_REQUIRED",
+                    "gatewayRef": refund_trans_id,
+                    "error": f"SSLCommerz request error (will reconcile before retrying): {exc}",
+                }
+
+        if not is_sandbox and not use_live_sslc:
             return {
                 "ok": False,
                 "refundStatus": "RECONCILIATION_REQUIRED",
@@ -148,7 +246,6 @@ class CardGatewayRefundAdapter(BaseRefundAdapter):
                 "error": "Card acquirer rejected refund API submission (insufficient settlement window or network error).",
             }
         if scen == "GATEWAY_SETTLED_IMMEDIATE":
-            # Only when explicit test/sandbox settlement webhook confirmation is simulated directly
             return {
                 "ok": True,
                 "refundStatus": "REFUNDED",
@@ -1304,7 +1401,8 @@ def get_refund_tracking(ref_or_booking: str, user: dict) -> tuple:
             """
             SELECT r.*, c.cancellation_ref, c.status as cancellation_status, c.reason as cancellation_reason,
                    c.customer_confirmed_at, c.supplier_ref,
-                   b.pnr_code, b.status as booking_status, al.name as airlineName, al.IATA as airlineIATA
+                   b.pnr_code, b.status as booking_status, b.total_amount as original_booking_amount,
+                   al.name as airlineName, al.IATA as airlineIATA
             FROM refunds r
             LEFT JOIN cancellations c ON r.cancellation_id = c.id
             JOIN bookings b ON r.booking_reference = b.booking_reference
@@ -1337,6 +1435,13 @@ def get_refund_tracking(ref_or_booking: str, user: dict) -> tuple:
                 (row["id"],),
             ).fetchall()
         ]
+        notifs = [
+            dict(n)
+            for n in cursor.execute(
+                "SELECT subject, body_summary, status, created_at FROM notification_outbox WHERE booking_reference = ? ORDER BY id DESC LIMIT 10",
+                (row["booking_reference"],),
+            ).fetchall()
+        ]
         quote = cursor.execute("SELECT * FROM refund_quotes WHERE id = ?", (row["quote_id"],)).fetchone() if row["quote_id"] else None
         q_items = [
             dict(qi)
@@ -1344,14 +1449,19 @@ def get_refund_tracking(ref_or_booking: str, user: dict) -> tuple:
         ] if row["quote_id"] else []
 
         st = row["status"]
+        sup_submitted = bool(hist) or row["cancellation_status"] in ("CANCELLED_BY_SUPPLIER", "MANUAL_REVIEW")
+        sup_confirmed = row["cancellation_status"] == "CANCELLED_BY_SUPPLIER"
+        gw_sent = st in ("GATEWAY_REFUND_PENDING", "GATEWAY_PROCESSING", "PARTIALLY_REFUNDED", "REFUNDED", "RECONCILIATION_REQUIRED")
         stages = [
             ("1. Cancellation requested", True),
-            ("2. Refund calculation completed", True),
-            ("3. Cancellation submitted to supplier", any("SUPPLIER" in h["to_status"] or "CANCELLED" in h["to_status"] or "PROCESSING" in h["to_status"] or "REFUNDED" in h["to_status"] for h in hist)),
-            ("4. Supplier confirmation received", row["cancellation_status"] == "CANCELLED_BY_SUPPLIER"),
-            ("5. Refund sent to payment provider", st in ("GATEWAY_REFUND_PENDING", "GATEWAY_PROCESSING", "PARTIALLY_REFUNDED", "REFUNDED", "RECONCILIATION_REQUIRED")),
-            ("6. Refund processing", st in ("GATEWAY_PROCESSING", "PARTIALLY_REFUNDED", "REFUNDED")),
-            ("7. Refund completed", st == "REFUNDED"),
+            ("2. Fare rules checked", True),
+            ("3. Refund amount calculated", bool(quote)),
+            ("4. Customer confirmed", bool(row["customer_confirmed_at"])),
+            ("5. Supplier cancellation submitted", sup_submitted),
+            ("6. Supplier confirmation received", sup_confirmed),
+            ("7. Refund submitted to payment provider", gw_sent),
+            ("8. Refund processing", st in ("GATEWAY_PROCESSING", "PARTIALLY_REFUNDED", "REFUNDED")),
+            ("9. Refund completed", st == "REFUNDED"),
         ]
 
         return 200, {
@@ -1365,6 +1475,7 @@ def get_refund_tracking(ref_or_booking: str, user: dict) -> tuple:
             "pnrCode": row["pnr_code"],
             "airlineName": row["airlineName"],
             "airlineIATA": row["airlineIATA"],
+            "originalPaidBDT": from_minor(quote["original_paid_minor"]) if quote else float(row["original_booking_amount"] or 0),
             "amountBDT": from_minor(row["approved_amount_minor"]),
             "settledAmountBDT": from_minor(row["settled_amount_minor"]),
             "currency": row["currency"],
@@ -1380,6 +1491,7 @@ def get_refund_tracking(ref_or_booking: str, user: dict) -> tuple:
             "timelineStages": [{"label": lbl, "completed": done} for lbl, done in stages],
             "history": hist,
             "transactions": txns,
+            "notifications": notifs,
             "quoteBreakdown": [
                 {"label": qi["label"], "category": qi["category"], "amountBDT": from_minor(qi["amount_minor"]), "authoritySource": qi["authority_source"]}
                 for qi in q_items
@@ -1388,6 +1500,64 @@ def get_refund_tracking(ref_or_booking: str, user: dict) -> tuple:
         }
     finally:
         conn.close()
+
+
+def get_my_refunds_list(user: dict) -> list:
+    """Returns all refund & cancellation requests owned by the current authenticated customer."""
+    conn = database.get_db()
+    rows = [
+        dict(r)
+        for r in conn.execute(
+            """
+            SELECT r.*, c.cancellation_ref, c.status as cancellation_status, c.supplier_ref,
+                   b.pnr_code, b.total_amount as originalBookingAmount, al.name as airlineName, al.IATA as airlineIATA
+            FROM refunds r
+            LEFT JOIN cancellations c ON r.cancellation_id = c.id
+            JOIN bookings b ON r.booking_reference = b.booking_reference
+            JOIN airLines al ON r.id_airline = al.id
+            WHERE r.id_account = ?
+            ORDER BY r.id DESC LIMIT 100
+            """,
+            (user["id"],),
+        ).fetchall()
+    ]
+    conn.close()
+    for r in rows:
+        r["amountBDT"] = from_minor(r["approved_amount_minor"])
+        r["settledAmountBDT"] = from_minor(r["settled_amount_minor"])
+    return rows
+
+
+def run_background_reconciliation_sweep() -> int:
+    """
+    Safe non-duplicating background reconciliation sweep for active SSLCommerz gateway refunds
+    (queries refund_ref_id status when live SSLCommerz is active; never submits duplicate refunds).
+    """
+    if Config.PAYMENT_GATEWAY_ACTIVE != "SSLCOMMERZ" or not (Config.SSLCOMMERZ_STORE_ID and Config.SSLCOMMERZ_STORE_PASS):
+        return 0
+    conn = database.get_db()
+    pending = conn.execute(
+        "SELECT refund_ref, id_airline, provider_ref FROM refunds WHERE status IN ('GATEWAY_REFUND_PENDING', 'GATEWAY_PROCESSING') AND provider_ref IS NOT NULL LIMIT 20"
+    ).fetchall()
+    conn.close()
+    checked = 0
+    for r in pending:
+        try:
+            qres = CardGatewayRefundAdapter.query_sslcommerz_status(r["provider_ref"])
+            checked += 1
+            if qres.get("ok") and isinstance(qres.get("data"), dict):
+                st = str(qres["data"].get("status") or "").lower()
+                if st == "refunded":
+                    reconcile_gateway_refund(
+                        r["refund_ref"],
+                        {"id": 0, "username": "Reconciler", "role": "SYSTEM_ADMIN"},
+                        simulate_outcome="SETTLED",
+                        provider_ref=r["provider_ref"],
+                        note="Automated SSLCommerz background reconciliation confirmed settlement.",
+                    )
+        except Exception:
+            continue
+    return checked
 
 
 def reconcile_gateway_refund(refund_ref: str, staff_user: dict, simulate_outcome: str = "SETTLED", settled_amount_bdt: float = None, provider_ref: str = None, note: str = "Gateway settlement reconciled") -> tuple:

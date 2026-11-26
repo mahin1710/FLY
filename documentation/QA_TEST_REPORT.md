@@ -7,11 +7,11 @@
 
 ## 1. Automated Python Suite (`python -m unittest discover -s tests -p "test_*.py" -v`)
 
-- **Total Executed:** **38 Tests**
-- **Result:** **38 / 38 PASSED (`OK`) in `16.659s`**
+- **Total Executed:** **39 Tests**
+- **Result:** **39 / 39 PASSED (`OK`) in `12.489s`**
 
 ### Suite Breakdown
-1. **QR Ticketing, Cryptography, PDF Readability, LAN Verification & Staff Check-In (`tests/e2e/test_qr_ticketing_and_lan_verify.py` — 2 multi-scenario suites OK):**
+1. **QR Ticketing, Cryptography, PDF Readability, LAN Verification & Staff Check-In (`tests/e2e/test_qr_ticketing_and_lan_verify.py` — 3 suites OK):**
    - `test_01_deferred_issuance_withholds_qr_until_confirmed`: Verified payment capture with `DEFER_ISSUANCE` creates `TICKETING_PENDING` with `qrSvg=None`, `verificationToken=None`, `/qr.png -> 409`; confirming issuance (`POST /api/tickets/<ref>/issue-deferred`) generates non-localhost LAN QR URL.
    - `test_02_multi_passenger_separate_qr_pdf_decode_lan_and_checkin`: Verified 2 passengers receive separate tickets + distinct high-entropy QR tokens; `ticket_qr_tokens` stores only salted hashes (zero raw token leaks); `/qr.png` AND `/pdf` embedded lossless FlateDecode QR decoded pixel-for-pixel via `zxing-cpp`; LAN URL verified (`VALID — TICKET ISSUED`, masked name, zero passport/card exposure); duplicate public scans increment counter cleanly without consuming check-in; guessable PNR rejected `404 INVALID TICKET`; 8 concurrent staff check-in attempts resulted in strictly 1 `200` + 7 `409`; cancellation immediately revoked QR (`CANCELLED — NOT VALID FOR TRAVEL`).
 2. **Realistic Cancellation, Refund Calculation, Adapters, Dual Control & Reports (`tests/e2e/test_cancellation_refund_system.py` — 4 multi-scenario suites OK):**

@@ -546,6 +546,13 @@ def api_reject_refund_quote(quote_ref):
     return jsonify(payload), status_code
 
 
+@bookings_bp.route("/api/refunds/my", methods=["GET"])
+@require_auth
+def api_my_refunds():
+    user = get_current_user()
+    return jsonify({"refunds": cancellation_refund_service.get_my_refunds_list(user)})
+
+
 @bookings_bp.route("/api/refunds/track/<string:ref_or_booking>", methods=["GET"])
 @require_auth
 def api_track_refund(ref_or_booking):
@@ -851,6 +858,21 @@ def api_staff_checkin_ticket(token):
         staff_user=staff,
         ip_address=ip,
         device_ref=data.get("deviceRef"),
+    )
+    return jsonify(payload), status_code
+
+
+@bookings_bp.route("/api/staff/tickets/verify/<string:token>/void", methods=["POST"])
+@require_roles("AIRLINE_ADMIN", "SYSTEM_ADMIN", "SUPER_ADMIN")
+def api_staff_void_ticket(token):
+    staff = get_current_user()
+    data = request.get_json(silent=True) or {}
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
+    status_code, payload = qr_service.staff_void_ticket(
+        raw_token=token,
+        staff_user=staff,
+        reason=data.get("reason") or "Voided by authorized staff",
+        ip_address=ip,
     )
     return jsonify(payload), status_code
 

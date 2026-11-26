@@ -39,15 +39,23 @@
       );
 
       document.getElementById('rtSummaryGrid').innerHTML = `
+        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">CANCELLATION REF</span><strong style="font-family:var(--font-mono);">${esc(r.cancellationRef || '--')}</strong></div>
         <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">BOOKING REF / PNR</span><strong>${esc(r.bookingReference)} (${esc(r.pnrCode || '--')})</strong></div>
-        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">REFUND AMOUNT</span><strong style="color:var(--accent-primary);">${esc(r.currency)} ${Number(r.amountBDT || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">ORIGINAL PAID</span><strong>${esc(r.currency)} ${Number(r.originalPaidBDT || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">ELIGIBLE REFUND</span><strong style="color:var(--accent-primary);">${esc(r.currency)} ${Number(r.amountBDT || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
         <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">ORIGINAL METHOD</span><strong>${esc(r.paymentMethod)}</strong></div>
         <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">DESTINATION</span><strong>${esc(r.refundDestination)}</strong></div>
-        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">REQUEST DATE (UTC)</span><strong>${esc(r.requestedAt)}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">SUBMISSION DATE (UTC)</span><strong>${esc(r.requestedAt)}</strong></div>
         <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">LAST UPDATE (UTC)</span><strong>${esc(r.updatedAt)}</strong></div>
-        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">SUPPLIER / PROVIDER REF</span><strong style="font-family:var(--font-mono);">${esc(r.providerRef || r.supplierRef || 'Pending')}</strong></div>
+        <div><span style="color:var(--text-muted);font-size:0.75rem;display:block;">SUPPLIER / GATEWAY REF</span><strong style="font-family:var(--font-mono);">${esc(r.supplierRef || 'N/A')} / ${esc(r.providerRef || 'Pending')}</strong></div>
       `;
       document.getElementById('rtWindowNotice').textContent = r.estimatedWindow;
+
+      const notifHtml = (r.notifications || []).map(n => `
+        <div style="padding:8px 10px;border:1px solid var(--border-subtle);border-radius:8px;font-size:0.82rem;">
+          <strong>${esc(n.subject)}</strong> (${esc(n.created_at)}) &mdash; ${esc(n.body_summary)}
+        </div>
+      `).join('');
 
       document.getElementById('rtTimeline').innerHTML = (r.timelineStages || []).map(st => `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid ${st.completed ? '#10b981' : 'var(--border-subtle)'};background:${st.completed ? 'rgba(16,185,129,0.08)' : 'transparent'};">
@@ -56,7 +64,7 @@
         </div>
       `).join('');
 
-      document.getElementById('rtHistory').innerHTML = (r.history || []).map(h => `
+      document.getElementById('rtHistory').innerHTML = ((r.history || []).map(h => `
         <div style="padding:8px 10px;border-left:3px solid var(--accent-primary);background:var(--bg-secondary);border-radius:0 8px 8px 0;">
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);">
             <strong>${esc(h.stage_label)}</strong>
@@ -64,7 +72,7 @@
           </div>
           <div style="margin-top:2px;">${esc(h.note || h.to_status)}</div>
         </div>
-      `).join('') || '<p style="color:var(--text-muted);">No updates recorded yet.</p>';
+      `).join('') || '<p style="color:var(--text-muted);">No updates recorded yet.</p>') + (notifHtml ? `<div style="margin-top:10px;display:grid;gap:6px;"><strong style="font-size:0.86rem;">Customer Notifications</strong>${notifHtml}</div>` : '');
     } catch (err) {
       bodyEl.classList.add('is-hidden');
       showErr(err.message || 'Refund record not found.');
