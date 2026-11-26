@@ -1091,7 +1091,7 @@ def confirm_cancellation_and_initiate_refund(
                             cursor.execute("UPDATE tickets SET status = 'CANCELLED', issuance_state = 'CANCELLED', updated_at = ? WHERE id = ?", (now_iso, seg["ticket_id"]))
                             qr_service.revoke_qr_tokens(cursor, ticket_id=seg["ticket_id"], reason="ALL_SEGMENTS_CANCELLED")
             cursor.execute(
-                "UPDATE bookings SET status = 'PARTIALLY_CANCELLED', cancellation_type = 'PARTIAL', cancellation_reason = ?, refund_amount = COALESCE(refund_amount, 0) + ?, refund_status = ? WHERE booking_reference = ?",
+                "UPDATE bookings SET status = 'CONFIRMED', cancellation_type = 'PARTIAL', cancellation_reason = ?, refund_amount = COALESCE(refund_amount, 0) + ?, refund_status = ? WHERE booking_reference = ?",
                 (reason, refund_bdt, "GATEWAY_PROCESSING" if refund_minor > 0 else "NO_REFUND", ref),
             )
         else:
@@ -1223,7 +1223,7 @@ def confirm_cancellation_and_initiate_refund(
                 if final_rf_status == "REFUNDED":
                     _append_refund_history(cursor, refund_id, final_rf_status, "REFUNDED", "7. Refund completed", f"Settled {format_bdt_minor(settled_m)} via {gw_ref}", None, adapter.name)
                     _record_ledger(cursor, ref, "GATEWAY_REFUND_OUTFLOW", "DEBIT", settled_m, refund_id=refund_id, cancellation_id=cancellation_id, reference_id=gw_ref, description=f"Gateway settled refund {gw_ref}")
-                    cursor.execute("UPDATE bookings SET status = 'REFUNDED', refund_status = 'REFUNDED' WHERE booking_reference = ? AND status = 'CANCELLED'", (ref,))
+                    cursor.execute("UPDATE bookings SET refund_status = 'REFUNDED' WHERE booking_reference = ? AND status = 'CANCELLED'", (ref,))
                     cursor.execute("UPDATE tickets SET status = 'REFUNDED', issuance_state = 'REFUNDED', updated_at = ? WHERE booking_reference = ? AND status = 'CANCELLED'", (now_iso, ref))
 
         cursor.execute(
@@ -1443,7 +1443,7 @@ def reconcile_gateway_refund(refund_ref: str, staff_user: dict, simulate_outcome
             new_st = "REFUNDED"
             cursor.execute("UPDATE refunds SET status = 'REFUNDED', settled_amount_minor = ?, provider_ref = ?, failure_reason = NULL, updated_at = ? WHERE id = ?", (settled_minor, gw_ref, now_iso, row["id"]))
             _record_ledger(cursor, row["booking_reference"], "GATEWAY_REFUND_OUTFLOW", "DEBIT", settled_minor, refund_id=row["id"], reference_id=gw_ref, description=note, created_by=staff_user["id"])
-            cursor.execute("UPDATE bookings SET status = 'REFUNDED', refund_status = 'REFUNDED' WHERE booking_reference = ? AND status = 'CANCELLED'", (row["booking_reference"],))
+            cursor.execute("UPDATE bookings SET refund_status = 'REFUNDED' WHERE booking_reference = ? AND status = 'CANCELLED'", (row["booking_reference"],))
             cursor.execute("UPDATE tickets SET status = 'REFUNDED', issuance_state = 'REFUNDED', updated_at = ? WHERE booking_reference = ? AND status = 'CANCELLED'", (now_iso, row["booking_reference"]))
             qr_service.revoke_qr_tokens(cursor, booking_reference=row["booking_reference"], reason="REFUND_SETTLED")
 
@@ -1598,7 +1598,7 @@ def process_manual_refund_operation(
             "UPDATE refunds SET status = 'REFUNDED', settled_amount_minor = ?, provider_ref = ?, updated_at = ? WHERE id = ?",
             (settled_minor, t_ref, now_iso, r["id"]),
         )
-        cursor.execute("UPDATE bookings SET status = 'REFUNDED', refund_status = 'REFUNDED' WHERE booking_reference = ? AND status = 'CANCELLED'", (r["booking_reference"],))
+        cursor.execute("UPDATE bookings SET refund_status = 'REFUNDED' WHERE booking_reference = ? AND status = 'CANCELLED'", (r["booking_reference"],))
         cursor.execute("UPDATE tickets SET status = 'REFUNDED', issuance_state = 'REFUNDED', updated_at = ? WHERE booking_reference = ? AND status = 'CANCELLED'", (now_iso, r["booking_reference"]))
         qr_service.revoke_qr_tokens(cursor, booking_reference=r["booking_reference"], reason="MANUAL_REFUND_SETTLED")
         _record_ledger(cursor, r["booking_reference"], "MANUAL_SETTLEMENT_OUTFLOW", "DEBIT", settled_minor, refund_id=r["id"], reference_id=t_ref, description=f"Manual settlement {t_ref} (evidence: {ev_ref})", created_by=staff_user["id"])

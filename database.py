@@ -303,6 +303,7 @@ def init_db():
     _ensure_column(cursor, "bookings", "cancellation_type", "TEXT")
     _ensure_column(cursor, "bookings", "fare_family", "TEXT DEFAULT 'STANDARD'")
     _ensure_column(cursor, "bookings", "is_test_booking", "INTEGER DEFAULT 1")
+    _ensure_column(cursor, "bookings", "issuance_status", "TEXT DEFAULT 'ISSUED'")
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_bookings_account ON bookings(id_account);")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_bookings_flight ON bookings(id_flight, status);")
@@ -900,99 +901,6 @@ def init_db():
         """
     )
 
-    # 6. Seed Versioned Service Fee Policy (Part G3) & Per-Airline Fare Rules (Part F3/G1)
-    cursor.execute(
-        """
-        INSERT OR IGNORE INTO fee_policies (
-            version, name, booking_service_fee_minor, cancellation_service_fee_minor,
-            refund_processing_fee_minor, waive_on_airline_cancel, waive_on_ticketing_error,
-            waive_on_schedule_change, currency, legal_notes, is_active, created_at, updated_at
-        )
-        VALUES (
-            'FLY-POL-V1',
-            'Standard FLY Service Fee Policy v1',
-            0,
-            35000,
-            0,
-            1,
-            1,
-            1,
-            'BDT',
-            'Cancellation service fee BDT 350 disclosed prior to purchase. Automatically waived on airline-initiated cancellations, schedule changes, and ticketing failures.',
-            1,
-            ?,
-            ?
-        )
-        """,
-        (now_iso, now_iso),
-    )
-
-    seeded_fare_rules = [
-        # (id_airline, fare_family, is_refundable, vol_fee_minor, noshow_fee_minor, partial_ok, split_pnr, min_hrs, tax_pct, air_chg_ref, anc_ref, notes)
-        (None, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "Non-refundable promotional fare; unused government/airport taxes remain eligible."),
-        (None, "STANDARD", 1, 80000, 200000, 1, 1, 4, 100, 1, 0, "Standard refundable fare subject to carrier penalty & FLY disclosed policy."),
-        (None, "FLEX", 1, 40000, 120000, 1, 0, 2, 100, 1, 1, "Flexible refundable fare with reduced penalty & ancillary refundability."),
-        (None, "BUSINESS", 1, 50000, 150000, 1, 0, 2, 100, 1, 1, "Business cabin fare with low cancellation penalty."),
-        (None, "FIRST", 1, 50000, 150000, 1, 0, 2, 100, 1, 1, "First class cabin fare with priority refund handling."),
-        (839, "STANDARD", 1, 75000, 180000, 1, 1, 4, 100, 1, 0, "Biman Bangladesh Standard fare cancellation tariff."),
-        (839, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "Biman Super Saver non-refundable; unused taxes refundable."),
-        (839, "BUSINESS", 1, 60000, 140000, 1, 0, 2, 100, 1, 1, "Biman Business flexible penalty rule."),
-        (371, "STANDARD", 1, 65000, 160000, 1, 1, 4, 100, 1, 0, "US-Bangla Airlines Standard fare cancellation tariff."),
-        (371, "SAVER", 0, 0, 0, 0, 1, 24, 100, 0, 0, "US-Bangla Saver non-refundable except unused govt taxes."),
-        (396, "STANDARD", 1, 450000, 750000, 1, 1, 6, 100, 1, 0, "Emirates International Economy Flex cancellation tariff."),
-        (396, "BUSINESS", 1, 300000, 600000, 1, 0, 4, 100, 1, 1, "Emirates Business Class fare rules."),
-    ]
-    for aid, ffam, is_ref, vfee, nsfee, p_ok, sp_pnr, mhrs, tpct, achg, anc, note in seeded_fare_rules:
-        cursor.execute(
-            """
-            INSERT OR IGNORE INTO fare_rules (
-                id_airline, fare_family, is_refundable, voluntary_cancel_fee_minor,
-                no_show_fee_minor, partial_cancel_allowed, split_pnr_required,
-                min_hours_before_dep, tax_refundable_pct, airline_charge_refundable,
-                ancillary_refundable, notes, updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (aid, ffam, is_ref, vfee, nsfee, p_ok, sp_pnr, mhrs, tpct, achg, anc, note, now_iso),
-        )
-
-    # 7. Backfill missing QR token hashes & flight segments for legacy ISSUED tickets cleanly
-    try:
-        from fly.services import qr_service
-        legacy_tickets = cursor.execute(
-            """
-            SELECT t.*, b.status as booking_status, f.dep_datetime, f.arr_datetime,
-                   da.IATA as depIATA, aa.IATA as arrIATA
-            FROM tickets t
-            JOIN bookings b ON t.booking_reference = b.booking_reference
-            JOIN flights f ON t.id_flight = f.id
-            JOIN airports da ON f.dep_airport = da.id
-            JOIN airports aa ON f.arr_airport = aa.id
-            WHERE NOT EXISTS (SELECT 1 FROM ticket_qr_tokens qt WHERE qt.ticket_id = t.id)
-            """
-        ).fetchall()
-        for lt in legacy_tickets:
-            seg_cnt = cursor.execute("SELECT COUNT(*) FROM ticket_segments WHERE ticket_id = ?", (lt["id"],)).fetchone()[0]
-            if seg_cnt == 0:
-                c_stat = "CANCELLED" if lt["status"] in ("CANCELLED", "REFUNDED") else "OPEN"
-                cursor.execute(
-                    """
-                    INSERT INTO ticket_segments (
-                        ticket_id, booking_reference, id_flight, segment_order,
-                        origin_iata, dest_iata, dep_datetime, arr_datetime, coupon_status, seat_code, cabin_class
-                    ) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        lt["id"], lt["booking_reference"], lt["id_flight"],
-                        lt["depIATA"], lt["arrIATA"], lt["dep_datetime"], lt["arr_datetime"],
-                        c_stat, lt["seat_codes"], lt["cabin_class"],
-                    ),
-                )
-            if lt["status"] == "ISSUED" and lt["booking_status"] == "CONFIRMED":
-                qr_service.issue_qr_for_ticket(cursor, lt["id"], issuance_state="ISSUED", is_test_ticket=True)
-    except Exception:
-        pass
-
     conn.commit()
     conn.close()
 
@@ -1132,6 +1040,7 @@ def seed_initial_data():
                     )
 
     # 6. Seed Versioned Service Fee Policy (Part G3) & Per-Airline Fare Rules (Part F3/G1)
+    now_iso = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute(
         """
         INSERT OR IGNORE INTO fee_policies (
@@ -2188,7 +2097,7 @@ def issue_deferred_tickets_atomic(booking_ref: str, actor_id: int = None, ip_add
             qr_service.issue_qr_for_ticket(cursor, row["id"], issuance_state="ISSUED", is_test_ticket=bool(row["is_test_ticket"]))
             issued_nums.append(t_num)
 
-        cursor.execute("UPDATE bookings SET status = 'CONFIRMED' WHERE booking_reference = ?", (ref,))
+        cursor.execute("UPDATE bookings SET status = 'CONFIRMED', issuance_status = 'ISSUED' WHERE booking_reference = ?", (ref,))
         log_audit_event(
             cursor,
             event_type="DEFERRED_TICKETS_ISSUED",
@@ -2370,14 +2279,15 @@ def confirm_payment_atomic(
         defer_issue = (str(issuance_scenario or "").strip().upper() == "DEFER_ISSUANCE")
         pnr_code = booking["pnr_code"] or _generate_unique_pnr(cursor)
         target_b_status = "TICKETING_PENDING" if defer_issue else "CONFIRMED"
+        target_iss_status = "TICKETING_PENDING" if defer_issue else "ISSUED"
 
         cursor.execute(
             """
             UPDATE bookings
-            SET status = ?, pnr_code = ?, payment_ref = ?, payment_method = ?, paid_at = ?, idempotency_key = ?
+            SET status = 'CONFIRMED', issuance_status = ?, pnr_code = ?, payment_ref = ?, payment_method = ?, paid_at = ?, idempotency_key = ?
             WHERE booking_reference = ?
             """,
-            (target_b_status, pnr_code, txn_ref, payment_method, now_iso, idem_key, booking_ref),
+            (target_iss_status, pnr_code, txn_ref, payment_method, now_iso, idem_key, booking_ref),
         )
         cursor.execute(
             "UPDATE reservations SET status = 'CONFIRMED', payment_ref = ? WHERE booking_reference = ?",

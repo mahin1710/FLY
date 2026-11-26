@@ -65,11 +65,17 @@
     `;
 
     let extraBtns = '';
-    if (b.status === 'CONFIRMED') {
+    if (b.status === 'CONFIRMED' || b.status === 'PARTIALLY_CANCELLED') {
       extraBtns += `<a href="/ticket/${encodeURIComponent(b.pnr_code || b.booking_reference)}" class="fly-btn fly-btn-primary">View E-Ticket &amp; QR</a>`;
       extraBtns += `<a href="/api/tickets/${encodeURIComponent(b.pnr_code || b.booking_reference)}/pdf" class="fly-btn fly-btn-outline">Download PDF</a>`;
-    } else if (b.status === 'PENDING_PAYMENT') {
-      extraBtns += `<a href="/checkout?ref=${encodeURIComponent(b.booking_reference)}" class="fly-btn fly-btn-primary">Complete Checkout</a>`;
+      extraBtns += `<a href="/cancel-booking/${encodeURIComponent(b.booking_reference)}" class="fly-btn fly-btn-danger">Cancel &amp; Refund Preview</a>`;
+    } else if (b.status === 'PENDING_PAYMENT' || b.status === 'TICKETING_PENDING') {
+      if (b.status === 'PENDING_PAYMENT') {
+        extraBtns += `<a href="/checkout?ref=${encodeURIComponent(b.booking_reference)}" class="fly-btn fly-btn-primary">Complete Checkout</a>`;
+      }
+      extraBtns += `<a href="/cancel-booking/${encodeURIComponent(b.booking_reference)}" class="fly-btn fly-btn-danger">Cancel Before Issuance</a>`;
+    } else if (b.status === 'CANCELLED' || b.status === 'REFUNDED') {
+      extraBtns += `<a href="/refunds/track/${encodeURIComponent(b.booking_reference)}" class="fly-btn fly-btn-primary">Track Refund Status</a>`;
     }
     actionsEl.innerHTML = extraBtns + actionsEl.innerHTML;
   } catch (err) {

@@ -80,6 +80,7 @@
       if (tab === 'dashboard') await loadDashboard();
       else if (tab === 'flights') await loadFlights();
       else if (tab === 'bookings') await loadBookingsAndRefunds();
+      else if (tab === 'refunds') await loadRefundManagement();
       else if (tab === 'inventory') await loadInventoryTab();
       else if (tab === 'audit-logs') await loadAuditLogs();
       else if (tab === 'settings') await loadSettings();
@@ -269,7 +270,10 @@
   }
 
   async function loadAuditLogs() {
-    const res = await window.FlyApi.get('/api/admin/audit-logs');
+    const [res, qrRes] = await Promise.all([
+      window.FlyApi.get('/api/admin/audit-logs'),
+      window.FlyApi.get('/api/admin/qr-scans')
+    ]);
     const tbody = document.getElementById('admAuditLogsBody');
     tbody.innerHTML = (res.logs || []).map(l => `
       <tr style="border-bottom:1px solid var(--border-subtle);">
@@ -279,10 +283,158 @@
         <td style="padding:8px;">${esc(l.reservation_ref || ('Flight #' + (l.flight_id || '--')))}</td>
         <td style="padding:8px;">${esc(l.details)}</td>
       </tr>`).join('') || '<tr><td colspan="5" style="padding:14px;color:var(--text-muted);">No audit events logged yet.</td></tr>';
+
+    const qBody = document.getElementById('admQrScansBody');
+    if (qBody) {
+      qBody.innerHTML = (qrRes.scans || []).map(s => `
+        <tr style="border-bottom:1px solid var(--border-subtle);">
+          <td style="padding:8px;white-space:nowrap;">${esc(s.scanned_at)}</td>
+          <td style="padding:8px;">${esc(s.ticket_number || '--')} (${esc(s.pnr_code || '--')})</td>
+          <td style="padding:8px;"><span class="fly-badge">${esc(s.scan_result)}</span></td>
+          <td style="padding:8px;">${esc(s.scan_source)}</td>
+          <td style="padding:8px;">${s.checkin_event ? 'Staff Check-In' : 'Read-Only'}</td>
+        </tr>`).join('') || '<tr><td colspan="5" style="padding:14px;color:var(--text-muted);">No QR scans recorded yet.</td></tr>';
+    }
   }
 
+  async function loadRefundManagement() {
+    const q = encodeURIComponent(document.getElementById('rfSearchQ').value.trim());
+    const st = encodeURIComponent(document.getElementById('rfFilterStatus').value);
+    const pm = encodeURIComponent(document.getElementById('rfFilterMethod').value);
+    const ct = encodeURIComponent(document.getElementById('rfFilterType').value);
+    const dt = encodeURIComponent(document.getElementById('rfFilterReqDate').value);
+    const qs = `?q=${q}&status=${st}&paymentMethod=${pm}&cancellationType=${ct}&fromDate=${dt}&toDate=${dt}`;
+
+    const [dash, listRes, repRes] = await Promise.all([
+      window.FlyApi.get('/api/admin/refunds/dashboard'),
+      window.FlyApi.get('/api/admin/refunds/list' + qs),
+      window.FlyApi.get('/api/admin/refunds/reports')
+    ]);
+
+    document.getElementById('rfKpiTotal').textContent = String(dash.totalRequests || 0);
+    document.getElementById('rfKpiPendingSup').textContent = String(dash.pendingSupplierRefunds || 0);
+    document.getElementById('rfKpiPendingGw').textContent = String(dash.pendingGatewayRefunds || 0);
+    document.getElementById('rfKpiCompleted').textContent = String(dash.completedRefunds || 0);
+    document.getElementById('rfKpiFailed').textContent = String((dash.failedRefunds || 0) + (dash.reconciliationRequired || 0));
+    document.getElementById('rfKpiAmount').textContent = `${window.FlyApi.formatBDT(dash.totalApprovedBDT)} / ${window.FlyApi.formatBDT(dash.totalSettledBDT)}`;
+
+    const tbody = document.getElementById('admRefundListBody');
+    tbody.innerHTML = (listRes.refunds || []).map(r => `
+      <tr style="border-bottom:1px solid var(--border-subtle);">
+        <td style="padding:8px;font-family:var(--font-mono);"><strong>${esc(r.refund_ref)}</strong><div style="font-size:0.74rem;color:var(--text-muted);">${esc(r.created_at)}</div></td>
+        <td style="padding:8px;"><strong>${esc(r.pnr_code || '--')}</strong> / ${esc(r.booking_reference)}<div style="font-size:0.74rem;color:var(--text-muted);">${esc(r.ticketNumbers || '--')}</div></td>
+        <td style="padding:8px;">${esc(r.passengerNames || r.username)}<div style="font-size:0.74rem;color:var(--text-muted);">${esc(r.cancellation_type)}</div></td>
+        <td style="padding:8px;">${esc(r.payment_method)}</td>
+        <td style="padding:8px;"><strong>${window.FlyApi.formatBDT(r.approvedAmountBDT)}</strong><div style="font-size:0.74rem;color:#059669;">Settled: ${window.FlyApi.formatBDT(r.settledAmountBDT)}</div></td>
+        <td style="padding:8px;"><span class="fly-badge ${r.status === 'REFUNDED' ? 'fly-badge-success' : (r.status === 'FAILED' ? 'fly-badge-danger' : 'fly-badge-warning')}">${esc(r.status)}</span></td>
+        <td style="padding:8px;"><button type="button" class="fly-btn fly-btn-outline adm-rf-inspect" data-rfid="${esc(r.refund_ref)}" style="padding:4px 10px;font-size:0.78rem;">Inspect / Act</button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" style="padding:14px;color:var(--text-muted);">No refunds match the active filters.</td></tr>';
+
+    tbody.querySelectorAll('.adm-rf-inspect').forEach(btn => {
+      btn.addEventListener('click', () => inspectAdminRefund(btn.getAttribute('data-rfid')));
+    });
+
+    const ag = repRes.pendingAging || {};
+    document.getElementById('admRefundReportsBox').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+        <div style="padding:10px;border:1px solid var(--border-subtle);border-radius:8px;"><strong>Total Penalties Retained:</strong> ${window.FlyApi.formatBDT(repRes.totalCancellationPenaltiesBDT)}</div>
+        <div style="padding:10px;border:1px solid var(--border-subtle);border-radius:8px;"><strong>Actual Disbursed Total:</strong> ${window.FlyApi.formatBDT(repRes.totalDisbursedBDT)}</div>
+        <div style="padding:10px;border:1px solid var(--border-subtle);border-radius:8px;"><strong>Pending Aging:</strong> 0-3d: ${ag['0_3_days'] || 0} &bull; 4-7d: ${ag['4_7_days'] || 0} &bull; 8+d: ${ag['8_plus_days'] || 0}</div>
+      </div>
+      <div style="font-size:0.84rem;"><strong>By Airline:</strong> ${(repRes.airlineWiseRefunds || []).map(a => `${esc(a.airlineIATA)}: ${a.requests} (${window.FlyApi.formatBDT(a.settledBDT)} settled)`).join(' | ') || 'None'}</div>
+      <div style="font-size:0.84rem;"><strong>By Payment Method:</strong> ${(repRes.paymentMethodWiseRefunds || []).map(m => `${esc(m.paymentMethod)}: ${m.requests} (${window.FlyApi.formatBDT(m.approvedBDT)})`).join(' | ') || 'None'}</div>
+    `;
+  }
+
+  async function inspectAdminRefund(refundRef) {
+    const card = document.getElementById('admRefundDetailCard');
+    const body = document.getElementById('admRfDetailBody');
+    const d = await window.FlyApi.get('/api/admin/refunds/' + encodeURIComponent(refundRef) + '/details');
+    document.getElementById('admRfDetailTitle').textContent = `Refund Inspector — ${d.refund_ref} (${d.status})`;
+    card.classList.remove('is-hidden');
+
+    body.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">
+        <div><strong>Booking / PNR:</strong> ${esc(d.booking_reference)} (${esc(d.pnr_code)})</div>
+        <div><strong>Payment Method:</strong> ${esc(d.payment_method)}</div>
+        <div><strong>Destination:</strong> ${esc(d.refund_destination)}</div>
+        <div><strong>Approved / Settled:</strong> ${window.FlyApi.formatBDT(d.approvedAmountBDT)} / ${window.FlyApi.formatBDT(d.settledAmountBDT)}</div>
+        <div><strong>Policy / Fare:</strong> ${esc(d.fee_policy_version)} / ${esc(d.fare_family)}</div>
+        <div><strong>Provider Ref:</strong> ${esc(d.provider_ref || 'Pending')}</div>
+      </div>
+      <div><strong>Quote Breakdown:</strong> ${(d.quoteItems || []).map(q => `${esc(q.label)}: BDT ${(Number(q.amount_minor || 0) / 100).toFixed(2)}`).join(' &bull; ')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;padding:12px;background:var(--bg-secondary);border-radius:10px;">
+        <button type="button" class="fly-btn fly-btn-primary" id="btnAdmReconcileOk">Reconcile Gateway Settled</button>
+        <button type="button" class="fly-btn fly-btn-outline" id="btnAdmManualApprove">Manual Approve</button>
+        <button type="button" class="fly-btn fly-btn-outline" id="btnAdmManualDual">Dual Approve (2nd Sign-off)</button>
+        <input type="text" id="admManTransferRef" class="fly-input" placeholder="Transfer Ref (e.g. NPSB-8812)" style="width:190px;">
+        <input type="text" id="admManEvidenceRef" class="fly-input" placeholder="Evidence / Slip ID" style="width:170px;">
+        <button type="button" class="fly-btn fly-btn-primary" id="btnAdmManualSettle">Confirm Settlement w/ Evidence</button>
+      </div>
+    `;
+
+    document.getElementById('btnAdmReconcileOk').onclick = async () => {
+      try {
+        await window.FlyApi.post(`/api/admin/refunds/${encodeURIComponent(refundRef)}/reconcile`, { outcome: 'SETTLED' });
+        showAlert('Gateway settlement reconciled as REFUNDED.', false);
+        loadRefundManagement();
+        inspectAdminRefund(refundRef);
+      } catch (e) { showAlert(e.message, true); }
+    };
+    document.getElementById('btnAdmManualApprove').onclick = async () => {
+      try {
+        await window.FlyApi.post(`/api/admin/refunds/${encodeURIComponent(refundRef)}/manual`, { action: 'APPROVE', reason: 'Verified original payer & fare rule eligibility' });
+        showAlert('Manual approval recorded.', false);
+        loadRefundManagement();
+        inspectAdminRefund(refundRef);
+      } catch (e) { showAlert(e.message, true); }
+    };
+    document.getElementById('btnAdmManualDual').onclick = async () => {
+      try {
+        await window.FlyApi.post(`/api/admin/refunds/${encodeURIComponent(refundRef)}/manual`, { action: 'DUAL_APPROVE', reason: 'Second finance approver authorization' });
+        showAlert('Dual finance approval recorded.', false);
+        loadRefundManagement();
+        inspectAdminRefund(refundRef);
+      } catch (e) { showAlert(e.message, true); }
+    };
+    document.getElementById('btnAdmManualSettle').onclick = async () => {
+      try {
+        await window.FlyApi.post(`/api/admin/refunds/${encodeURIComponent(refundRef)}/manual`, {
+          action: 'SETTLE',
+          reason: 'Verified bank/manual payout settlement',
+          transferReference: document.getElementById('admManTransferRef').value.trim(),
+          evidenceRef: document.getElementById('admManEvidenceRef').value.trim()
+        });
+        showAlert('Manual refund marked REFUNDED with evidence.', false);
+        loadRefundManagement();
+        inspectAdminRefund(refundRef);
+      } catch (e) { showAlert(e.message, true); }
+    };
+  }
+
+  const rfBtn = document.getElementById('btnAdmRefundFilter');
+  if (rfBtn) rfBtn.addEventListener('click', loadRefundManagement);
+  const closeRfBtn = document.getElementById('btnCloseRfDetail');
+  if (closeRfBtn) closeRfBtn.addEventListener('click', () => document.getElementById('admRefundDetailCard').classList.add('is-hidden'));
+
   async function loadSettings() {
-    const res = await window.FlyApi.get('/api/admin/settings');
+    const [res, fpRes] = await Promise.all([
+      window.FlyApi.get('/api/admin/settings'),
+      window.FlyApi.get('/api/admin/fee-policies')
+    ]);
+    const fpList = document.getElementById('admFeePoliciesList');
+    if (fpList) {
+      fpList.innerHTML = (fpRes.policies || []).map(fp => `
+        <div style="padding:8px 10px;border:1px solid var(--border-subtle);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div>
+            <strong>${esc(fp.version)}</strong> — ${esc(fp.name)}
+            <div style="font-size:0.78rem;color:var(--text-muted);">Booking Fee: BDT ${(Number(fp.booking_service_fee_minor || 0) / 100).toFixed(0)} &bull; Cancel Fee: BDT ${(Number(fp.cancellation_service_fee_minor || 0) / 100).toFixed(0)}</div>
+          </div>
+          <span class="fly-badge ${fp.is_active ? 'fly-badge-success' : ''}">${fp.is_active ? 'ACTIVE' : 'ARCHIVED'}</span>
+        </div>
+      `).join('');
+    }
     const ov = document.getElementById('admSettingsOverview');
     const pols = (res.baggagePolicies || []).map(p =>
       `<div style="padding:10px;border:1px solid var(--border-subtle);border-radius:8px;">
@@ -341,6 +493,27 @@
           extraPerKgFee: Number(document.getElementById('bpPerKg').value)
         });
         showAlert('Baggage policy updated.', false);
+        loadSettings();
+      } catch (err) {
+        showAlert(err.message, true);
+      }
+    });
+  }
+
+  const fpForm = document.getElementById('admFeePolicyForm');
+  if (fpForm) {
+    fpForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        await window.FlyApi.post('/api/admin/fee-policies', {
+          version: document.getElementById('fpVersion').value.trim(),
+          name: document.getElementById('fpName').value.trim(),
+          bookingServiceFeeBDT: Number(document.getElementById('fpBookFee').value),
+          cancellationServiceFeeBDT: Number(document.getElementById('fpCancelFee').value),
+          legalNotes: document.getElementById('fpNotes').value.trim()
+        });
+        fpForm.reset();
+        showAlert('New fee policy version published (prior bookings preserve original version).', false);
         loadSettings();
       } catch (err) {
         showAlert(err.message, true);

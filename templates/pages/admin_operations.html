@@ -26,10 +26,11 @@
   <nav style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;" id="adminNavTabs" aria-label="Admin sections">
     <a href="/admin" data-admin-tab="dashboard" class="fly-btn fly-btn-primary">Overview</a>
     <a href="/admin/flights" data-admin-tab="flights" class="fly-btn fly-btn-outline">Flights</a>
-    <a href="/admin/bookings" data-admin-tab="bookings" class="fly-btn fly-btn-outline">Bookings &amp; Refunds</a>
+    <a href="/admin/bookings" data-admin-tab="bookings" class="fly-btn fly-btn-outline">Bookings</a>
+    <a href="/admin/refunds" data-admin-tab="refunds" class="fly-btn fly-btn-outline">Refund Management</a>
     <a href="/admin/inventory" data-admin-tab="inventory" class="fly-btn fly-btn-outline">Seat Inventory</a>
-    <a href="/admin/audit-logs" data-admin-tab="audit-logs" class="fly-btn fly-btn-outline">Audit &amp; Concurrency Logs</a>
-    <a href="/admin/settings" data-admin-tab="settings" class="fly-btn fly-btn-outline">Baggage &amp; Promos</a>
+    <a href="/admin/audit-logs" data-admin-tab="audit-logs" class="fly-btn fly-btn-outline">Audit &amp; QR Logs</a>
+    <a href="/admin/settings" data-admin-tab="settings" class="fly-btn fly-btn-outline">Fee Policies, Baggage &amp; Promos</a>
   </nav>
 
   <!-- TAB: DASHBOARD -->
@@ -146,6 +147,93 @@
     </div>
   </section>
 
+  <!-- TAB: COMPLETE REFUND MANAGEMENT (Part L) -->
+  <section class="admin-panel is-hidden" data-panel="refunds">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px;" id="admRefundKpis">
+      <div class="fly-card" style="padding: 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">TOTAL REQUESTS</div><div id="rfKpiTotal" style="font-size:1.35rem;font-weight:800;">0</div></div>
+      <div class="fly-card" style="padding: 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">PENDING SUPPLIER</div><div id="rfKpiPendingSup" style="font-size:1.35rem;font-weight:800;color:#d97706;">0</div></div>
+      <div class="fly-card" style="padding: 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">PENDING GATEWAY</div><div id="rfKpiPendingGw" style="font-size:1.35rem;font-weight:800;color:#0284c7;">0</div></div>
+      <div class="fly-card" style="padding: 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">COMPLETED</div><div id="rfKpiCompleted" style="font-size:1.35rem;font-weight:800;color:#059669;">0</div></div>
+      <div class="fly-card" style="padding: 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">FAILED / RECONCILE</div><div id="rfKpiFailed" style="font-size:1.35rem;font-weight:800;color:#dc2626;">0</div></div>
+      <div class="fly-card" style="padding: 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">APPROVED / SETTLED</div><div id="rfKpiAmount" style="font-size:1.05rem;font-weight:800;">BDT 0</div></div>
+    </div>
+
+    <div class="fly-card" style="padding: 18px; margin-bottom: 18px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; align-items: end;">
+        <div class="fly-field"><label class="fly-label">Search (Ref/PNR/Ticket/Email/Txn)</label><input type="text" id="rfSearchQ" class="fly-input" placeholder="RF-, PNR, ticket, email..."></div>
+        <div class="fly-field"><label class="fly-label">Status</label>
+          <select id="rfFilterStatus" class="fly-select">
+            <option value="">All Statuses</option>
+            <option value="APPROVAL_PENDING">APPROVAL_PENDING</option>
+            <option value="SUBMITTED_TO_SUPPLIER">SUBMITTED_TO_SUPPLIER</option>
+            <option value="SUPPLIER_APPROVED">SUPPLIER_APPROVED</option>
+            <option value="GATEWAY_REFUND_PENDING">GATEWAY_REFUND_PENDING</option>
+            <option value="GATEWAY_PROCESSING">GATEWAY_PROCESSING</option>
+            <option value="PARTIALLY_REFUNDED">PARTIALLY_REFUNDED</option>
+            <option value="REFUNDED">REFUNDED</option>
+            <option value="FAILED">FAILED</option>
+            <option value="RECONCILIATION_REQUIRED">RECONCILIATION_REQUIRED</option>
+          </select>
+        </div>
+        <div class="fly-field"><label class="fly-label">Payment Method</label>
+          <select id="rfFilterMethod" class="fly-select">
+            <option value="">All Methods</option>
+            <option value="CARD">Card / SSLCommerz</option>
+            <option value="BKASH">bKash</option>
+            <option value="NAGAD">Nagad</option>
+            <option value="BANK">Bank Transfer</option>
+            <option value="CASH">Cash / Manual</option>
+          </select>
+        </div>
+        <div class="fly-field"><label class="fly-label">Cancellation Type</label>
+          <select id="rfFilterType" class="fly-select">
+            <option value="">All Types</option>
+            <option value="VOLUNTARY">VOLUNTARY</option>
+            <option value="AIRLINE_INITIATED">AIRLINE_INITIATED</option>
+            <option value="SCHEDULE_CHANGE">SCHEDULE_CHANGE</option>
+            <option value="PARTIAL">PARTIAL</option>
+            <option value="NO_SHOW">NO_SHOW</option>
+            <option value="TICKETING_FAILURE">TICKETING_FAILURE</option>
+          </select>
+        </div>
+        <div class="fly-field"><label class="fly-label">Request Date</label><input type="date" id="rfFilterReqDate" class="fly-input"></div>
+        <button type="button" id="btnAdmRefundFilter" class="fly-btn fly-btn-primary" style="height: 42px;">Apply Filters</button>
+      </div>
+    </div>
+
+    <div class="fly-card" style="padding: 20px; margin-bottom: 18px; overflow-x: auto;">
+      <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Refund Requests</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.86rem;">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid var(--border-subtle);">
+            <th style="padding: 8px;">Refund Ref</th>
+            <th style="padding: 8px;">PNR / Booking / Ticket</th>
+            <th style="padding: 8px;">Passenger &amp; Type</th>
+            <th style="padding: 8px;">Method</th>
+            <th style="padding: 8px;">Approved / Settled</th>
+            <th style="padding: 8px;">Status</th>
+            <th style="padding: 8px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="admRefundListBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Detail & Manual / Reconcile Inspector -->
+    <div id="admRefundDetailCard" class="fly-card is-hidden" style="padding: 20px; margin-bottom: 18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <h3 style="margin:0;" id="admRfDetailTitle">Refund Details</h3>
+        <button type="button" id="btnCloseRfDetail" class="fly-btn fly-btn-outline" style="padding:4px 10px;font-size:0.8rem;">Close</button>
+      </div>
+      <div id="admRfDetailBody" style="display:grid;gap:14px;font-size:0.88rem;"></div>
+    </div>
+
+    <div class="fly-card" style="padding: 20px;">
+      <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Refund Aging &amp; Financial Reports</h2>
+      <div id="admRefundReportsBox" style="display: grid; gap: 12px; font-size: 0.88rem;">Loading reports...</div>
+    </div>
+  </section>
+
   <!-- TAB: INVENTORY -->
   <section class="admin-panel is-hidden" data-panel="inventory">
     <div class="fly-card" style="padding: 20px;">
@@ -160,7 +248,7 @@
 
   <!-- TAB: AUDIT LOGS -->
   <section class="admin-panel is-hidden" data-panel="audit-logs">
-    <div class="fly-card" style="padding: 20px; overflow-x: auto;">
+    <div class="fly-card" style="padding: 20px; overflow-x: auto; margin-bottom: 20px;">
       <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Concurrency Locks, Payments &amp; Admin Audit Trail</h2>
       <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
         <thead>
@@ -175,11 +263,42 @@
         <tbody id="admAuditLogsBody"></tbody>
       </table>
     </div>
+    <div class="fly-card" style="padding: 20px; overflow-x: auto;">
+      <h2 style="margin: 0 0 12px; font-size: 1.1rem;">QR Verification &amp; Staff Check-In Scan History</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid var(--border-subtle);">
+            <th style="padding: 8px;">Scanned At (UTC)</th>
+            <th style="padding: 8px;">Ticket / PNR</th>
+            <th style="padding: 8px;">Result</th>
+            <th style="padding: 8px;">Source</th>
+            <th style="padding: 8px;">Check-In</th>
+          </tr>
+        </thead>
+        <tbody id="admQrScansBody"></tbody>
+      </table>
+    </div>
   </section>
 
   <!-- TAB: SETTINGS -->
   <section class="admin-panel is-hidden" data-panel="settings">
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+      <div class="fly-card" style="padding: 20px;">
+        <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Versioned FLY Service Fee Policy</h2>
+        <form id="admFeePolicyForm" style="display: grid; gap: 10px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="fly-field"><label class="fly-label">Version Label</label><input type="text" id="fpVersion" class="fly-input" placeholder="e.g. FLY-POL-V2" required></div>
+            <div class="fly-field"><label class="fly-label">Policy Name</label><input type="text" id="fpName" class="fly-input" placeholder="2026 Fee Schedule" required></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="fly-field"><label class="fly-label">Booking Fee (BDT)</label><input type="number" id="fpBookFee" class="fly-input" value="0" min="0"></div>
+            <div class="fly-field"><label class="fly-label">Cancel Service Fee (BDT)</label><input type="number" id="fpCancelFee" class="fly-input" value="350" min="0"></div>
+          </div>
+          <div class="fly-field"><label class="fly-label">Legal / Compliance Disclosure Notes</label><input type="text" id="fpNotes" class="fly-input" value="Waived on airline-initiated disruptions and ticketing errors."></div>
+          <button type="submit" class="fly-btn fly-btn-primary">Publish New Policy Version</button>
+        </form>
+        <div id="admFeePoliciesList" style="display: grid; gap: 8px; font-size: 0.85rem;"></div>
+      </div>
       <div class="fly-card" style="padding: 20px;">
         <h2 style="margin: 0 0 12px; font-size: 1.1rem;">Configure Baggage Policy</h2>
         <form id="admBaggageForm" style="display: grid; gap: 12px;">

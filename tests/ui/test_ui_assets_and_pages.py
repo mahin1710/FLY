@@ -31,6 +31,8 @@ PAGES = [
     "/admin/inventory",
     "/admin/audit-logs",
     "/admin/settings",
+    "/admin/refunds",
+    "/refunds/track",
     "/ticket/A7K9P2",
     "/ticket/verify/TEST",
 ]
