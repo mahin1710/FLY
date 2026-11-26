@@ -999,11 +999,11 @@ textarea {
 .hero-section {
   position: relative;
   min-height: 600px;
-  padding: 96px 0 0 0;
+  padding: 42px 0 0 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   text-align: center;
   overflow: visible;
   z-index: 2;
@@ -1055,7 +1055,7 @@ textarea {
 
 .hero-text-block {
   max-width: 820px;
-  margin: 0 auto 38px auto;
+  margin: 0 auto 176px auto;
 }
 
 .hero-badge {
@@ -10230,7 +10230,10 @@ select:focus-visible {
 @media (max-width: 1100px) {
   .cinematic-hero {
     min-height: 540px;
-    padding: 64px 0 0 0;
+    padding: 36px 0 0 0;
+  }
+  .cinematic-hero .hero-text-block {
+    margin-bottom: 120px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -74px;
@@ -10243,7 +10246,10 @@ select:focus-visible {
 @media (max-width: 768px) {
   .cinematic-hero {
     min-height: 460px;
-    padding: 48px 0 0 0;
+    padding: 30px 0 0 0;
+  }
+  .cinematic-hero .hero-text-block {
+    margin-bottom: 72px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -44px;
@@ -10256,7 +10262,10 @@ select:focus-visible {
 @media (max-width: 640px) {
   .cinematic-hero {
     min-height: 420px;
-    padding: 36px 0 0 0;
+    padding: 26px 0 0 0;
+  }
+  .cinematic-hero .hero-text-block {
+    margin-bottom: 42px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -24px;
@@ -10269,7 +10278,10 @@ select:focus-visible {
 @media (max-width: 480px) {
   .cinematic-hero {
     min-height: 380px;
-    padding: 28px 0 0 0;
+    padding: 22px 0 0 0;
+  }
+  .cinematic-hero .hero-text-block {
+    margin-bottom: 28px;
   }
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -18px;
