@@ -93,8 +93,10 @@ class UiAssetsAndPagesTests(unittest.TestCase):
         self.assertIn("FLY BEYOND BORDERS &bull; GLOBAL FLIGHT NETWORK", html)
         self.assertIn("Fly Beyond Borders", html)
         self.assertIn("Discover destinations, compare flights, and enjoy a simpler way to travel.", html)
-        # Ensure floating search panel is not clipped and sits before feature strip wrapper
-        self.assertLess(html.index("searchWidgetContainer"), html.index("hero-feature-wrapper"))
+        # Ensure floating search panel sits before Popular Destinations and feature strip box is removed
+        self.assertNotIn("heroFeatureStrip", html)
+        self.assertNotIn("Best Price Guarantee", html)
+        self.assertLess(html.index("searchWidgetContainer"), html.index("popular-destinations-section"))
 
 
 if __name__ == "__main__":

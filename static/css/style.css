@@ -10226,9 +10226,9 @@ select:focus-visible {
   gap: 12px;
 }
 
-/* Cascade Guard: Ensure responsive hero float overlap & compact spacing take precedence */
+/* Cascade Guard: Ensure responsive hero float overlap & clean top clearance for #destinations */
 .popular-destinations-section {
-  padding: 20px 0 24px 0;
+  padding: 132px 0 24px 0;
 }
 
 @media (max-width: 1100px) {
@@ -10242,8 +10242,8 @@ select:focus-visible {
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -74px;
   }
-  .hero-feature-wrapper {
-    padding-top: 92px;
+  .popular-destinations-section {
+    padding-top: 98px;
   }
 }
 
@@ -10258,8 +10258,8 @@ select:focus-visible {
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -44px;
   }
-  .hero-feature-wrapper {
-    padding-top: 62px;
+  .popular-destinations-section {
+    padding-top: 68px;
   }
 }
 
@@ -10274,8 +10274,8 @@ select:focus-visible {
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -24px;
   }
-  .hero-feature-wrapper {
-    padding-top: 40px;
+  .popular-destinations-section {
+    padding-top: 44px;
   }
 }
 
@@ -10290,8 +10290,8 @@ select:focus-visible {
   .cinematic-hero .search-widget-card.genesis-floating-card {
     margin-bottom: -18px;
   }
-  .hero-feature-wrapper {
-    padding-top: 34px;
+  .popular-destinations-section {
+    padding-top: 36px;
   }
 }
 
