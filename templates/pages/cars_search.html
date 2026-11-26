@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
+{% from "components/page_heading.html" import render_page_heading %}
+
+{% block title %}Car Rentals Search — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumb([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'Car Rentals Search', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="carsPage">
+  {{ render_page_heading(
+    'Airport & City Car Rentals',
+    'Compare pickup flexibility, driver policies, insurance coverage, and fuel rules.'
+  ) }}
+
+  <div class="fly-card" style="padding: 18px 22px; margin: 16px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+    <div id="carQuerySummary" style="font-size: 0.94rem;">Loading rental criteria...</div>
+    <a href="/" class="fly-btn fly-btn-outline">Modify Car Search</a>
+  </div>
+
+  <div id="carResultsContainer" style="margin-top: 18px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function () {
+  const qs = window.location.search;
+  const params = new URLSearchParams(qs);
+  const esc = s => window.FlyApi ? window.FlyApi.escapeHtml(s) : String(s || '');
+  const summary = document.getElementById('carQuerySummary');
+  const container = document.getElementById('carResultsContainer');
+
+  const pLoc = params.get('pickupLocation') || '--';
+  const dLoc = params.get('dropoffLocation') || pLoc;
+  const pDt = params.get('pickupDate') || '--';
+  const pTm = params.get('pickupTime') || '10:00';
+  const rDt = params.get('returnDate') || '--';
+  const rTm = params.get('returnTime') || '10:00';
+  const age = params.get('driverAge') || '25';
+  summary.innerHTML = `<strong>${esc(pLoc)}</strong> ➔ <strong>${esc(dLoc)}</strong> &bull; Pickup: ${esc(pDt)} ${esc(pTm)} &bull; Return: ${esc(rDt)} ${esc(rTm)} &bull; Driver Age: ${esc(age)}`;
+
+  try {
+    const res = await fetch('/api/cars/search' + qs);
+    const data = await res.json();
+    if (!res.ok) {
+      container.innerHTML = `<div class="fly-alert fly-alert-danger">${esc(data.error || 'Invalid car rental parameters.')}</div>`;
+      return;
+    }
+    if (!data.providerConfigured) {
+      container.innerHTML = `
+        <div class="fly-card" style="padding: 28px;">
+          <span class="fly-badge fly-badge-warning">Provider Adapter Ready &bull; External Key Required</span>
+          <h2 style="margin: 12px 0 8px; font-size: 1.25rem;">Live Car Rental Supplier Not Configured</h2>
+          <p style="margin: 0 0 12px; color: var(--text-secondary);">
+            ${esc(data.message)}
+          </p>
+          <p style="margin: 0 0 14px; font-size: 0.86rem; color: var(--text-muted);">
+            Your car search from <strong>${esc(data.query.pickupLocation)}</strong> to <strong>${esc(data.query.dropoffLocation)}</strong> (${esc(data.query.pickupDate)} ${esc(data.query.pickupTime)} — ${esc(data.query.returnDate)} ${esc(data.query.returnTime)}, Driver Age ${esc(data.query.driverAge)}) passed validation cleanly. To serve live vehicle fleets, configure:
+            <code>${(data.requiredEnv || []).map(esc).join(', ')}</code>
+          </p>
+          <a href="/" class="fly-btn fly-btn-primary">Return to FLY Travel Search</a>
+        </div>`;
+      return;
+    }
+    container.innerHTML = '<div class="fly-card" style="padding:24px;">Live rental vehicles loaded.</div>';
+  } catch (err) {
+    container.innerHTML = `<div class="fly-alert fly-alert-danger">Network error while contacting car rental adapter.</div>`;
+  }
+})();
+</script>
+{% endblock %}

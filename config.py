@@ -61,3 +61,6 @@ class Config:
     MAX_LOCK_EXTENSIONS = 1
     LOCK_SWEEP_INTERVAL_SECONDS = int(os.environ.get("LOCK_SWEEP_INTERVAL_SECONDS", 30))
     MAX_SEATS_PER_BOOKING = int(os.environ.get("MAX_SEATS_PER_BOOKING", 9))
+    BOOKING_TIMEZONE = os.environ.get("BOOKING_TIMEZONE", "Asia/Dhaka")
+    HOTEL_PROVIDER_API_KEY = os.environ.get("HOTEL_PROVIDER_API_KEY", "").strip()
+    CAR_RENTAL_PROVIDER_API_KEY = os.environ.get("CAR_RENTAL_PROVIDER_API_KEY", "").strip()

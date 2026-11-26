@@ -125,7 +125,9 @@
 
       if (fromEl) fromEl.textContent = fromText;
       if (toEl) toEl.textContent = toText;
-      if (tripEl) tripEl.textContent = s.tripType === 'roundtrip' ? 'Round Trip' : 'One Way';
+      if (tripEl) {
+        tripEl.textContent = s.tripType === 'roundtrip' ? 'Round Trip' : (s.tripType === 'multicity' ? 'Multi City' : 'One Way');
+      }
       if (depEl) depEl.textContent = s.departure ? ('Departure: ' + s.departure) : 'Flexible Dates';
       if (paxEl) paxEl.textContent = paxCount + (paxCount === 1 ? ' Passenger' : ' Passengers');
       if (cabinEl) cabinEl.textContent = s.cabin;
@@ -152,8 +154,8 @@
 
       try {
         const res = await fetch('/api/flights?' + qs.toString(), { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('Could not load flight schedules (' + res.status + ')');
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error((data && data.error) || ('Could not load flight schedules (' + res.status + ')'));
         const flights = Array.isArray(data.flights) ? data.flights : [];
         this.allFlights = flights.map(f => this.normalizeFlight(f));
         this.populateFilterOptions();

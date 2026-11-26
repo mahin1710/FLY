@@ -98,8 +98,10 @@
       document.getElementById('contactEmail').value = b.contact_email || b.emailAddress || user.email || '';
       document.getElementById('contactPhone').value = b.contact_phone || '';
 
-      renderPassengerInputs(Math.max(1, (b.seatCodes || []).length), b.passengerData || []);
-      renderFareSummary(b.fareBreakdown || { baseFare: b.total_amount, taxesAndFees: 0, totalPayable: b.total_amount });
+      const paxList = Array.isArray(b.passengerData) ? b.passengerData : [];
+      const totalPaxForms = Math.max(1, (b.seatCodes || []).length, paxList.length);
+      renderPassengerInputs(totalPaxForms, paxList);
+      renderFareSummary(b.fareBreakdown || { baseFare: b.total_amount, taxes: 0, totalPayable: b.total_amount });
 
       if (extendBtn && Number(b.lock_extensions || 0) >= 1) {
         extendBtn.disabled = true;
@@ -120,12 +122,16 @@
     const seats = (state.booking && state.booking.seatCodes) || [];
     const user = window.FlyApi.getUser() || {};
     let html = '';
+    let seatIdx = 0;
     for (let i = 0; i < count; i++) {
-      const p = existingList[i] || (i === 0 ? { firstName: user.firstName || '', lastName: user.lastName || '' } : {});
-      const seatTag = seats[i] ? ` — Seat ${esc(seats[i])}` : '';
+      const p = existingList[i] || (i === 0 ? { type: 'adult', firstName: user.firstName || '', lastName: user.lastName || '' } : { type: 'adult' });
+      const pType = String(p.type || 'adult').toLowerCase();
+      const typeLabel = pType === 'infant' ? 'Infant (<2 yrs • Lap)' : (pType === 'child' ? 'Child (2-11 yrs)' : 'Adult (12+ yrs)');
+      const seatCode = pType === 'infant' ? '' : (seats[seatIdx++] || '');
+      const seatTag = seatCode ? ` — Seat ${esc(seatCode)}` : (pType === 'infant' ? ' — Shared Adult Lap Seat' : '');
       html += `
-        <div class="pax-form-block" data-pax-idx="${i}" style="padding:14px;background:var(--bg-secondary);border-radius:10px;">
-          <div style="font-weight:700;margin-bottom:10px;">Passenger ${i + 1}${seatTag}</div>
+        <div class="pax-form-block" data-pax-idx="${i}" data-pax-type="${esc(pType)}" data-seat-code="${esc(seatCode)}" style="padding:14px;background:var(--bg-secondary);border-radius:10px;">
+          <div style="font-weight:700;margin-bottom:10px;">Passenger ${i + 1}: ${esc(typeLabel)}${seatTag}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">
             <div class="fly-field">
               <label class="fly-label">First Name *</label>
@@ -175,8 +181,8 @@
 
   function renderFareSummary(fb) {
     const base = Number(fb.baseFare || 0);
-    const tax = Number(fb.taxesAndFees || 0);
-    const extras = Number(fb.baggageFee || 0) + Number(fb.mealFee || 0) + Number(fb.insuranceFee || 0) + Number(fb.seatUpgradeFee || 0);
+    const tax = Number(fb.taxes != null ? fb.taxes : (fb.taxesAndFees || 0)) + Number(fb.airlineCharges || 0);
+    const extras = Number(fb.baggageFee || fb.luggageFee || 0) + Number(fb.mealFee || 0) + Number(fb.insuranceFee || 0) + Number(fb.seatUpgradeFee || 0);
     const disc = Number(fb.discount || 0);
     const total = Number(fb.totalPayable || (base + tax + extras - disc));
 
@@ -198,19 +204,19 @@
   async function syncDetailsToServer(showOk) {
     if (!state.booking) return null;
     const paxBlocks = Array.from(document.querySelectorAll('.pax-form-block'));
-    const passengerData = paxBlocks.map((blk, idx) => {
+    const passengerData = paxBlocks.map((blk) => {
       const fn = blk.querySelector('.pax-fn').value.trim();
       const ln = blk.querySelector('.pax-ln').value.trim();
       const doc = blk.querySelector('.pax-doc').value.trim();
       const dob = blk.querySelector('.pax-dob').value;
       return {
-        type: 'adult',
+        type: blk.getAttribute('data-pax-type') || 'adult',
         firstName: fn,
         lastName: ln,
         fullName: (fn + ' ' + ln).trim(),
         passportNumber: doc,
         dob: dob,
-        seatCode: (state.booking.seatCodes || [])[idx] || ''
+        seatCode: blk.getAttribute('data-seat-code') || ''
       };
     });
 

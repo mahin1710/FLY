@@ -144,6 +144,20 @@ def api_hold_seats():
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid baggage or add-on numeric values."}), 400
 
+    pax_list = data.get("passengerData") or data.get("passengers") or []
+    if not pax_list and (data.get("adults") or data.get("children") or data.get("infants")):
+        try:
+            a_cnt = max(1, int(data.get("adults") or 1))
+            c_cnt = max(0, int(data.get("children") or 0))
+            i_cnt = max(0, int(data.get("infants") or 0))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid passenger category counts."}), 400
+        if i_cnt > a_cnt:
+            return jsonify({"error": "Each infant must be accompanied by an adult passenger.", "code": "INVALID_PASSENGERS"}), 400
+        if len(int_seat_ids) != (a_cnt + c_cnt):
+            return jsonify({"error": f"Selected seats ({len(int_seat_ids)}) must match Adults + Children ({a_cnt + c_cnt}).", "code": "SEAT_PAX_MISMATCH"}), 400
+        pax_list = ([{"type": "adult"} for _ in range(a_cnt)] + [{"type": "child"} for _ in range(c_cnt)] + [{"type": "infant"} for _ in range(i_cnt)])
+
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "local").split(",")[0].strip()
     success, msg, code, hold_info = database.hold_seats_atomic(
         flight_id=int(flight_id),
@@ -151,7 +165,7 @@ def api_hold_seats():
         account_id=user["id"],
         nbr_luggages=nbr_luggages,
         weight=weight,
-        passenger_data=data.get("passengerData") or data.get("passengers") or [],
+        passenger_data=pax_list,
         return_flight_id=data.get("returnFlightId"),
         return_seat_ids=ret_seat_ids,
         multi_leg_data=data.get("multiLegData") or [],
@@ -316,11 +330,28 @@ def api_update_booking_details(booking_ref):
         if booking["return_flight_id"]:
             all_fids.append(int(booking["return_flight_id"]))
 
-        adults_count = max(1, len(passengers) if passengers else len(seat_rows) or 1)
+        adults_count, children_count, infants_count = 0, 0, 0
+        if passengers and isinstance(passengers, list):
+            for p in passengers:
+                pt = str(p.get("type") or p.get("passengerType") or "adult").lower()
+                if "infant" in pt:
+                    infants_count += 1
+                elif "child" in pt:
+                    children_count += 1
+                else:
+                    adults_count += 1
+        if adults_count == 0:
+            adults_count = max(1, len(seat_rows) or 1)
+        if infants_count > adults_count:
+            cursor.execute("ROLLBACK;")
+            return jsonify({"error": "Each infant must be accompanied by an adult passenger.", "code": "INVALID_PASSENGERS"}), 400
+
         fare_breakdown = database.calculate_fare_breakdown(
             flight_ids=all_fids,
             cabin_class=booking["cabin_class"] or "Economy",
             adults=adults_count,
+            children=children_count,
+            infants=infants_count,
             luggage_count=nbr_luggages,
             luggage_weight=weight,
             meal_fee=meal_fee,

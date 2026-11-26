@@ -1038,11 +1038,17 @@ def hold_seats_atomic(
                     (er["booking_reference"],),
                 )
 
-        # 2. Verify outbound flight availability
+        # 2. Verify outbound flight availability and future departure boundary
         flight = cursor.execute("SELECT * FROM flights WHERE id = ? AND COALESCE(is_active, 1) = 1", (flight_id,)).fetchone()
         if not flight or (flight["status"] or "").upper() == "CANCELLED":
             cursor.execute("ROLLBACK;")
             return False, "Flight is not available for booking.", "FLIGHT_UNAVAILABLE", None
+
+        from fly.services.travel_providers import get_booking_today_str
+        dep_date_part = str(flight["dep_datetime"] or "")[:10]
+        if dep_date_part and dep_date_part < get_booking_today_str(Config.BOOKING_TIMEZONE):
+            cursor.execute("ROLLBACK;")
+            return False, "Cannot book seats for a past flight departure.", "PAST_DATE_REJECTED", None
 
         airline_id = flight["id_airline"]
 

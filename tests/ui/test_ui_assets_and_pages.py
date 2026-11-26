@@ -14,6 +14,8 @@ BASE_URL = os.environ.get("FLY_BASE_URL", "http://127.0.0.1:5000")
 PAGES = [
     "/",
     "/flights/search",
+    "/hotels/search",
+    "/cars/search",
     "/flights/976/seats",
     "/checkout",
     "/login",

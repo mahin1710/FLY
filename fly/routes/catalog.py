@@ -7,7 +7,9 @@ import time
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_from_directory, current_app, Response
 import database
+from config import Config
 from fly.middleware.auth import get_current_user
+from fly.services.travel_providers import HotelProviderAdapter, CarRentalProviderAdapter, get_booking_today_str
 
 catalog_bp = Blueprint("catalog", __name__)
 
@@ -284,7 +286,27 @@ def api_search_flights():
     arr_city = (request.args.get("arrCity") or request.args.get("to") or "").strip()
     date_after = (request.args.get("dateAfter") or request.args.get("departure") or "").strip()
     date_before = (request.args.get("dateBefore") or "").strip()
+    ret_date = (request.args.get("return") or "").strip()
     cabin_class = (request.args.get("cabinClass") or request.args.get("cabin") or "").strip().lower()
+
+    today_dhaka = get_booking_today_str(Config.BOOKING_TIMEZONE)
+    if date_after:
+        if len(date_after) < 10 or date_after[:10] < today_dhaka:
+            return jsonify({
+                "error": f"Past travel dates are not allowed. Earliest departure date is {today_dhaka} ({Config.BOOKING_TIMEZONE}).",
+                "code": "PAST_DATE_REJECTED",
+            }), 400
+    if ret_date:
+        if ret_date[:10] < today_dhaka:
+            return jsonify({
+                "error": f"Return date cannot be in the past ({today_dhaka} {Config.BOOKING_TIMEZONE}).",
+                "code": "PAST_DATE_REJECTED",
+            }), 400
+        if date_after and ret_date[:10] < date_after[:10]:
+            return jsonify({
+                "error": "Return date must be on or after departure date.",
+                "code": "INVALID_RETURN_DATE",
+            }), 400
     q = (request.args.get("q") or request.args.get("search") or "").strip()
     airline_ids_param = (request.args.get("airlines") or request.args.get("airlineId") or "").strip()
     stops_filter = (request.args.get("stops") or "").strip().lower()
@@ -313,7 +335,10 @@ def api_search_flights():
         params.extend([f"%{arr_city}%", arr_city, f"%{arr_city}%"])
     if date_after:
         where_clauses.append("f.dep_datetime >= ?")
-        params.append(f"{date_after} 00:00")
+        params.append(f"{date_after[:10]} 00:00")
+    else:
+        where_clauses.append("f.dep_datetime >= ?")
+        params.append(f"{today_dhaka} 00:00")
     if date_before:
         where_clauses.append("f.dep_datetime <= ?")
         params.append(f"{date_before} 23:59")
@@ -539,3 +564,15 @@ def api_airline_logo(airline_id):
     iata = row["IATA"] if row else ""
     filename = "fly_icon.svg" if iata in ("BG", "BS", "EK", "QR", "VQ") else "default_logo.png"
     return send_from_directory(current_app.static_folder + "/images", filename)
+
+
+@catalog_bp.route("/api/hotels/search", methods=["GET"])
+def api_search_hotels():
+    status_code, payload = HotelProviderAdapter.search(dict(request.args), Config.BOOKING_TIMEZONE)
+    return jsonify(payload), status_code
+
+
+@catalog_bp.route("/api/cars/search", methods=["GET"])
+def api_search_cars():
+    status_code, payload = CarRentalProviderAdapter.search(dict(request.args), Config.BOOKING_TIMEZONE)
+    return jsonify(payload), status_code

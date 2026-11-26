@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}FLY — Fly Beyond Borders | Official International Flight Booking{% endblock %}
-{% block meta_description %}Discover destinations, compare flights, and enjoy a simpler way to travel with FLY. Verified fares, 15-minute seat holds, and transparent pricing.{% endblock %}
+{% block title %}FLY — Fly Beyond Borders | Official Flight, Hotel &amp; Travel Booking{% endblock %}
+{% block meta_description %}Discover destinations, compare flights, search hotels and car rentals on FLY. Real-time seat selection, 10-minute seat locks, and transparent pricing.{% endblock %}
 
 {% block content %}
 <!-- View: Homepage Landing -->
@@ -16,50 +16,45 @@
       <div class="hero-text-block">
         <div class="hero-badge">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
-          <span>FLY BEYOND BORDERS &bull; GLOBAL FLIGHT NETWORK</span>
+          <span>FLY BEYOND BORDERS &bull; GLOBAL TRAVEL NETWORK</span>
         </div>
         <h1 class="hero-title hero-headline-brand">
           Fly Beyond Borders
         </h1>
         <p class="hero-subtitle">
-          Discover destinations, compare flights, and enjoy a simpler way to travel.
+          Discover destinations, compare flights, and plan complete trips in one place.
         </p>
       </div>
 
-      <!-- Floating White Flight Search Panel (Elevated 24px-28px Rounded Card) -->
-      <div class="search-widget-card genesis-floating-card" role="search" aria-label="Flight Search Widget" id="searchWidgetContainer">
-        
-        <!-- Top Tab Bar: Categories on Left + Trip Type Pills on Right -->
+      <!-- Floating White Travel Search Panel -->
+      <div class="search-widget-card genesis-floating-card" role="search" aria-label="Travel Search Widget" id="searchWidgetContainer">
+
+        <!-- Top Tab Bar: Flights / Hotels / Car Rentals + Flight Trip Type Pills -->
         <div class="search-card-topbar">
-          <!-- Category Tabs -->
           <div class="service-category-tabs" role="tablist" aria-label="Travel Services">
             <button class="cat-tab-btn active" id="catTabFlights" role="tab" aria-selected="true" type="button">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
               <span>Flights</span>
             </button>
-            <button class="cat-tab-btn" id="catTabHotels" role="tab" aria-selected="false" type="button" onclick="showPartnerModal('Hotels', 'Explore curated accommodations with FLY hospitality partners across 120+ destinations.')">
+            <button class="cat-tab-btn" id="catTabHotels" role="tab" aria-selected="false" type="button">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>
               <span>Hotels</span>
             </button>
-            <button class="cat-tab-btn" id="catTabExperiences" role="tab" aria-selected="false" type="button" onclick="showPartnerModal('Experiences', 'Discover guided local tours, airport VIP lounges, and curated excursions.')">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-              <span>Experiences</span>
-            </button>
-            <button class="cat-tab-btn" id="catTabCarRental" role="tab" aria-selected="false" type="button" onclick="showPartnerModal('Car Rental', 'Reliable airport transfers and flexible rental vehicles waiting at your destination.')">
+            <button class="cat-tab-btn" id="catTabCarRental" role="tab" aria-selected="false" type="button">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.7 2 11 2 11.3V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h10"/></svg>
-              <span>Car Rental</span>
+              <span>Car Rentals</span>
             </button>
           </div>
 
-          <!-- Trip Type Segmented Pills -->
-          <div class="trip-type-segmented-pill" role="radiogroup" aria-label="Trip Type">
-            <button class="trip-pill active" id="tabRoundTrip" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.setTripType('roundtrip'); } else { app.setTripType('roundtrip'); }" type="button" role="radio" aria-checked="true">
-              Round Trip
-            </button>
-            <button class="trip-pill" id="tabOneWay" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.setTripType('oneway'); } else { app.setTripType('oneway'); }" type="button" role="radio" aria-checked="false">
+          <!-- Exact Order: One Way (Default) -> Round Trip -> Multi City -->
+          <div class="trip-type-segmented-pill" id="flightTripPills" role="radiogroup" aria-label="Trip Type">
+            <button class="trip-pill active" id="tabOneWay" type="button" role="radio" aria-checked="true">
               One Way
             </button>
-            <button class="trip-pill" id="tabMultiCity" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.setTripType('multicity'); } else { app.setTripType('multicity'); }" type="button" role="radio" aria-checked="false">
+            <button class="trip-pill" id="tabRoundTrip" type="button" role="radio" aria-checked="false">
+              Round Trip
+            </button>
+            <button class="trip-pill" id="tabMultiCity" type="button" role="radio" aria-checked="false">
               Multi City
             </button>
           </div>
@@ -68,9 +63,8 @@
         <!-- Validation Alert Banner -->
         <div class="search-validation-alert" id="searchValidationAlert" role="alert" aria-live="polite" style="display: none;"></div>
 
-        <!-- Standard Search Form (Round Trip & One Way) -->
-        <div class="search-widget-form genesis-form-grid is-roundtrip" id="standardSearchForm">
-          
+        <!-- 1. Standard Flight Search Form (One Way default / Round Trip) — No homepage Travellers control -->
+        <form class="search-widget-form genesis-form-grid is-oneway" id="standardSearchForm" novalidate>
           <!-- Origin Airport Field -->
           <div class="form-segment-block form-group-airport" id="originGroup">
             <div class="segment-label-row">
@@ -80,15 +74,15 @@
               <label for="homeOriginInput" class="segment-label">From</label>
             </div>
             <div class="segment-input-wrapper">
-              <input type="text" id="homeOriginInput" class="segment-input airport-input" placeholder="Rome (FCO) - Italy" autocomplete="off" aria-label="Departure airport or city">
+              <input type="text" id="homeOriginInput" class="segment-input airport-input" placeholder="City, airport name, or IATA (e.g. Dhaka, DAC)" autocomplete="off" aria-label="Departure airport or city">
             </div>
             <div class="field-error-msg" id="originError" role="alert" aria-live="polite"></div>
             <div class="airport-dropdown-list" id="homeOriginDropdown" role="listbox"></div>
           </div>
 
-          <!-- Swap Button Between Origin & Destination -->
+          <!-- Swap Button -->
           <div class="swap-btn-container">
-            <button class="btn-swap-circular" id="btnSwapHome" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.swapAirports(); } else { app.swapHomeAirports(); }" title="Swap Departure and Arrival" type="button" aria-label="Swap departure and arrival airports">
+            <button class="btn-swap-circular" id="btnSwapHome" title="Swap Departure and Arrival" type="button" aria-label="Swap departure and arrival airports">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="swap-svg"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
             </button>
           </div>
@@ -102,7 +96,7 @@
               <label for="homeDestInput" class="segment-label">To</label>
             </div>
             <div class="segment-input-wrapper">
-              <input type="text" id="homeDestInput" class="segment-input airport-input" placeholder="New York (JFK) - United States" autocomplete="off" aria-label="Arrival destination airport or city">
+              <input type="text" id="homeDestInput" class="segment-input airport-input" placeholder="City, airport name, or IATA (e.g. Dubai, DXB)" autocomplete="off" aria-label="Arrival destination airport or city">
             </div>
             <div class="field-error-msg" id="destError" role="alert" aria-live="polite"></div>
             <div class="airport-dropdown-list" id="homeDestDropdown" role="listbox"></div>
@@ -122,8 +116,8 @@
             <div class="field-error-msg" id="depDateError" role="alert" aria-live="polite"></div>
           </div>
 
-          <!-- Return Date Field -->
-          <div class="form-segment-block form-group-field" id="returnDateField">
+          <!-- Return Date Field (Shown for Round Trip only) -->
+          <div class="form-segment-block form-group-field" id="returnDateField" style="display: none;">
             <div class="segment-label-row">
               <span class="segment-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
@@ -136,113 +130,25 @@
             <div class="field-error-msg" id="returnDateError" role="alert" aria-live="polite"></div>
           </div>
 
-          <!-- Travelers & Cabin Class Picker -->
-          <div class="form-segment-block form-group-field passenger-class-picker-group" id="travellersField">
-            <div class="segment-label-row">
-              <span class="segment-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </span>
-              <label class="segment-label">Travellers</label>
-            </div>
-            <div class="segment-input-wrapper passenger-picker-trigger" id="passengerClassTrigger" onclick="app.togglePassengerPopover(event)" role="button" aria-haspopup="dialog" aria-expanded="false" tabindex="0">
-              <div class="traveler-trigger-info">
-                <span class="traveler-summary-text" id="travelerSummaryText">1 Passenger</span>
-                <span class="traveler-subtext" id="travelerSubtext">Economy</span>
-              </div>
-              <span class="trigger-chevron" aria-hidden="true">▾</span>
-            </div>
-            <div class="field-error-msg" id="passengersError" role="alert" aria-live="polite"></div>
-
-            <!-- Popover Panel -->
-            <div class="passenger-class-popover" id="passengerClassPopover" role="dialog" aria-label="Passenger and cabin selection">
-              <div class="popover-section-header">
-                <span class="popover-section-title">Passengers</span>
-                <span class="popover-total-indicator" id="popoverTotalIndicator">Total: 1</span>
-              </div>
-
-              <!-- Adults -->
-              <div class="traveler-counter-row">
-                <div class="counter-label-col">
-                  <div class="counter-title">Adults</div>
-                  <div class="counter-subtitle">12+ years (min 1)</div>
-                </div>
-                <div class="counter-btn-group">
-                  <button type="button" class="btn-counter" onclick="app.changePassengerCount('adults', -1)" id="btnMinusAdults" aria-label="Decrease adults">−</button>
-                  <span class="counter-value" id="valAdults">1</span>
-                  <button type="button" class="btn-counter" onclick="app.changePassengerCount('adults', 1)" aria-label="Increase adults">+</button>
-                </div>
-              </div>
-
-              <!-- Children -->
-              <div class="traveler-counter-row">
-                <div class="counter-label-col">
-                  <div class="counter-title">Children</div>
-                  <div class="counter-subtitle">2–11 years</div>
-                </div>
-                <div class="counter-btn-group">
-                  <button type="button" class="btn-counter" onclick="app.changePassengerCount('children', -1)" id="btnMinusChildren" aria-label="Decrease children">−</button>
-                  <span class="counter-value" id="valChildren">0</span>
-                  <button type="button" class="btn-counter" onclick="app.changePassengerCount('children', 1)" aria-label="Increase children">+</button>
-                </div>
-              </div>
-
-              <!-- Infants -->
-              <div class="traveler-counter-row">
-                <div class="counter-label-col">
-                  <div class="counter-title">Infants</div>
-                  <div class="counter-subtitle">Under 2 years (lap)</div>
-                </div>
-                <div class="counter-btn-group">
-                  <button type="button" class="btn-counter" onclick="app.changePassengerCount('infants', -1)" id="btnMinusInfants" aria-label="Decrease infants">−</button>
-                  <span class="counter-value" id="valInfants">0</span>
-                  <button type="button" class="btn-counter" onclick="app.changePassengerCount('infants', 1)" aria-label="Increase infants">+</button>
-                </div>
-              </div>
-
-              <div class="popover-divider"></div>
-
-              <div class="popover-section-header">
-                <span class="popover-section-title">Cabin Class</span>
-              </div>
-              <div class="cabin-pills-grid">
-                <button type="button" class="cabin-pill active" data-cabin="Economy" onclick="app.selectCabinClass('Economy')">Economy</button>
-                <button type="button" class="cabin-pill" data-cabin="Premium Economy" onclick="app.selectCabinClass('Premium Economy')">Premium Economy</button>
-                <button type="button" class="cabin-pill" data-cabin="Business" onclick="app.selectCabinClass('Business')">Business</button>
-                <button type="button" class="cabin-pill" data-cabin="First Class" onclick="app.selectCabinClass('First Class')">First Class</button>
-              </div>
-
-              <div class="popover-footer">
-                <button type="button" class="btn-popover-done" onclick="app.closePassengerPopover(event)">Done</button>
-              </div>
-            </div>
-
-            <!-- Hidden form state inputs -->
-            <input type="hidden" id="homePassengers" value="1">
-            <input type="hidden" id="homeCabinClass" value="economy">
-            <input type="hidden" id="homeAdults" value="1">
-            <input type="hidden" id="homeChildren" value="0">
-            <input type="hidden" id="homeInfants" value="0">
-          </div>
-
-          <!-- Search CTA Pill Button -->
+          <!-- Search CTA Button -->
           <div class="form-segment-submit">
-            <button class="btn-search-flights-pill" id="btnHomeSearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { window.location.href='/flights/search'; }" type="button">
+            <button class="btn-search-flights-pill" id="btnHomeSearch" type="submit">
               <span>Search Flights</span>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" class="search-arrow-icon" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
           </div>
-        </div>
+        </form>
 
         <!-- Multi-City Dynamic Form Container -->
         <div class="multicity-widget-form" id="multiCityContainer" style="display: none;">
           <div class="multicity-legs-list" id="multiCityLegsList"></div>
           <div class="multicity-bottom-bar">
-            <button type="button" class="btn-add-city" id="btnAddCityLeg" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.addMultiCityLeg(); } else { app.addMultiCityLeg(); }">
+            <button type="button" class="btn-add-city" id="btnAddCityLeg">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
               <span>Add Another City</span>
             </button>
             <div class="multicity-actions">
-              <button class="btn-search-flights-pill" id="btnMultiCitySearch" onclick="if (typeof FlightSearchWidget !== 'undefined') { FlightSearchWidget.handleSubmit(event); } else { window.location.href='/flights/search'; }" type="button">
+              <button class="btn-search-flights-pill" id="btnMultiCitySearch" type="button">
                 <span>Search Multi-City Flights</span>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" class="search-arrow-icon" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </button>
@@ -250,20 +156,113 @@
           </div>
         </div>
 
-        <!-- Quick Route Tags Bar -->
-        <div class="quick-tags-bar">
+        <!-- 2. Hotels Search Form -->
+        <form class="hotels-form-grid" id="hotelsSearchForm" style="display: none;" novalidate>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="hotelDestInput" class="segment-label">Destination / City</label></div>
+            <input type="text" id="hotelDestInput" class="segment-input" placeholder="e.g. Cox's Bazar, Dubai" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="hotelCheckIn" class="segment-label">Check-in</label></div>
+            <input type="date" id="hotelCheckIn" class="segment-input date-input" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="hotelCheckOut" class="segment-label">Check-out</label></div>
+            <input type="date" id="hotelCheckOut" class="segment-input date-input" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="hotelRoomsSelect" class="segment-label">Rooms</label></div>
+            <select id="hotelRoomsSelect" class="segment-input">
+              <option value="1" selected>1 Room</option>
+              <option value="2">2 Rooms</option>
+              <option value="3">3 Rooms</option>
+              <option value="4">4 Rooms</option>
+            </select>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="hotelAdultsSelect" class="segment-label">Adults</label></div>
+            <select id="hotelAdultsSelect" class="segment-input">
+              <option value="1">1 Adult</option>
+              <option value="2" selected>2 Adults</option>
+              <option value="3">3 Adults</option>
+              <option value="4">4 Adults</option>
+              <option value="6">6 Adults</option>
+            </select>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="hotelChildrenSelect" class="segment-label">Children</label></div>
+            <select id="hotelChildrenSelect" class="segment-input">
+              <option value="0" selected>0 Children</option>
+              <option value="1">1 Child</option>
+              <option value="2">2 Children</option>
+              <option value="3">3 Children</option>
+            </select>
+          </div>
+          <div class="form-segment-submit">
+            <button class="btn-search-flights-pill" id="btnSearchHotels" type="submit">
+              <span>Search Hotels</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- 3. Car Rentals Search Form -->
+        <form class="cars-form-grid" id="carsSearchForm" style="display: none;" novalidate>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="carPickupLoc" class="segment-label">Pickup Location</label></div>
+            <input type="text" id="carPickupLoc" class="segment-input" placeholder="e.g. Dhaka Airport (DAC)" required>
+          </div>
+          <div class="form-segment-block" id="carDropoffGroup" style="display: none;">
+            <div class="segment-label-row"><label for="carDropoffLoc" class="segment-label">Drop-off Location</label></div>
+            <input type="text" id="carDropoffLoc" class="segment-input" placeholder="City or Airport">
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="carPickupDate" class="segment-label">Pickup Date</label></div>
+            <input type="date" id="carPickupDate" class="segment-input date-input" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="carPickupTime" class="segment-label">Pickup Time</label></div>
+            <input type="time" id="carPickupTime" class="segment-input" value="10:00" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="carReturnDate" class="segment-label">Return Date</label></div>
+            <input type="date" id="carReturnDate" class="segment-input date-input" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="carReturnTime" class="segment-label">Return Time</label></div>
+            <input type="time" id="carReturnTime" class="segment-input" value="10:00" required>
+          </div>
+          <div class="form-segment-block">
+            <div class="segment-label-row"><label for="carDriverAge" class="segment-label">Driver Age</label></div>
+            <input type="number" id="carDriverAge" class="segment-input" value="25" min="21" max="85" required>
+          </div>
+          <div class="form-segment-block" style="justify-content: center;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.84rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" id="carSameLocation" checked>
+              <span>Return same place</span>
+            </label>
+          </div>
+          <div class="form-segment-submit">
+            <button class="btn-search-flights-pill" id="btnSearchCars" type="submit">
+              <span>Search Cars</span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Route Tags Bar (Flights Tab) -->
+        <div class="quick-tags-bar" id="flightQuickRoutesBar">
           <span class="quick-tag-label">Popular Routes:</span>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">Dhaka ➔ Cox's Bazar</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Chittagong')">Dhaka ➔ Chittagong</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Sylhet')">Dhaka ➔ Sylhet</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Saidpur')">Dhaka ➔ Saidpur</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Dhaka', 'Dubai')">Dhaka ➔ Dubai</button>
-          <button type="button" class="quick-tag" onclick="app.quickFilterSearch('Chittagong', 'Dhaka')">Chittagong ➔ Dhaka</button>
-          <button type="button" class="quick-tag reset-tag" onclick="app.clearHomeSearch()">Clear All</button>
+          <button type="button" class="quick-tag" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">Dhaka ➔ Cox's Bazar</button>
+          <button type="button" class="quick-tag" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Chittagong')">Dhaka ➔ Chittagong</button>
+          <button type="button" class="quick-tag" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Sylhet')">Dhaka ➔ Sylhet</button>
+          <button type="button" class="quick-tag" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Dubai')">Dhaka ➔ Dubai</button>
+          <button type="button" class="quick-tag" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Bangkok')">Dhaka ➔ Bangkok</button>
+          <button type="button" class="quick-tag reset-tag" onclick="FlightSearchWidget.clearHomeSearch()">Clear</button>
         </div>
       </div>
 
-      <!-- Feature Highlights Ribbon (Directly Below Search Card — Matching Genesis Screenshot) -->
+      <!-- Feature Highlights Ribbon -->
       <div class="hero-feature-strip" id="heroFeatureStrip" aria-label="FLY Service Guarantees">
         <div class="feature-strip-item">
           <div class="feature-item-icon">
@@ -274,7 +273,6 @@
             <div class="feature-item-desc">Find our best rates</div>
           </div>
         </div>
-
         <div class="feature-strip-item">
           <div class="feature-item-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -284,43 +282,37 @@
             <div class="feature-item-desc">Dedicated travel assistance</div>
           </div>
         </div>
-
         <div class="feature-strip-item">
           <div class="feature-item-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
           <div class="feature-item-content">
             <div class="feature-item-title">Secure Booking</div>
-            <div class="feature-item-desc">100% verified transactions</div>
+            <div class="feature-item-desc">Atomic seat lock &amp; PNR verification</div>
           </div>
         </div>
-
         <div class="feature-strip-item">
           <div class="feature-item-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
           </div>
           <div class="feature-item-content">
             <div class="feature-item-title">Flexible Options</div>
-            <div class="feature-item-desc">Changes and cancellations made easy</div>
+            <div class="feature-item-desc">Changes and refunds made easy</div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- Quick Glance: Active Trip Widget -->
-  <div class="container active-trip-banner" id="activeTripBanner" style="display: none;"></div>
-
   <!-- ======================================================== -->
-  <!-- SECTION: POPULAR DESTINATIONS (#destinations)             -->
+  <!-- SECTION: COMPACT POPULAR DESTINATIONS (#destinations)     -->
   <!-- ======================================================== -->
   <section class="container popular-destinations-section" id="destinations" aria-label="Popular Flight Destinations">
-    <div class="section-header">
+    <div class="section-header" style="margin-bottom: 18px;">
       <div>
         <div class="section-eyebrow">Popular routes</div>
-        <h2 class="section-title">Popular Destinations</h2>
-        <p class="section-subtitle">Explore top domestic and regional destinations with transparent, verified pricing</p>
+        <h2 class="section-title" style="font-size: 1.55rem; margin-bottom: 4px;">Popular Destinations</h2>
+        <p class="section-subtitle" style="font-size: 0.9rem; margin: 0;">Explore active domestic &amp; international connections with real-time seat inventory</p>
       </div>
       <a href="/flights/search" class="btn-secondary-outline">
         <span>Explore All Routes</span>
@@ -329,9 +321,10 @@
     </div>
 
     <div class="destinations-grid">
-      <!-- Card 1: Cox's Bazar -->
-      <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Cox\'s Bazar', 'CXB')" tabindex="0" role="button" aria-label="Book flight to Cox's Bazar">
+      <!-- 1. Cox's Bazar -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Cox\'s Bazar', 'CXB')" tabindex="0" role="button" aria-label="Book flight to Cox's Bazar">
         <div class="dest-card-media dest-cxb">
+          <img src="/images/destinations/coxs-bazar.webp" alt="Cox's Bazar sea beach sunset shoreline in Bangladesh" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
           <span class="dest-badge">Coastal Route</span>
         </div>
         <div class="dest-card-body">
@@ -342,14 +335,15 @@
           <p class="dest-country">Bangladesh &bull; Natural Sea Beach</p>
           <div class="dest-meta-row">
             <span class="dest-flight-time">55m non-stop</span>
-            <span class="dest-fare-pill">Fares from BDT 4,500</span>
+            <span class="dest-fare-pill">From BDT 4,300</span>
           </div>
         </div>
       </article>
 
-      <!-- Card 2: Chittagong -->
-      <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Chittagong', 'CGP')" tabindex="0" role="button" aria-label="Book flight to Chittagong">
+      <!-- 2. Chittagong -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Chittagong', 'CGP')" tabindex="0" role="button" aria-label="Book flight to Chittagong">
         <div class="dest-card-media dest-cgp">
+          <img src="/images/destinations/chittagong.webp" alt="Patenga coast and boats in Chittagong, Bangladesh" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
           <span class="dest-badge">Commercial Hub</span>
         </div>
         <div class="dest-card-body">
@@ -357,17 +351,18 @@
             <h3 class="dest-city">Chittagong</h3>
             <span class="dest-code">CGP</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; Port City &amp; Business District</p>
+          <p class="dest-country">Bangladesh &bull; Port City</p>
           <div class="dest-meta-row">
             <span class="dest-flight-time">45m non-stop</span>
-            <span class="dest-fare-pill">Fares from BDT 3,800</span>
+            <span class="dest-fare-pill">From BDT 3,800</span>
           </div>
         </div>
       </article>
 
-      <!-- Card 3: Sylhet -->
-      <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Sylhet', 'ZYL')" tabindex="0" role="button" aria-label="Book flight to Sylhet">
+      <!-- 3. Sylhet -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Sylhet', 'ZYL')" tabindex="0" role="button" aria-label="Book flight to Sylhet">
         <div class="dest-card-media dest-zyl">
+          <img src="/images/destinations/sylhet.webp" alt="Lush green tea gardens in Sylhet, Bangladesh" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
           <span class="dest-badge">Tea Highlands</span>
         </div>
         <div class="dest-card-body">
@@ -375,17 +370,18 @@
             <h3 class="dest-city">Sylhet</h3>
             <span class="dest-code">ZYL</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; Surma Valley &amp; Tea Gardens</p>
+          <p class="dest-country">Bangladesh &bull; Surma Valley</p>
           <div class="dest-meta-row">
             <span class="dest-flight-time">50m non-stop</span>
-            <span class="dest-fare-pill">Fares from BDT 3,500</span>
+            <span class="dest-fare-pill">From BDT 3,500</span>
           </div>
         </div>
       </article>
 
-      <!-- Card 4: Dubai -->
-      <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Dubai', 'DXB')" tabindex="0" role="button" aria-label="Book flight to Dubai">
+      <!-- 4. Dubai -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Dubai', 'DXB')" tabindex="0" role="button" aria-label="Book flight to Dubai">
         <div class="dest-card-media dest-dxb">
+          <img src="/images/destinations/dubai.webp" alt="Dubai city skyline and Burj Khalifa tower at dusk" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
           <span class="dest-badge">Middle East</span>
         </div>
         <div class="dest-card-body">
@@ -393,46 +389,86 @@
             <h3 class="dest-city">Dubai</h3>
             <span class="dest-code">DXB</span>
           </div>
-          <p class="dest-country">UAE &bull; Direct International Transit</p>
+          <p class="dest-country">UAE &bull; International Transit</p>
           <div class="dest-meta-row">
             <span class="dest-flight-time">4h 45m non-stop</span>
-            <span class="dest-fare-pill">Fares from BDT 38,500</span>
+            <span class="dest-fare-pill">From BDT 48,500</span>
           </div>
         </div>
       </article>
 
-      <!-- Card 5: Saidpur -->
-      <article class="destination-card" onclick="app.selectPopularDestination('Dhaka', 'Saidpur', 'SPD')" tabindex="0" role="button" aria-label="Book flight to Saidpur">
+      <!-- 5. Bangkok -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Bangkok', 'BKK')" tabindex="0" role="button" aria-label="Book flight to Bangkok">
         <div class="dest-card-media dest-bkk">
-          <span class="dest-badge">Northern Hub</span>
+          <img src="/images/destinations/bangkok.webp" alt="Grand Palace architecture skyline in Bangkok, Thailand" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
+          <span class="dest-badge">Southeast Asia</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
-            <h3 class="dest-city">Saidpur</h3>
-            <span class="dest-code">SPD</span>
+            <h3 class="dest-city">Bangkok</h3>
+            <span class="dest-code">BKK</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; Nilphamari &amp; Rangpur Gateway</p>
+          <p class="dest-country">Thailand &bull; Direct Regional</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">55m non-stop</span>
-            <span class="dest-fare-pill">Fares from BDT 3,400</span>
+            <span class="dest-flight-time">2h 30m non-stop</span>
+            <span class="dest-fare-pill">From BDT 32,000</span>
           </div>
         </div>
       </article>
 
-      <!-- Card 6: Chittagong -> Dhaka -->
-      <article class="destination-card" onclick="app.selectPopularDestination('Chittagong', 'Dhaka', 'DAC')" tabindex="0" role="button" aria-label="Book flight from Chittagong to Dhaka">
+      <!-- 6. Singapore -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Singapore', 'SIN')" tabindex="0" role="button" aria-label="Book flight to Singapore">
         <div class="dest-card-media dest-sin">
-          <span class="dest-badge">Capital Express</span>
+          <img src="/images/destinations/singapore.webp" alt="Marina Bay Sands waterfront skyline in Singapore" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
+          <span class="dest-badge">Regional Hub</span>
         </div>
         <div class="dest-card-body">
           <div class="dest-card-top">
-            <h3 class="dest-city">Dhaka (from CGP)</h3>
-            <span class="dest-code">DAC</span>
+            <h3 class="dest-city">Singapore</h3>
+            <span class="dest-code">SIN</span>
           </div>
-          <p class="dest-country">Bangladesh &bull; Frequent Daily Shuttles</p>
+          <p class="dest-country">Singapore &bull; Marina Bay</p>
           <div class="dest-meta-row">
-            <span class="dest-flight-time">50m non-stop</span>
-            <span class="dest-fare-pill">Fares from BDT 3,800</span>
+            <span class="dest-flight-time">4h 05m non-stop</span>
+            <span class="dest-fare-pill">From BDT 42,000</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- 7. Kuala Lumpur -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'Kuala Lumpur', 'KUL')" tabindex="0" role="button" aria-label="Book flight to Kuala Lumpur">
+        <div class="dest-card-media dest-kul">
+          <img src="/images/destinations/kuala-lumpur.webp" alt="Petronas Twin Towers skyline in Kuala Lumpur, Malaysia" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
+          <span class="dest-badge">ASEAN Gateway</span>
+        </div>
+        <div class="dest-card-body">
+          <div class="dest-card-top">
+            <h3 class="dest-city">Kuala Lumpur</h3>
+            <span class="dest-code">KUL</span>
+          </div>
+          <p class="dest-country">Malaysia &bull; Twin Towers</p>
+          <div class="dest-meta-row">
+            <span class="dest-flight-time">3h 55m non-stop</span>
+            <span class="dest-fare-pill">From BDT 38,000</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- 8. London -->
+      <article class="destination-card" onclick="FlightSearchWidget.selectPopularDestination('Dhaka', 'London', 'LHR')" tabindex="0" role="button" aria-label="Book flight to London">
+        <div class="dest-card-media dest-lhr">
+          <img src="/images/destinations/london.webp" alt="River Thames and Tower Bridge skyline in London, UK" class="dest-card-img" loading="lazy" onerror="this.style.display='none'">
+          <span class="dest-badge">Europe Direct</span>
+        </div>
+        <div class="dest-card-body">
+          <div class="dest-card-top">
+            <h3 class="dest-city">London</h3>
+            <span class="dest-code">LHR</span>
+          </div>
+          <p class="dest-country">United Kingdom &bull; Heathrow</p>
+          <div class="dest-meta-row">
+            <span class="dest-flight-time">10h 45m direct</span>
+            <span class="dest-fare-pill">From BDT 82,500</span>
           </div>
         </div>
       </article>
@@ -447,45 +483,42 @@
       <div>
         <div class="section-eyebrow">Exclusive savings</div>
         <h2 class="section-title">Special Travel Offers</h2>
-        <p class="section-subtitle">Take advantage of limited-time seasonal fares and partner discounts</p>
+        <p class="section-subtitle">Active promo codes ready to apply during checkout</p>
       </div>
       <a href="/flights/search" class="btn-secondary-outline">
-        <span>View All Deals</span>
+        <span>View All Flights</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arrow-icon" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
     </div>
 
     <div class="offers-grid">
-      <!-- Offer Card 1 -->
       <div class="offer-card">
-        <div class="offer-badge">Domestic Special</div>
-        <h3 class="offer-title">Fly to Cox's Bazar with 15% Off</h3>
-        <p class="offer-desc">Escape to the world's longest natural sea beach with daily nonstop departures from Hazrat Shahjalal International Airport.</p>
+        <div class="offer-badge">Sitewide 10% Off</div>
+        <h3 class="offer-title">Save 10% With Promo FLY10</h3>
+        <p class="offer-desc">Apply code FLY10 at checkout on eligible domestic &amp; international bookings over BDT 2,000.</p>
         <div class="offer-footer">
-          <span class="offer-code-badge">PROMO: BEACH2026</span>
-          <button type="button" class="btn-sm btn-primary" onclick="app.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">Book Now</button>
+          <span class="offer-code-badge">PROMO: FLY10</span>
+          <button type="button" class="btn-sm btn-primary" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Cox\'s Bazar')">Search Flights</button>
         </div>
       </div>
 
-      <!-- Offer Card 2 -->
       <div class="offer-card">
-        <div class="offer-badge">Regional Hub</div>
-        <h3 class="offer-title">Dubai &amp; Gulf Direct Connections</h3>
-        <p class="offer-desc">Seamless bookings on Biman Bangladesh, Emirates &amp; flydubai with 15-minute fare holds and extra baggage allowances.</p>
+        <div class="offer-badge">Dhaka Departure</div>
+        <h3 class="offer-title">Flat BDT 500 Off With DHAKA500</h3>
+        <p class="offer-desc">Instant BDT 500 fare savings on flights departing Dhaka over BDT 3,500 total fare.</p>
         <div class="offer-footer">
-          <span class="offer-code-badge">PROMO: GULF10</span>
-          <button type="button" class="btn-sm btn-primary" onclick="app.quickFilterSearch('Dhaka', 'Dubai')">Book Now</button>
+          <span class="offer-code-badge">PROMO: DHAKA500</span>
+          <button type="button" class="btn-sm btn-primary" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Dubai')">Search Dubai</button>
         </div>
       </div>
 
-      <!-- Offer Card 3 -->
       <div class="offer-card">
-        <div class="offer-badge">Southeast Asia</div>
-        <h3 class="offer-title">Bangkok &amp; Singapore Weekend Getaway</h3>
-        <p class="offer-desc">Competitive round-trip fares with transparent tax breakdowns and seat reservation included.</p>
+        <div class="offer-badge">Regional Hubs</div>
+        <h3 class="offer-title">Bangkok, Singapore &amp; Kuala Lumpur</h3>
+        <p class="offer-desc">Direct &amp; connecting regional flights with real-time seat maps and transparent baggage allowances.</p>
         <div class="offer-footer">
-          <span class="offer-code-badge">PROMO: ASIAFLY</span>
-          <button type="button" class="btn-sm btn-primary" onclick="app.quickFilterSearch('Dhaka', 'Bangkok')">Book Now</button>
+          <span class="offer-code-badge">23–40 KG BAGGAGE</span>
+          <button type="button" class="btn-sm btn-primary" onclick="FlightSearchWidget.quickFilterSearch('Dhaka', 'Bangkok')">Search Bangkok</button>
         </div>
       </div>
     </div>
@@ -514,8 +547,8 @@
         <div class="benefit-icon-wrapper">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="benefit-svg" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
-        <h3 class="benefit-title">15-Minute Seat Hold</h3>
-        <p class="benefit-desc">Select seats on the interactive cabin map. Seats are held exclusively while entering passenger information.</p>
+        <h3 class="benefit-title">10-Minute Atomic Seat Hold</h3>
+        <p class="benefit-desc">Select seats on the interactive cabin map with database-enforced double-booking prevention.</p>
       </div>
 
       <div class="benefit-card">
@@ -531,7 +564,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="benefit-svg" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         </div>
         <h3 class="benefit-title">Dedicated Support</h3>
-        <p class="benefit-desc">Travel assistance desk available to assist with itinerary adjustments, baggage questions, and servicing.</p>
+        <p class="benefit-desc">Travel assistance desk available to assist with itinerary adjustments, baggage rules, and refunds.</p>
       </div>
     </div>
   </section>
@@ -553,7 +586,7 @@
           <h3 class="info-card-title">Airport Check-In Timing</h3>
         </div>
         <p class="info-card-text">
-          For domestic flights within Bangladesh, counter check-in opens 2 hours before departure and closes 45 minutes prior. For international departures, please arrive at least 3 hours before scheduled departure.
+          Domestic check-in opens 2 hours before departure and closes 45 minutes prior. International departures close counter check-in 60 minutes before takeoff.
         </p>
       </div>
 
@@ -563,7 +596,7 @@
           <h3 class="info-card-title">Baggage Allowance Policy</h3>
         </div>
         <p class="info-card-text">
-          Standard Economy tickets include 20kg checked baggage for domestic routes and 25–30kg for regional flights. Hand luggage is limited to 7kg (one cabin bag plus one laptop bag or handbag).
+          Default allowances include 23 kg checked baggage on domestic routes and 40 kg on international routes, plus 7 kg cabin hand luggage.
         </p>
       </div>
 
@@ -573,7 +606,7 @@
           <h3 class="info-card-title">Valid Travel Documents</h3>
         </div>
         <p class="info-card-text">
-          Domestic travel requires a valid National ID (NID), Passport, Student ID, or Driving License. International routes require a Passport valid for at least 6 months beyond travel dates and appropriate destination visas.
+          Domestic travel requires a valid NID or Passport. International routes require a Passport valid at least 6 months beyond travel dates.
         </p>
       </div>
 
@@ -583,7 +616,7 @@
           <h3 class="info-card-title">Changes &amp; Cancellation</h3>
         </div>
         <p class="info-card-text">
-          Flight changes and refund requests are processed according to the airline fare rules shown during booking review. Manage and track changes anytime via our <a href="/manage-booking" class="text-link">Manage Booking</a> portal.
+          Manage confirmed bookings and track refunds anytime via <a href="/manage-booking" class="text-link">Manage Booking</a> or your passenger dashboard.
         </p>
       </div>
     </div>
@@ -597,7 +630,7 @@
       <div class="help-text-col">
         <span class="help-badge">Passenger Support</span>
         <h3 class="help-title">Need assistance with your booking?</h3>
-        <p class="help-desc">Our travel desk is available 24/7 to assist with schedule adjustments, baggage policies, or reservation inquiries.</p>
+        <p class="help-desc">Our travel desk assists with schedule adjustments, baggage policies, and reservation lookups.</p>
       </div>
       <div class="help-actions-col">
         <a href="tel:+8809610000359" class="help-contact-item">
@@ -605,7 +638,7 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </span>
           <div>
-            <span class="help-label">Helpline (Toll-Free)</span>
+            <span class="help-label">Helpline</span>
             <span class="help-value">+880 9610-000FLY</span>
           </div>
         </a>
@@ -624,72 +657,9 @@
       </div>
     </div>
   </section>
-
-  <!-- Interactive Partner Services Modal (Zero Dead Buttons) -->
-  <div class="partner-modal-backdrop" id="partnerModal" role="dialog" aria-modal="true" aria-labelledby="partnerModalTitle" style="display: none;">
-    <div class="partner-modal-card">
-      <div class="partner-modal-header">
-        <h3 class="partner-modal-title" id="partnerModalTitle">Partner Service</h3>
-        <button type="button" class="btn-close-modal" onclick="closePartnerModal()" aria-label="Close dialog">✕</button>
-      </div>
-      <div class="partner-modal-body">
-        <div class="partner-icon-large" id="partnerModalIcon">✨</div>
-        <p class="partner-modal-desc" id="partnerModalDesc">Information</p>
-        <p class="partner-modal-sub">We are currently integrating this partner service directly into FLY. Book your flights now to receive exclusive partner perks and airport discounts upon arrival!</p>
-      </div>
-      <div class="partner-modal-footer">
-        <button type="button" class="btn-secondary-outline" onclick="closePartnerModal()">Got it</button>
-        <a href="/flights/search" class="btn-primary">Explore Flights</a>
-      </div>
-    </div>
-  </div>
 </section>
 {% endblock %}
 
 {% block scripts %}
-<script src="/js/app.js"></script>
 <script src="/js/flight_search_widget.js"></script>
-<script>
-  // Partner modal helper for non-flight tabs
-  function showPartnerModal(title, description) {
-    const modal = document.getElementById('partnerModal');
-    const modalTitle = document.getElementById('partnerModalTitle');
-    const modalDesc = document.getElementById('partnerModalDesc');
-    const modalIcon = document.getElementById('partnerModalIcon');
-    if (modal && modalTitle && modalDesc) {
-      modalTitle.textContent = title + ' with FLY Partners';
-      modalDesc.textContent = description;
-      if (modalIcon) {
-        if (title.includes('Hotel')) modalIcon.textContent = '🏨';
-        else if (title.includes('Car')) modalIcon.textContent = '🚗';
-        else modalIcon.textContent = '✨';
-      }
-      modal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    }
-  }
-
-  function closePartnerModal() {
-    const modal = document.getElementById('partnerModal');
-    if (modal) {
-      modal.style.display = 'none';
-      document.body.style.overflow = '';
-    }
-  }
-
-  // Close on backdrop click
-  document.addEventListener('click', function(e) {
-    const modal = document.getElementById('partnerModal');
-    if (e.target === modal) {
-      closePartnerModal();
-    }
-  });
-
-  // Close on Escape key
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      closePartnerModal();
-    }
-  });
-</script>
 {% endblock %}

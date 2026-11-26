@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "components/breadcrumb.html" import render_breadcrumb %}
+{% from "components/page_heading.html" import render_page_heading %}
+
+{% block title %}Hotel Search — FLY{% endblock %}
+
+{% block breadcrumbs %}
+  {{ render_breadcrumb([
+    {'label': 'Home', 'url': '/'},
+    {'label': 'Hotels Search', 'url': None}
+  ]) }}
+{% endblock %}
+
+{% block content %}
+<div class="fly-container fly-page-section" id="hotelsPage">
+  {{ render_page_heading(
+    'Hotel Accommodations',
+    'Verified room availability, transparent taxes, and flexible cancellation options.'
+  ) }}
+
+  <div class="fly-card" style="padding: 18px 22px; margin: 16px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+    <div id="hotelQuerySummary" style="font-size: 0.94rem;">Loading search criteria...</div>
+    <a href="/" class="fly-btn fly-btn-outline">Modify Hotel Search</a>
+  </div>
+
+  <div id="hotelResultsContainer" style="margin-top: 18px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function () {
+  const qs = window.location.search;
+  const params = new URLSearchParams(qs);
+  const esc = s => window.FlyApi ? window.FlyApi.escapeHtml(s) : String(s || '');
+  const summary = document.getElementById('hotelQuerySummary');
+  const container = document.getElementById('hotelResultsContainer');
+
+  const dest = params.get('destination') || '--';
+  const ci = params.get('checkIn') || '--';
+  const co = params.get('checkOut') || '--';
+  const rooms = params.get('rooms') || '1';
+  const adults = params.get('adults') || '2';
+  const children = params.get('children') || '0';
+  summary.innerHTML = `<strong>${esc(dest)}</strong> &bull; Check-in: ${esc(ci)} &bull; Check-out: ${esc(co)} &bull; ${esc(rooms)} Room(s), ${esc(adults)} Adult(s)${Number(children) > 0 ? (', ' + esc(children) + ' Child(ren)') : ''}`;
+
+  try {
+    const res = await fetch('/api/hotels/search' + qs);
+    const data = await res.json();
+    if (!res.ok) {
+      container.innerHTML = `<div class="fly-alert fly-alert-danger">${esc(data.error || 'Invalid hotel search parameters.')}</div>`;
+      return;
+    }
+    if (!data.providerConfigured) {
+      container.innerHTML = `
+        <div class="fly-card" style="padding: 28px;">
+          <span class="fly-badge fly-badge-warning">Provider Adapter Ready &bull; External Key Required</span>
+          <h2 style="margin: 12px 0 8px; font-size: 1.25rem;">Live Hotel Inventory Not Configured</h2>
+          <p style="margin: 0 0 12px; color: var(--text-secondary);">
+            ${esc(data.message)}
+          </p>
+          <p style="margin: 0 0 14px; font-size: 0.86rem; color: var(--text-muted);">
+            Your search for <strong>${esc(data.query.destination)}</strong> (${esc(data.query.nights)} night(s): ${esc(data.query.checkIn)} to ${esc(data.query.checkOut)}) passed all backend validation. To serve live partner hotels, configure:
+            <code>${(data.requiredEnv || []).map(esc).join(', ')}</code>
+          </p>
+          <a href="/" class="fly-btn fly-btn-primary">Return to FLY Travel Search</a>
+        </div>`;
+      return;
+    }
+    container.innerHTML = '<div class="fly-card" style="padding:24px;">Live hotel results loaded.</div>';
+  } catch (err) {
+    container.innerHTML = `<div class="fly-alert fly-alert-danger">Network error while contacting hotel adapter.</div>`;
+  }
+})();
+</script>
+{% endblock %}

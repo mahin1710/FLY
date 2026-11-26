@@ -26,6 +26,16 @@ def flight_seat_selection_page(flight_id):
     return render_template("pages/seat_map.html", flight_id=flight_id)
 
 
+@pages_bp.route("/hotels/search")
+def hotel_search_page():
+    return render_template("pages/hotels_search.html")
+
+
+@pages_bp.route("/cars/search")
+def car_search_page():
+    return render_template("pages/cars_search.html")
+
+
 @pages_bp.route("/flights/offer/<offer_id>")
 def flight_offer_page(offer_id):
     return redirect("/flights/search")
