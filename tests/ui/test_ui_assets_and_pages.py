@@ -92,7 +92,7 @@ class UiAssetsAndPagesTests(unittest.TestCase):
         st, html = fetch_text("/")
         self.assertEqual(st, 200)
         self.assertIn("hero-backdrop-frame", html)
-        self.assertIn("FLY BEYOND BORDERS &bull; GLOBAL FLIGHT NETWORK", html)
+        self.assertNotIn("GLOBAL FLIGHT NETWORK", html)
         self.assertIn("Fly Beyond Borders", html)
         self.assertIn("Discover destinations, compare flights, and enjoy a simpler way to travel.", html)
         # Ensure floating search panel sits before Popular Destinations and feature strip box is removed
