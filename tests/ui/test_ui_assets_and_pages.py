@@ -81,6 +81,20 @@ class UiAssetsAndPagesTests(unittest.TestCase):
         self.assertIn("@media (max-width:", css)
         self.assertIn("@media print", css)
         self.assertIn(".seat-map-layout", css)
+        self.assertIn("--header-height: 58px", css)
+        self.assertIn("flyHeroTextReveal", css)
+        self.assertIn("flySearchPanelFloatUp", css)
+        self.assertIn("prefers-reduced-motion: reduce", css)
+
+    def test_03_homepage_hero_structure_and_copy(self):
+        st, html = fetch_text("/")
+        self.assertEqual(st, 200)
+        self.assertIn("hero-backdrop-frame", html)
+        self.assertIn("FLY BEYOND BORDERS &bull; GLOBAL FLIGHT NETWORK", html)
+        self.assertIn("Fly Beyond Borders", html)
+        self.assertIn("Discover destinations, compare flights, and enjoy a simpler way to travel.", html)
+        # Ensure floating search panel is not clipped and sits before feature strip wrapper
+        self.assertLess(html.index("searchWidgetContainer"), html.index("hero-feature-wrapper"))
 
 
 if __name__ == "__main__":
