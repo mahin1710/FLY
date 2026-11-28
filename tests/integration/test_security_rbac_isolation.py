@@ -3,7 +3,6 @@ FLY — Security, RBAC, Airline Data Isolation, Tampering & Idempotency Tests
 """
 
 import os
-import sys
 import uuid
 import json
 import unittest

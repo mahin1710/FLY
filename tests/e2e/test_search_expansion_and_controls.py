@@ -15,7 +15,6 @@ Verifies:
 import os
 import re
 import json
-import uuid
 import unittest
 import urllib.request
 import urllib.error

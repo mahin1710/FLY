@@ -22,7 +22,6 @@ if ROOT not in sys.path:
 
 import database  # noqa: E402
 from config import Config  # noqa: E402
-from fly.services import qr_service  # noqa: E402
 
 BASE_URL = os.environ.get("FLY_BASE_URL", "http://127.0.0.1:5000")
 

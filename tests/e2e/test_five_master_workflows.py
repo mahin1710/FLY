@@ -8,18 +8,11 @@ FLY — Phase 11 Full End-to-End 5-Workflow Regression Suite
 """
 
 import os
-import sys
 import uuid
 import json
 import unittest
 import urllib.request
 import urllib.error
-
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
-import database  # noqa: E402
 
 BASE_URL = os.environ.get("FLY_BASE_URL", "http://127.0.0.1:5000")
 

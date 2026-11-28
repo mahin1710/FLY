@@ -8,7 +8,7 @@ Produces:
 
 import zlib
 from config import Config
-from fly.services.qr_service import generate_qr_rgb_image, generate_qr_svg  # noqa: F401
+from fly.services.qr_service import generate_qr_rgb_image
 
 
 def _pdf_escape(text: str) -> str:

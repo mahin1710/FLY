@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify, Response
 from config import Config
 import database
 from fly.middleware.auth import check_rate_limit, get_current_user, require_auth, require_roles, verify_booking_access
-from fly.services.pdf_service import build_ticket_pdf, generate_qr_svg
+from fly.services.pdf_service import build_ticket_pdf
 from fly.services import qr_service, cancellation_refund_service
 
 bookings_bp = Blueprint("bookings", __name__)

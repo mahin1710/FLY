@@ -4,7 +4,6 @@ FLY Airports, Flights Catalog, Live Seat Availability & Fare Breakdown API Bluep
 
 import json
 import time
-from datetime import datetime
 from flask import Blueprint, request, jsonify, send_from_directory, current_app, Response
 import database
 from config import Config
